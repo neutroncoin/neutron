@@ -1,14 +1,14 @@
 <a href="http://imgur.com/Ub3OdE9"><img src="http://i.imgur.com/Ub3OdE9.png" title="Neutron" /></a>
 
 
-Neutron is an open source wallet aimed at increasing a holders BTC Value over time with staking features. Now under new Management with active members. The Neutron Network is solid and will be maintained for the forseeable future.
-Support the network by running a Nucleus Node and earn coin for your efforts! Neutron is obtainable on well known exchanges and can be purchased at market prices.Neutron is easy to Buy, Stake, Trade, and Sell. 
+Neutron is an open source wallet aimed at increasing a holders BTC Value over time with staking features. Now under new Management with active members. The Neutron Network is solid and will be maintained for the forseeable future. Support the network by running a Nucleus Node and earn coin for your efforts! Neutron is obtainable on well known exchanges and can be purchased at market prices. Neutron is easy to Buy, Stake, Trade, and Sell. 
 
 
 Specs:
+        
 
-        Ticker: NTRN
-
+	Ticker: NTRN
+	
 	No Premine, No IPO/ICO
 
 	Block time: 79 seconds
@@ -24,10 +24,11 @@ Specs:
 	P2P Port: 32001
 
 
-Payouts:
+Block Rewards:
 
-        Block 0 - 120 = 0 Coins
 
+	Block 0 - 120 = 0 Coins
+	
 	Block 121 - 950 = 750  Coins
 
 	Block 951  - 1400 = 550 Coins
@@ -37,10 +38,9 @@ Payouts:
 	Block 1901 - 2400 = 325 Coins
 
 	Block 2401 - 2850 = 250 Coins
-
-
-        Block 2600 Starting of the Proof of Stake Phase
-
+	
+	Block 2600 Starting of the Proof of Stake Phase
+	
 	Block 2851 - 3500 = 190 Coins
 
 	Block 3501 - 4000 = 105 Coins
