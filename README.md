@@ -39,7 +39,7 @@ Payouts:
 	Block 2401 - 2850 = 250 Coins
 
 
-Block 2600 Starting of the Proof of Stake Phase
+        Block 2600 Starting of the Proof of Stake Phase
 
 	Block 2851 - 3500 = 190 Coins
 
