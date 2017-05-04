@@ -1,4 +1,4 @@
-<a href="http://i.imgur.com/YUhDNh9.png"><img src="http://i.imgur.com/YUhDNh9.png" title="Neutron" /></a>
+<a href="http://i.imgur.com/YUhDNh9m.png"><img src="http://i.imgur.com/YUhDNh9m.png" title="Neutron" /></a>
 
 
 Neutron is an open source wallet aimed at increasing a holders BTC Value over time with staking features. Now under new Management with active members. The Neutron Network is solid and will be maintained for the forseeable future. Support the network by running a Nucleus Node and earn coin for your efforts! Neutron is obtainable on well known exchanges and can be purchased at market prices. Neutron is easy to Buy, Stake, Trade, and Sell. 
