@@ -33,7 +33,7 @@ LIBS += \
  $(DEPSDIR)/lib/libboost_thread-mt.a \
  $(DEPSDIR)/lib/libssl.a \
  $(DEPSDIR)/lib/libcrypto.a \
- -lz
+ $(DEPSDIR)/lib/libz.a
 else
 LIBS += \
  -ldb_cxx-4.8 \
@@ -52,13 +52,13 @@ ifdef RELEASE
 # Compile for maximum compatibility and smallest size.
 # This requires that dependencies are compiled
 # the same way.
-CFLAGS = -mmacosx-version-min=10.5 -arch x86_64 -O3 -msse2
+CFLAGS = -mmacosx-version-min=10.7 -arch x86_64 -O3 -msse2
 else
 CFLAGS = -g -msse2
 endif
 
 # ppc doesn't work because we don't support big-endian
-CFLAGS += -Wall -Wextra -Wformat -Wno-ignored-qualifiers -Wformat-security -Wno-unused-parameter \
+CFLAGS += -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter \
     $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
 
 OBJS= \
@@ -92,6 +92,12 @@ OBJS= \
     obj/pbkdf2.o \
     obj/kernel.o \
     obj/scrypt.o \
+    obj/masternode.o \
+    obj/darksend.o \
+    obj/rpcdarksend.o \
+    obj/activemasternode.o \
+    obj/spork.o \
+    obj/masternodeconfig.o \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
     obj/zerocoin/Accumulator.o \
@@ -124,7 +130,7 @@ DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
 OBJS += obj/txdb-leveldb.o
 leveldb/libleveldb.a:
-	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..
+	@echo "Building LevelDB ..." && cd leveldb && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" libleveldb.a libmemenv.a && cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
 # auto-generated dependencies:
@@ -165,5 +171,6 @@ clean:
 	-rm -f obj/*.P
 	-rm -f obj/zerocoin/*.P
 	-rm -f obj/build.h
+	cd leveldb && $(MAKE) clean && cd ..
 
 FORCE:
