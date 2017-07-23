@@ -1245,6 +1245,7 @@ void MapPort()
 // The second name should resolve to a list of seed addresses.
 static const char *strDNSSeed[][2] = {
     {"presstab", "ntrnseed.presstab.pw" },
+    {"fuzzbawls", "ntrn.seed.fuzzbawls.pw"},
     {"198.24.142.136", "198.24.142.136" },
     //{"archon.darkfox.id.au", "foxy.seeds.darkfox.id.au"},
 };
