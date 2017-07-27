@@ -5,26 +5,27 @@
 TARGET_PLATFORM:=i686
 #TARGET_PLATFORM:=x86_64
 
-DEPSDIR:=/usr/$(TARGET_PLATFORM)-w64-mingw32
-CC:=$(TARGET_PLATFORM)-w64-mingw32-gcc
-CXX:=$(TARGET_PLATFORM)-w64-mingw32-g++
-RANLIB=$(TARGET_PLATFORM)-w64-mingw32-ranlib
-STRIP=$(TARGET_PLATFORM)-w64-mingw32-strip
+DEPSDIR:=/mnt/mxe/usr/$(TARGET_PLATFORM)-w64-mingw32.static
+HOST:=$(TARGET_PLATFORM)-w64-mingw32
+INCDIR:=$(DEPSDIR)/include
+LIBDIR:=$(DEPSDIR)/lib
+AR:=$(TARGET_PLATFORM)-w64-mingw32.static-ar
+CC:=$(TARGET_PLATFORM)-w64-mingw32.static-gcc
+CXX:=$(TARGET_PLATFORM)-w64-mingw32.static-g++
+RANLIB=$(TARGET_PLATFORM)-w64-mingw32.static-ranlib
+STRIP=$(TARGET_PLATFORM)-w64-mingw32.static-strip
 
 USE_UPNP:=0
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
  -I"$(CURDIR)"/obj \
- -I"$(DEPSDIR)/boost_1_55_0" \
- -I"$(DEPSDIR)/db-6.0.20/build_unix" \
- -I"$(DEPSDIR)/openssl-1.0.1f/include" \
- -I"$(DEPSDIR)"
+ -I"$(INCDIR)/boost" \
+ -I"$(INCDIR)/openssl/include" \
+ -I"$(INCDIR)"
 
 LIBPATHS= \
- -L"$(DEPSDIR)/boost_1_55_0/stage/lib" \
- -L"$(DEPSDIR)/db-6.0.20/build_unix" \
- -L"$(DEPSDIR)/openssl-1.0.1f"
+ -L"$(LIBDIR)"
 
 LIBS= \
  -l boost_system-mt \
@@ -34,7 +35,8 @@ LIBS= \
  -l boost_chrono-mt \
  -l db_cxx \
  -l ssl \
- -l crypto
+ -l crypto \
+ -l z
 
 DEFS=-D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE
 DEBUGFLAGS=-g
@@ -47,7 +49,7 @@ endif
 ifneq (${USE_UPNP}, -)
 	LIBPATHS += -L"$(DEPSDIR)/miniupnpc"
 	LIBS += -l miniupnpc -l iphlpapi
-	DEFS += -DSTATICLIB -DUSE_UPNP=$(USE_UPNP)
+	DEFS += -DSTATICLIB -DMINIUPNP_STATICLIB -DUSE_UPNP=$(USE_UPNP)
 endif
 
 LIBS += -l mingwthrd -l kernel32 -l user32 -l gdi32 -l comdlg32 -l winspool -l winmm -l shell32 -l comctl32 -l ole32 -l oleaut32 -l uuid -l rpcrt4 -l advapi32 -l ws2_32 -l mswsock -l shlwapi
@@ -85,6 +87,12 @@ OBJS= \
     obj/noui.o \
     obj/kernel.o \
     obj/pbkdf2.o \
+    obj/masternode.o \
+    obj/darksend.o \
+    obj/rpcdarksend.o \
+    obj/activemasternode.o \
+    obj/spork.o \
+    obj/masternodeconfig.o \
     obj/scrypt.o \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
