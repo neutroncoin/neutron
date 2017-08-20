@@ -273,15 +273,16 @@ void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& 
 
                 CTransaction tx2;
                 uint256 hash;
+
                 //if(GetTransaction(i.prevout.hash, tx2, hash, true)){
-		if(GetTransaction(i.prevout.hash, tx2, hash)){
+                if(GetTransaction(i.prevout.hash, tx2, hash)){
                     if(tx2.vout.size() > i.prevout.n) {
                         nValueIn += tx2.vout[i.prevout.n].nValue;
                     }
                 } else{
                     missingTx = true;
                 }
-            }
+            } // FOREACH
 
             if (nValueIn > DARKSEND_POOL_MAX) {
                 printf("dsi -- more than darksend pool max! %s\n", tx.ToString().c_str());
@@ -305,8 +306,8 @@ void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& 
             }
 
             //if(!AcceptableInputs(mempool, state, tx)){
-            bool* pfMissingInputs;
-	    if(!AcceptableInputs(mempool, tx, false, pfMissingInputs)){
+            bool pfMissingInputs = false;
+            if(!AcceptableInputs(mempool, tx, false, &pfMissingInputs)){
                 printf("dsi -- transaction not valid! \n");
                 error = _("Transaction not valid.");
                 pfrom->PushMessage("dssu", darkSendPool.sessionID, darkSendPool.GetState(), darkSendPool.GetEntriesCount(), MASTERNODE_REJECTED, error);
@@ -974,8 +975,8 @@ bool CDarkSendPool::IsCollateralValid(const CTransaction& txCollateral){
     if(fDebug) printf("CDarkSendPool::IsCollateralValid %s\n", txCollateral.ToString().c_str());
 
     //if(!AcceptableInputs(mempool, state, txCollateral)){
-    bool* pfMissingInputs = false;
-    if(!AcceptableInputs(mempool, txCollateral, false, pfMissingInputs)){
+    bool pfMissingInputs = false;
+    if(!AcceptableInputs(mempool, txCollateral, false, &pfMissingInputs)){
         if(fDebug) printf ("CDarkSendPool::IsCollateralValid - didn't pass IsAcceptable\n");
         return false;
     }
@@ -1154,8 +1155,8 @@ void CDarkSendPool::SendDarksendDenominate(std::vector<CTxIn>& vin, std::vector<
         }
 
         //if(!AcceptableInputs(mempool, state, tx)){
-	bool* pfMissingInputs;
-	if(!AcceptableInputs(mempool, tx, false, pfMissingInputs)){
+    bool pfMissingInputs = false;
+    if(!AcceptableInputs(mempool, tx, false, &pfMissingInputs)){
             printf("dsi -- transaction not valid! %s \n", tx.ToString().c_str());
             return;
         }
