@@ -739,10 +739,10 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         }
     }
 
+    // printf("AcceptableInputs : accepted %s (poolsz %u)\n",
+    //        hash.ToString().c_str(),
+    //        pool.mapTx.size());
 
-    printf("AcceptableInputs : accepted %s (poolsz %u)\n",
-           hash.ToString().c_str(),
-           pool.mapTx.size());
     return true;
 }
 
