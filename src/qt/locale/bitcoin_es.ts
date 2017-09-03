@@ -2651,8 +2651,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Especifica un archivo de configuración (por defecto: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Especifica un archivo de configuración (por defecto: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

@@ -2646,8 +2646,8 @@ Detta betyder att en avgift på minst %2 krävs.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Ange konfigurationsfilen (standard: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Ange konfigurationsfilen (standard: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

@@ -2643,8 +2643,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Konfigürasyon dosyasını belirt (varsayılan: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Konfigürasyon dosyasını belirt (varsayılan: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

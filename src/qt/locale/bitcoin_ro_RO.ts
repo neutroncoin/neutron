@@ -2645,8 +2645,8 @@ Acest lucru înseamnă că o taxă de cel puțin %2 este necesară</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Specifica fisier de configurare(implicit: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Specifica fisier de configurare(implicit: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

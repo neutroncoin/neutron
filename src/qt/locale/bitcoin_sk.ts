@@ -2644,8 +2644,8 @@ To znamená, že je potrebný poplatok aspoň %2.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Zadajte konfiguračný súbor (predvolené: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Zadajte konfiguračný súbor (predvolené: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

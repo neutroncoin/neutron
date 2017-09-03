@@ -2643,8 +2643,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Määritä asetustiedosto (oletus: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Määritä asetustiedosto (oletus: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

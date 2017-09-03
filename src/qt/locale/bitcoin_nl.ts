@@ -2645,13 +2645,13 @@ Dit betekend dat een fee van %2 is vereist.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Selecteer configuratie bestand (standaard: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Selecteer configuratie bestand (standaard: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>Specify pid file (default: neutrond.pid)</source>
-        <translation>Selecteer pid bestand (standaard: Neutron.conf)</translation>
+        <translation>Selecteer pid bestand (standaard: neutron.conf)</translation>
     </message>
     <message>
         <location line="+2"/>

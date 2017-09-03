@@ -2645,8 +2645,8 @@ Cela implique que des frais à hauteur d&apos;au moins %2 seront nécessaires.</
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Spécifier le fichier de configuration (par défaut: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Spécifier le fichier de configuration (par défaut: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

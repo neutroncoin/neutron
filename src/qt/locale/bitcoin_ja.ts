@@ -2644,8 +2644,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>設定ファイルを特定する (デファルト: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>設定ファイルを特定する (デファルト: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

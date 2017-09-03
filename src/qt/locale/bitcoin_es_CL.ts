@@ -2634,7 +2634,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
+        <source>Specify configuration file (default: neutron.conf)</source>
         <translation type="unfinished"/>
     </message>
     <message>

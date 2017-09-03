@@ -1150,7 +1150,7 @@ boost::filesystem::path GetMasternodeConfigFile()
 
 boost::filesystem::path GetConfigFile()
 {
-    boost::filesystem::path pathConfigFile(GetArg("-conf", "Neutron.conf"));
+    boost::filesystem::path pathConfigFile(GetArg("-conf", "neutron.conf"));
     if (!pathConfigFile.is_complete()) pathConfigFile = GetDataDir(false) / pathConfigFile;
     return pathConfigFile;
 }

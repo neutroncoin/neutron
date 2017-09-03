@@ -2645,8 +2645,8 @@ Det betyder, at et gebyr på mindst %2 er påkrævet.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Angiv konfigurationsfil (default: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Angiv konfigurationsfil (default: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

@@ -2636,8 +2636,8 @@ En aquest cas es requereix una comisió d&apos;almenys 2%.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Especifiqueu el fitxer de configuració (per defecte: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Especifiqueu el fitxer de configuració (per defecte: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>

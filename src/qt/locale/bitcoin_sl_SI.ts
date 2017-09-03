@@ -2643,8 +2643,8 @@ Ta oznaka se obarva rdeče, če je prioriteta manjša kot &quot;srednja&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Določi konfiguracijsko datoteko (privzeto: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Določi konfiguracijsko datoteko (privzeto: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
