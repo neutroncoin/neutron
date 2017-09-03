@@ -30,7 +30,7 @@ UI_DIR = build
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
     # Mac: compile for reasonable compatibility (10.10, 64-bit)
-    macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.10 -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.10.sdk
+    macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.10
 
     !windows:!macx {
         # Linux: static link
