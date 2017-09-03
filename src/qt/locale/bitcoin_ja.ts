@@ -963,7 +963,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>任意の受信者は%1より少ない額をもらったばい、このラベルは赤くなる。
@@ -2624,8 +2624,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>-server か Neutrondへコマンドを送る。</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>-server か neutrondへコマンドを送る。</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2649,8 +2649,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>pid ファイルを特定する (デフォルト: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>pid ファイルを特定する (デフォルト: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
