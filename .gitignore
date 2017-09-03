@@ -16,6 +16,7 @@ src/test_neutron
 Makefile
 Neutron-qt
 Neutron-qt.app
+Neutron-qt.dmg
 
 # Unit-tests
 Makefile.test
