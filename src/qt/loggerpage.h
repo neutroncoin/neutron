@@ -24,10 +24,17 @@
 #include <QFileInfo>
 
 #define LOGGER_UPDATE_SECONDS 1
+
 #if defined(Q_OS_WIN)
-   #define DEBUG_FILEPATH "\\.Neutron\\debug.log"
+    // Windows: GetDefaultDataDir()\Neutron
+    #define DEBUG_FILEPATH "\\.Neutron\\debug.log"
 #else
-   #define DEBUG_FILEPATH ".Neutron/debug.log"
+#if defined(Q_OS_MAC)
+    // Mac: GetDefaultDataDir()/Neutron
+    #define DEBUG_FILEPATH "Neutron/debug.log"
+#else
+    // Unix: GetDefaultDataDir()/.neutron
+    #define DEBUG_FILEPATH ".neutron/debug.log"
 #endif
 
 

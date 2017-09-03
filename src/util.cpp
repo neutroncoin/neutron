@@ -1081,10 +1081,9 @@ void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 boost::filesystem::path GetDefaultDataDir()
 {
     namespace fs = boost::filesystem;
-    // Windows < Vista: C:\Documents and Settings\Username\Application Data\Neutron
-    // Windows >= Vista: C:\Users\Username\AppData\Roaming\Neutron
+    // Windows: C:\Users\Username\AppData\Roaming\Neutron
     // Mac: ~/Library/Application Support/Neutron
-    // Unix: ~/.Neutron
+    // Unix: ~/.neutron
 #ifdef WIN32
     // Windows
     return GetSpecialFolderPath(CSIDL_APPDATA) / "Neutron";
@@ -1102,7 +1101,7 @@ boost::filesystem::path GetDefaultDataDir()
     return pathRet / "Neutron";
 #else
     // Unix
-    return pathRet / ".Neutron";
+    return pathRet / ".neutron";
 #endif
 #endif
 }
