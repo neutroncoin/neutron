@@ -1,5 +1,6 @@
+/dist/
 src/*.exe
-src/Neutrond
+src/neutrond
 src/test_neutron
 .*.swp
 *.*~*
@@ -13,9 +14,11 @@ src/test_neutron
 
 # Compilation and Qt preprocessor part
 *.qm
+*.app
 Makefile
 Neutron-qt
 Neutron-qt.app
+Neutron-qt.dmg
 
 # Unit-tests
 Makefile.test

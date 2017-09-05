@@ -965,7 +965,7 @@ Detta betyder att en avgift på minst %1 krävs.</translation>
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Denna label blir röd, om en mottagare får en mängd mindre än %1
@@ -2626,8 +2626,8 @@ Detta betyder att en avgift på minst %2 krävs.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Skicka kommando till -server eller Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Skicka kommando till -server eller neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2646,13 +2646,13 @@ Detta betyder att en avgift på minst %2 krävs.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Ange konfigurationsfilen (standard: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Ange konfigurationsfilen (standard: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Ange pid filen (standard Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Ange pid filen (standard neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>

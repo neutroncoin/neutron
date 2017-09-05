@@ -942,7 +942,7 @@ Adresse: %4
 
  Can vary +/- 1 Byte per input.</source>
         <translation>Denne etiket bliver rød, hvis transaktionen størrelse er større end 10000 byte.
- 
+
 Det betyder, at et gebyr på mindst %1 per kb er påkrævet.
 
 Kan variere + / - 1 byte per indgang.</translation>
@@ -955,22 +955,22 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
 
  This means a fee of at least %1 per kb is required.</source>
         <translation>Transaktioner med højere prioritet får mere sandsynligt en blok.
- 
+
 Denne etiket bliver rød, hvis prioritet er mindre end &quot;medium&quot;.
- 
+
 Det betyder, at et gebyr på mindst %1 per kb er påkrævet.</translation>
     </message>
     <message>
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Denne etiket bliver rød, hvis nogen modtager et beløb, der er mindre end %1.
- 
-Det betyder, at et gebyr på mindst %2 er påkrævet. 
- 
+
+Det betyder, at et gebyr på mindst %2 er påkrævet.
+
 Beløb under 0,546 gange det minimale gebyr er vist som DUST.</translation>
     </message>
     <message>
@@ -978,8 +978,8 @@ Beløb under 0,546 gange det minimale gebyr er vist som DUST.</translation>
         <source>This label turns red, if the change is smaller than %1.
 
  This means a fee of at least %2 is required.</source>
-        <translation>Denne etiket bliver rød, hvis ændringen er mindre end %1. 
- 
+        <translation>Denne etiket bliver rød, hvis ændringen er mindre end %1.
+
 Det betyder, at et gebyr på mindst %2 er påkrævet.</translation>
     </message>
     <message>
@@ -2625,8 +2625,8 @@ Det betyder, at et gebyr på mindst %2 er påkrævet.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Send kommando til-server eller Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Send kommando til-server eller neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2645,13 +2645,13 @@ Det betyder, at et gebyr på mindst %2 er påkrævet.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Angiv konfigurationsfil (default: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Angiv konfigurationsfil (default: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Angiv pid fil (standard: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Angiv pid fil (standard: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -2998,16 +2998,16 @@ If the file does not exist, create it with owner-readable-only file permissions.
 It is also recommended to set alertnotify so you are notified of problems;
 for example: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com
 </source>
-        <translation>% s, skal du indstille et rpcpassword i konfigurationsfilen: 
-% s 
-Det anbefales at bruge følgende tilfældig adgangskode: 
-rpcuser = Neutronrpc  
-rpcpassword =% s  
-(du behøver ikke at huske denne adgangskode)  
-Brugernavn og adgangskode må ikke være den samme.  
-Hvis filen ikke findes, skal du oprette den med filtilladelser ejer-læsbar-kun. 
-Det kan også anbefales at sætte alertnotify så du får besked om problemer; 
-for eksempel: alertnotify = echo%% s | mail-s &quot;Neutron Alert&quot; admin@foo.com 
+        <translation>% s, skal du indstille et rpcpassword i konfigurationsfilen:
+% s
+Det anbefales at bruge følgende tilfældig adgangskode:
+rpcuser = Neutronrpc
+rpcpassword =% s
+(du behøver ikke at huske denne adgangskode)
+Brugernavn og adgangskode må ikke være den samme.
+Hvis filen ikke findes, skal du oprette den med filtilladelser ejer-læsbar-kun.
+Det kan også anbefales at sætte alertnotify så du får besked om problemer;
+for eksempel: alertnotify = echo%% s | mail-s &quot;Neutron Alert&quot; admin@foo.com
 </translation>
     </message>
     <message>

@@ -949,7 +949,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation type="unfinished"/>
@@ -2605,7 +2605,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
+        <source>Send command to -server or neutrond</source>
         <translation type="unfinished"/>
     </message>
     <message>
@@ -2625,12 +2625,12 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
+        <source>Specify configuration file (default: neutron.conf)</source>
         <translation type="unfinished"/>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
+        <source>Specify pid file (default: neutrond.pid)</source>
         <translation type="unfinished"/>
     </message>
     <message>

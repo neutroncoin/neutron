@@ -934,7 +934,7 @@ Address: %4
  Can vary +/- 1 Byte per input.</source>
         <translation>Aquesta etiqueta es tornarà vermell, si la mida de la transacció és més gran que 10000 bytes.
 
-En aquest cas es requereix una comisió d&apos;almenys el 1% per kb. 
+En aquest cas es requereix una comisió d&apos;almenys el 1% per kb.
 
 Pot variar + / - 1 Byte per entrada.</translation>
     </message>
@@ -945,7 +945,7 @@ Pot variar + / - 1 Byte per entrada.</translation>
 This label turns red, if the priority is smaller than &quot;medium&quot;.
 
  This means a fee of at least %1 per kb is required.</source>
-        <translation>Les operacions amb més prioritat entren mes facilment a un bloc. 
+        <translation>Les operacions amb més prioritat entren mes facilment a un bloc.
 
 Aquesta etiqueta es torna vermella, si la prioritat és menor que &quot;mitja&quot;.
 
@@ -955,7 +955,7 @@ En aquest cas es requereix una comisió d&apos;almenys el 1% per kb.</translatio
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Aquesta etiqueta es torna vermella, si qualsevol beneficiari rep una quantitat inferior a 1%.
@@ -2616,8 +2616,8 @@ En aquest cas es requereix una comisió d&apos;almenys 2%.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Enviar comandes a -server o Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Enviar comandes a -server o neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2636,13 +2636,13 @@ En aquest cas es requereix una comisió d&apos;almenys 2%.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Especifiqueu el fitxer de configuració (per defecte: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Especifiqueu el fitxer de configuració (per defecte: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Especificar arxiu pid (per defecte: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Especificar arxiu pid (per defecte: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3000,11 +3000,6 @@ Si no hi ha l&apos;arxiu, s&apos;ha de crear amb els permisos de només lectura 
 També es recomana establir alertnotify per a que se li notifiquin els problemes;
 per exemple: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com
 </translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation>Trobar companys utilitzant l&apos;IRC (per defecte: 1) {0)?}</translation>
     </message>
     <message>
         <location line="+5"/>

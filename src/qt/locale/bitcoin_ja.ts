@@ -963,7 +963,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>任意の受信者は%1より少ない額をもらったばい、このラベルは赤くなる。
@@ -2624,8 +2624,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>-server か Neutrondへコマンドを送る。</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>-server か neutrondへコマンドを送る。</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2644,13 +2644,13 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>設定ファイルを特定する (デファルト: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>設定ファイルを特定する (デファルト: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>pid ファイルを特定する (デフォルト: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>pid ファイルを特定する (デフォルト: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3008,11 +3008,6 @@ rpcpassword=%s
 問題のことを知らせるために、alertnotifyの設定を有効にしたほうがいいです。
 例：alertnotify=echo %%s | mail -s &quot;ブラックコイン警告&quot; admin@foo.com
 </translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation>インターネットリレーチャット(IRC)でピアアを探す。(デファルト:1 {0}?)</translation>
     </message>
     <message>
         <location line="+5"/>

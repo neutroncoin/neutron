@@ -960,7 +960,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>如果收款人所收款项少于 %1，该标签变为红色。
@@ -2618,8 +2618,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>向-server服务器或Neutrond发送命令</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>向-server服务器或neutrond发送命令</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2641,13 +2641,13 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>指定配置文件(默认: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>指定配置文件(默认: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>指定pid文件(默认: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>指定pid文件(默认: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>

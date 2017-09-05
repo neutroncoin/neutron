@@ -291,6 +291,8 @@ void MasternodeManager::on_removeButton_clicked()
 
 void MasternodeManager::on_startButton_clicked()
 {
+    if (ui->tableWidget_2->rowCount() == 0)
+        return;
     // start the node
     QItemSelectionModel* selectionModel = ui->tableWidget_2->selectionModel();
     QModelIndexList selected = selectionModel->selectedRows();
@@ -316,6 +318,8 @@ void MasternodeManager::on_startButton_clicked()
 
 void MasternodeManager::on_stopButton_clicked()
 {
+    if (ui->tableWidget_2->rowCount() == 0)
+        return;
     // start the node
     QItemSelectionModel* selectionModel = ui->tableWidget_2->selectionModel();
     QModelIndexList selected = selectionModel->selectedRows();
@@ -343,6 +347,8 @@ void MasternodeManager::on_stopButton_clicked()
 
 void MasternodeManager::on_startAllButton_clicked()
 {
+    if (ui->tableWidget_2->rowCount() == 0)
+        return;
     std::string results;
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {
@@ -366,6 +372,8 @@ void MasternodeManager::on_startAllButton_clicked()
 
 void MasternodeManager::on_stopAllButton_clicked()
 {
+    if (ui->tableWidget_2->rowCount() == 0)
+        return;
     std::string results;
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {

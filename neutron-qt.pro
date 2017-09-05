@@ -1,11 +1,12 @@
 TEMPLATE = app
 TARGET = Neutron-qt
-VERSION = 1.1.1
+VERSION = 1.1.2
 INCLUDEPATH += src src/json src/qt
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
+CONFIG += c++14
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
@@ -28,8 +29,8 @@ UI_DIR = build
 
 # use: qmake "RELEASE=1"
 contains(RELEASE, 1) {
-    # Mac: compile for maximum compatibility (10.7, 64-bit)
-    macx:QMAKE_CXXFLAGS += -mmacosx-version-min=10.7 -arch x86_64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX10.7.sdk
+    # Mac: compile for reasonable compatibility (10.10, 64-bit)
+    macx:QMAKE_MACOSX_DEPLOYMENT_TARGET = 10.10
 
     !windows:!macx {
         # Linux: static link
@@ -44,6 +45,7 @@ QMAKE_LFLAGS *= -fstack-protector-all --param ssp-buffer-size=1
 # We need to exclude this for Windows cross compile with MinGW 4.2.x, as it will result in a non-working executable!
 # This can be enabled for Windows, when we switch to MinGW >= 4.4.x.
 }
+
 # for extra security (see: https://wiki.debian.org/Hardening): this flag is GCC compiler-specific
 QMAKE_CXXFLAGS *= -D_FORTIFY_SOURCE=2
 # for extra security on Windows: enable ASLR and DEP via GCC linker flags
@@ -191,6 +193,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/qt/guiutil.h \
     src/qt/transactionrecord.h \
     src/qt/guiconstants.h \
+    src/qt/loggerpage.h \
     src/qt/optionsmodel.h \
     src/qt/monitoreddatamapper.h \
     src/qt/transactiondesc.h \
@@ -235,6 +238,7 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/coincontroldialog.cpp \
     src/qt/coincontroltreewidget.cpp \
     src/qt/addressbookpage.cpp \
+    src/qt/loggerpage.cpp \
     src/qt/signverifymessagedialog.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/editaddressdialog.cpp \
@@ -332,7 +336,8 @@ FORMS += \
     src/qt/forms/optionsdialog.ui \
     src/qt/forms/addeditadrenalinenode.ui \
     src/qt/forms/adrenalinenodeconfigdialog.ui \
-    src/qt/forms/masternodemanager.ui
+    src/qt/forms/masternodemanager.ui \
+    src/qt/forms/loggerpage.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h
@@ -477,6 +482,7 @@ macx:OBJECTIVE_SOURCES += src/qt/macdockiconhandler.mm src/qt/macnotificationhan
 macx:LIBS += -framework Foundation -framework ApplicationServices -framework AppKit
 macx:DEFINES += MAC_OSX MSG_NOSIGNAL=0
 macx:ICON = src/qt/res/icons/neutron.icns
+macx:QMAKE_TARGET_BUNDLE_PREFIX = "com.neutroncoin"
 macx:TARGET = "Neutron-Qt"
 macx:QMAKE_CFLAGS_THREAD += -pthread
 macx:QMAKE_LFLAGS_THREAD += -pthread

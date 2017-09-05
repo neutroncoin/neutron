@@ -957,7 +957,7 @@ Puede variar + / - 1 Byte por entrada.</translation>
 This label turns red, if the priority is smaller than &quot;medium&quot;.
 
  This means a fee of at least %1 per kb is required.</source>
-        <translation>Las transacciones con mayor prioridad son más probables en entrar hacia un bloque. 
+        <translation>Las transacciones con mayor prioridad son más probables en entrar hacia un bloque.
 
 Esta etiqueta se convierte en rojo, si la prioridad es menor que &quot;medium&quot;.
 
@@ -967,7 +967,7 @@ Esto significa que se requiere una cuota de al menos el %1 por kb.</translation>
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Esta etiqueta se convierte en rojo, si cualquier recipiente recibe una cantidad menor que %1.
@@ -2628,8 +2628,8 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Envía un comando a -server o Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Envía un comando a -server o neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2651,13 +2651,13 @@ Esto significa que se requiere una cuota de al menos %2.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Especifica un archivo de configuración (por defecto: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Especifica un archivo de configuración (por defecto: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Especifica un archivo pid (por defecto: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Especifica un archivo pid (por defecto: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3019,11 +3019,6 @@ Si no existe el archivo, créelo con permisos de sólo lectura para el dueño.
 También se recomienda establecer alertnotify para ser notificado de los problemas;
 por ejemplo: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com
 </translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation>Encontrar pares usando IRC (por defecto:1) {0)?}</translation>
     </message>
     <message>
         <location line="+5"/>

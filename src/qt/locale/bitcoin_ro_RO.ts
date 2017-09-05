@@ -964,7 +964,7 @@ Acest lucru inseamna ca este necesar un comision cel putin de %1 pe kB</translat
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Aceasta eticheta se inroseste daca oricare din contacte primeste o suma mai mica decat %1.
@@ -2625,8 +2625,8 @@ Acest lucru înseamnă că o taxă de cel puțin %2 este necesară</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Trimite comanda catre server sau Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Trimite comanda catre server sau neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2645,12 +2645,12 @@ Acest lucru înseamnă că o taxă de cel puțin %2 este necesară</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Specifica fisier de configurare(implicit: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Specifica fisier de configurare(implicit: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
+        <source>Specify pid file (default: neutrond.pid)</source>
         <translation>Speficica fisier pid(implicit: Neutron.pid)</translation>
     </message>
     <message>
@@ -3007,11 +3007,6 @@ Dacă fișierul nu există, creați-l cu drepturi de citire doar de către deți
 Este deasemenea recomandat să setați alertnotify pentru a fi notificat de probleme;
 de exemplu: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com
 </translation>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation>Gaseste noduri fosoling irc (implicit: 1) {0)?}</translation>
     </message>
     <message>
         <location line="+5"/>

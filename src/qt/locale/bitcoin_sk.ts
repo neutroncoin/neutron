@@ -29,9 +29,9 @@ Distributed under the MIT/X11 software license, see the accompanying file COPYIN
 
 This product includes software developed by the OpenSSL Project for use in the OpenSSL Toolkit (http://www.openssl.org/) and cryptographic software written by Eric Young (eay@cryptsoft.com) and UPnP software written by Thomas Bernard.</source>
         <translation>
-Toto je experimentálny softvér. 
+Toto je experimentálny softvér.
 
-Distribuovaný pod softvérovou licenciou MIT/X11, viď priložený súbor COPYING alebo http://www.opensource.org/licenses/mit-license.php. 
+Distribuovaný pod softvérovou licenciou MIT/X11, viď priložený súbor COPYING alebo http://www.opensource.org/licenses/mit-license.php.
 
 Tento produkt obsahuje softvér vyvinutý projektom OpenSSL Project pre použitie v sade OpenSSL Toolkit (http://www.openssl.org/) a šifrovací softvér, ktorý napísal Eric Young (eay@cryptsoft.com) a UPnP softvér ktorý napísaný Thomas Bernard.</translation>
     </message>
@@ -963,7 +963,7 @@ To znamená, že je nutný poplatok vo výške aspoň %1 za kb.</translation>
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Tento popis sčervenie, ak príjemca dostane sumu menšiu ako %1.
@@ -2624,8 +2624,8 @@ To znamená, že je potrebný poplatok aspoň %2.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Pošli príkaz na -server alebo Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Pošli príkaz na -server alebo neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2644,13 +2644,13 @@ To znamená, že je potrebný poplatok aspoň %2.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Zadajte konfiguračný súbor (predvolené: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Zadajte konfiguračný súbor (predvolené: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Zadajte pid súbor (predvolené: Neutrond.pid)</translation>
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Zadajte pid súbor (predvolené: neutrond.pid)</translation>
     </message>
     <message>
         <location line="+2"/>
@@ -3003,7 +3003,7 @@ Je odporúčané použiť nasledujúce náhodné heslo:
 rpcuser=Neutronrpc
 rpcpassword=%s
 (Nemusíte si pamätať toto heslo)
-Užívateľské meno a heslo nesmú byť rovnaké. 
+Užívateľské meno a heslo nesmú byť rovnaké.
 Ak súbor neexistuje, vytvorte ho s oprávneniami súborov vlastníkov iba na čítatanie.
 Odporúča sa tiež nastaviť alertnotify, takže budete upozornení na problémy;
 napríklad: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com</translation>

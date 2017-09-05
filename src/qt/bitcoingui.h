@@ -17,6 +17,7 @@ class SignVerifyMessageDialog;
 class Notificator;
 class RPCConsole;
 class MasternodeManager;
+class LoggerPage;
 QT_BEGIN_NAMESPACE
 class QLabel;
 class QLineEdit;
@@ -68,6 +69,7 @@ private:
     SendCoinsDialog *sendCoinsPage;
     SignVerifyMessageDialog *signVerifyMessageDialog;
     MasternodeManager *masternodeManagerPage;
+    LoggerPage *loggerPage;
     QLabel *labelEncryptionIcon;
     QLabel *labelStakingIcon;
     QLabel *labelConnectionsIcon;
@@ -96,6 +98,7 @@ private:
     QAction *aboutQtAction;
     QAction *openRPCConsoleAction;
     QAction *masternodeManagerAction;
+    QAction *openLoggerAction;
 
     QSystemTrayIcon *trayIcon;
     Notificator *notificator;
@@ -140,6 +143,8 @@ public slots:
     void handleURI(QString strURI);
 
 private slots:
+    /** Switch to logger Page */
+    void gotoLoggerPage();
     /** Switch to overview (home) page */
     void gotoOverviewPage();
     /** Switch to history (transactions) page */

@@ -953,7 +953,7 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation type="unfinished"/>
@@ -2608,8 +2608,8 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Kommando versenden an -server oder Neutrond </translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Kommando versenden an -server oder neutrond </translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2628,12 +2628,12 @@ This label turns red, if the priority is smaller than &quot;medium&quot;.
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Konfigurationsdatei angeben (Standard: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Konfigurationsdatei angeben (Standard: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
+        <source>Specify pid file (default: neutrond.pid)</source>
         <translation>PID Datei angeben (Standard: Neutron.pid)</translation>
     </message>
     <message>
@@ -2981,11 +2981,6 @@ It is also recommended to set alertnotify so you are notified of problems;
 for example: alertnotify=echo %%s | mail -s &quot;Neutron Alert&quot; admin@foo.com
 </source>
         <translation type="unfinished"/>
-    </message>
-    <message>
-        <location line="+51"/>
-        <source>Find peers using internet relay chat (default: 0)</source>
-        <translation>Knoten die IRC Chat nutzen auffinden (Standard: 1) (0)?)</translation>
     </message>
     <message>
         <location line="+5"/>

@@ -962,7 +962,7 @@ Tämä tarkoittaa, että ainakin %1 rahansiirtopalkkio per kilotavu tarvitaan.</
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Tämä nimike muuttuu punaiseksi, jos jokin asiakas saa pienemmän määrän kuin %1.
@@ -2623,8 +2623,8 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Syötä komento kohteeseen -server tai Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Syötä komento kohteeseen -server tai neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2643,12 +2643,12 @@ Tämä tarkoittaa, että ainakin %2 rahansiirtopalkkio tarvitaan.</translation>
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Määritä asetustiedosto (oletus: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Määritä asetustiedosto (oletus: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
+        <source>Specify pid file (default: neutrond.pid)</source>
         <translation>Määritä prosessitiedosto (oletus: Neutron.pid)</translation>
     </message>
     <message>

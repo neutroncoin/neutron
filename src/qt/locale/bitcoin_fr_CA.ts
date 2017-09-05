@@ -964,12 +964,12 @@ Cela veut dire que des frais d&apos;un minimum de %1 par kb sont requis</transla
         <location line="+1"/>
         <source>This label turns red, if any recipient receives an amount smaller than %1.
 
- This means a fee of at least %2 is required. 
+ This means a fee of at least %2 is required.
 
  Amounts below 0.546 times the minimum relay fee are shown as DUST.</source>
         <translation>Ce label passe au rouge, Lorsqu&apos;un destinataire reçoit un montant inférieur à %1.
 
- Cela implique que des frais à hauteur de %2 seront nécessaire 
+ Cela implique que des frais à hauteur de %2 seront nécessaire
 
 Les montants inférieurs à  0.546 fois les frais minimum de relais apparaissent en tant que DUST.</translation>
     </message>
@@ -2625,8 +2625,8 @@ Les montants inférieurs à  0.546 fois les frais minimum de relais apparaissent
     </message>
     <message>
         <location line="+1"/>
-        <source>Send command to -server or Neutrond</source>
-        <translation>Envoyer commande à -server ou Neutrond</translation>
+        <source>Send command to -server or neutrond</source>
+        <translation>Envoyer commande à -server ou neutrond</translation>
     </message>
     <message>
         <location line="+1"/>
@@ -2645,13 +2645,13 @@ Les montants inférieurs à  0.546 fois les frais minimum de relais apparaissent
     </message>
     <message>
         <location line="+2"/>
-        <source>Specify configuration file (default: Neutron.conf)</source>
-        <translation>Spécifier le fichier de configuration (defaut: Neutron.conf)</translation>
+        <source>Specify configuration file (default: neutron.conf)</source>
+        <translation>Spécifier le fichier de configuration (defaut: neutron.conf)</translation>
     </message>
     <message>
         <location line="+1"/>
-        <source>Specify pid file (default: Neutrond.pid)</source>
-        <translation>Spécifier le fichier pid (defaut: Neutrond.pid)
+        <source>Specify pid file (default: neutrond.pid)</source>
+        <translation>Spécifier le fichier pid (defaut: neutrond.pid)
 </translation>
     </message>
     <message>

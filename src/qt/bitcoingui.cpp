@@ -27,6 +27,7 @@
 #include "rpcconsole.h"
 #include "wallet.h"
 #include "masternodemanager.h"
+#include "loggerpage.h"
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -119,6 +120,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
     signVerifyMessageDialog = new SignVerifyMessageDialog(this);
     masternodeManagerPage = new MasternodeManager(this);
+    loggerPage = new LoggerPage(this);
 
     centralWidget = new QStackedWidget(this);
     centralWidget->addWidget(overviewPage);
@@ -127,6 +129,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     centralWidget->addWidget(receiveCoinsPage);
     centralWidget->addWidget(sendCoinsPage);
     centralWidget->addWidget(masternodeManagerPage);
+    centralWidget->addWidget(loggerPage);
     setCentralWidget(centralWidget);
 
     // Create status bar
@@ -249,6 +252,19 @@ void BitcoinGUI::createActions()
     masternodeManagerAction->setCheckable(true);
     tabGroup->addAction(masternodeManagerAction);
 
+#if 0
+    openLoggerAction = new QAction(QIcon(":/icons/history"), tr("&Logger"), this);
+    openLoggerAction->setStatusTip(tr("Show log entries"));
+    openLoggerAction->setToolTip(openLoggerAction->statusTip());
+    openLoggerAction->setCheckable(true);
+#ifdef Q_OS_MAC
+    openLoggerAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_5));
+#else
+    openLoggerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
+#endif
+    tabGroup->addAction(openLoggerAction);
+#endif
+
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(overviewAction, SIGNAL(triggered()), this, SLOT(gotoOverviewPage()));
     connect(sendCoinsAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
@@ -261,6 +277,9 @@ void BitcoinGUI::createActions()
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(gotoAddressBookPage()));
     connect(masternodeManagerAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(masternodeManagerAction, SIGNAL(triggered()), this, SLOT(gotoMasternodeManagerPage()));
+#if 0
+    connect(openLoggerAction, SIGNAL(triggered()), this, SLOT(gotoLoggerPage()));
+# endif
 
     quitAction = new QAction(QIcon(":/icons/quit"), tr("E&xit"), this);
     quitAction->setToolTip(tr("Quit application"));
@@ -353,6 +372,9 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
     toolbar->addAction(masternodeManagerAction);
+#if 0
+    toolbar->addAction(openLoggerAction);
+# endif
     QToolBar *toolbar2 = addToolBar(tr("Actions toolbar"));
     toolbar2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolbar2->addAction(exportAction);
@@ -710,6 +732,15 @@ void BitcoinGUI::gotoMasternodeManagerPage()
 {
     masternodeManagerAction->setChecked(true);
     centralWidget->setCurrentWidget(masternodeManagerPage);
+
+    exportAction->setEnabled(false);
+    disconnect(exportAction, SIGNAL(triggered()), 0, 0);
+}
+
+void BitcoinGUI::gotoLoggerPage()
+{
+    openLoggerAction->setChecked(true);
+    centralWidget->setCurrentWidget(loggerPage);
 
     exportAction->setEnabled(false);
     disconnect(exportAction, SIGNAL(triggered()), 0, 0);
