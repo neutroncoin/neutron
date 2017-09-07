@@ -36,6 +36,7 @@
     // Unix: GetDefaultDataDir()/.neutron
     #define DEBUG_FILEPATH ".neutron/debug.log"
 #endif
+#endif
 
 
 namespace Enums

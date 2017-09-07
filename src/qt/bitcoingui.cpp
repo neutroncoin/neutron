@@ -120,7 +120,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
     signVerifyMessageDialog = new SignVerifyMessageDialog(this);
     masternodeManagerPage = new MasternodeManager(this);
+#if 0
     loggerPage = new LoggerPage(this);
+#endif
 
     centralWidget = new QStackedWidget(this);
     centralWidget->addWidget(overviewPage);
@@ -129,7 +131,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     centralWidget->addWidget(receiveCoinsPage);
     centralWidget->addWidget(sendCoinsPage);
     centralWidget->addWidget(masternodeManagerPage);
+#if 0
     centralWidget->addWidget(loggerPage);
+#endif
     setCentralWidget(centralWidget);
 
     // Create status bar
@@ -739,11 +743,13 @@ void BitcoinGUI::gotoMasternodeManagerPage()
 
 void BitcoinGUI::gotoLoggerPage()
 {
+#if 0
     openLoggerAction->setChecked(true);
     centralWidget->setCurrentWidget(loggerPage);
 
     exportAction->setEnabled(false);
     disconnect(exportAction, SIGNAL(triggered()), 0, 0);
+#endif
 }
 
 void BitcoinGUI::gotoOverviewPage()

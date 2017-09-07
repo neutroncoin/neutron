@@ -80,7 +80,7 @@ void LoggerPage::updateLogTable()
     nTimeListUpdated = GetTime();
 
 #if defined(Q_OS_WIN)
-    QString home = QStandardPaths::locate(QStandardPaths::DataLocation, QString::fromStdString(DEBUG_FILEPATH), QStandardPaths::LocateFile);
+    QString path = QStandardPaths::locate(QStandardPaths::DataLocation, QString::fromStdString(DEBUG_FILEPATH), QStandardPaths::LocateFile);
 #else
     QString path = QStandardPaths::locate(QStandardPaths::HomeLocation, QString::fromStdString(DEBUG_FILEPATH), QStandardPaths::LocateFile);
 #endif
