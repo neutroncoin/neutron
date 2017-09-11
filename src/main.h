@@ -33,7 +33,7 @@ class CNode;
 class CTxIn;
 class CTxMemPool;
 
-#define START_MASTERNODE_PAYMENTS_TESTNET 1432123200 
+#define START_MASTERNODE_PAYMENTS_TESTNET 2000
 #define START_MASTERNODE_PAYMENTS 1432123200 
 
 static const int64_t DARKSEND_COLLATERAL = (25000*COIN);
@@ -157,7 +157,7 @@ std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 uint256 WantedByOrphan(const CBlock* pblockOrphan);
 const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfStake);
-void StakeMiner(CWallet *pwallet);
+
 void ResendWalletTransactions(bool fForce = false);
 
 
@@ -1135,6 +1135,7 @@ public:
     bool AcceptBlock();
     bool GetCoinAge(uint64_t& nCoinAge) const; // ppcoin: calculate total coin age spent in block
     bool SignBlock(CWallet& keystore, int64_t nFees);
+    bool SignBlock_POW(const CKeyStore& keystore);
     bool CheckBlockSignature() const;
 
 private:
