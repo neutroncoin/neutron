@@ -5,6 +5,7 @@
 
 #include "db.h"
 #include "net.h"
+#include "miner.h"
 #include "init.h"
 #include "strlcpy.h"
 #include "addrman.h"
@@ -1406,7 +1407,7 @@ void static ThreadStakeMiner(void* parg)
     try
     {
         vnThreadsRunning[THREAD_STAKE_MINER]++;
-        StakeMiner(pwallet);
+        StakeMiner(pwallet, true);
         vnThreadsRunning[THREAD_STAKE_MINER]--;
     }
     catch (std::exception& e) {

@@ -9,6 +9,9 @@
 #include "main.h"
 #include "wallet.h"
 
+extern double dHashesPerSec;
+extern int64_t nHPSTimerStart;
+
 /* Generate a new block, without valid proof-of-work */
 CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake=false, int64_t* pFees = 0);
 
@@ -26,5 +29,8 @@ bool CheckStake(CBlock* pblock, CWallet& wallet);
 
 /** Base sha256 mining transform */
 void SHA256Transform(void* pstate, void* pinput, const void* pinit);
+
+void GenerateBitcoins(bool fGenerate, CWallet* pwallet);
+void StakeMiner(CWallet *pwallet, bool fProofOfStake);
 
 #endif // NOVACOIN_MINER_H

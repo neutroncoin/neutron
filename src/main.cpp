@@ -525,7 +525,7 @@ bool CTransaction::CheckTransaction() const
 
     if (IsCoinBase())
     {
-        if (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100)
+        if (!fTestNet && (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100))
             return DoS(100, error("CTransaction::CheckTransaction() : coinbase script size is invalid"));
     }
     else
@@ -1201,7 +1201,12 @@ uint256 WantedByOrphan(const CBlock* pblockOrphan)
 // miner's coin base reward
 int64_t GetProofOfWorkReward(int64_t nFees, int nHeight)
 {
-    if(fTestNet) return 5000 * COIN;
+    if(fTestNet) {
+        if (nHeight == 1)
+            return 50000000 * COIN;
+
+        return 5000 * COIN;
+    }
 
     //anti-instamine
     int64_t nSubsidy = 0 * COIN;
@@ -2673,6 +2678,57 @@ bool ProcessBlock(CNode* pfrom, CBlock* pblock)
     return true;
 }
 
+bool CBlock::SignBlock_POW(const CKeyStore& keystore)
+{
+    vector<valtype> vSolutions;
+    txnouttype whichType;
+
+    for(unsigned int i = 0; i < vtx[0].vout.size(); i++)
+    {
+        const CTxOut& txout = vtx[0].vout[i];
+
+        if (!Solver(txout.scriptPubKey, whichType, vSolutions))
+            continue;
+        CKey key;
+        // Sign
+        valtype& vchPubKey = vSolutions[0];
+        CScript scriptPubKey;
+
+        if (whichType == TX_PUBKEY)
+        {
+            if (!keystore.GetKey(Hash160(vchPubKey), key))
+                continue;
+            if (key.GetPubKey() != vchPubKey)
+                continue;
+            hashMerkleRoot = BuildMerkleTree();
+            if(!key.Sign(GetHash(), vchBlockSig))
+                continue;
+
+            return true;
+        }
+
+        if (whichType == TX_PUBKEYHASH) // pay to address type
+        {
+            // convert to pay to public key type
+            if (!keystore.GetKey(uint160(vSolutions[0]), key))
+            {
+                if (fDebug && GetBoolArg("-printcoinstake"))
+                    printf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                continue;  // unable to find corresponding public key
+            }
+            if (key.GetPubKey() != vchPubKey)
+                continue;
+            hashMerkleRoot = BuildMerkleTree();
+            if(!key.Sign(GetHash(), vchBlockSig))
+                continue;
+
+            return true;
+        }
+    }
+
+    printf("Sign failed\n");
+    return false;
+}
 // novacoin: attempt to generate suitable proof-of-stake
 bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
 {
@@ -2830,6 +2886,7 @@ bool LoadBlockIndex(bool fAllowNew)
         bnProofOfWorkLimit = bnProofOfWorkLimitTestNet; // 16 bits PoW target limit for testnet
         nStakeMinAge = 1 * 60 * 60; // test net min age is 1 hour
         nCoinbaseMaturity = 10; // test maturity is 10 blocks
+        nModifierInterval = 6;
     }
     else
     {
