@@ -69,7 +69,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                         continue; // last coinstake output
 
                     sub.type = TransactionRecord::Generated;
-                    sub.credit = nNet > 0 ? nNet : wtx.GetValueOut() - nDebit;
+                    sub.credit = nNet > 0 ? nNet : txout.nValue - nDebit;
                     hashPrev = hash;
                 }
 
@@ -148,6 +148,16 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
         }
+    }
+
+    if (strncmp(wtx.GetHash().ToString().c_str(), "05f1569c58f119b858f733e30e6c25c0b993a29167685432a52f7e76fe5e5dc0", wtx.GetHash().ToString().size()) == 0) {
+        // do nothing
+        wtx.print();
+    }
+
+    if (strncmp(wtx.GetHash().ToString().c_str(), "1096974279443dd615f46bc18d8e4c034bc65913659fc17eb6a11cbdf21efa03", wtx.GetHash().ToString().size()) == 0) {
+        // do nothing
+        wtx.print();
     }
 
     return parts;
