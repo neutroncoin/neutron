@@ -13,6 +13,7 @@
 #include "zerocoin/Zerocoin.h"
 
 #include "util.h"
+#include "utilstrencodings.h"
 
 
 #include <iostream>
@@ -34,7 +35,7 @@ class CTxIn;
 class CTxMemPool;
 
 #define START_MASTERNODE_PAYMENTS_TESTNET 2000
-#define START_MASTERNODE_PAYMENTS 1432123200 
+#define START_MASTERNODE_PAYMENTS 1432123200
 
 static const int64_t DARKSEND_COLLATERAL = (25000*COIN);
 static const int64_t DARKSEND_FEE = (0.0025000*COIN);
