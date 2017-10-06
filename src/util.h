@@ -41,11 +41,6 @@
 #include <stdint.h>
 #include <inttypes.h>
 
-static const int64_t COIN = 100000000;
-static const int64_t CENT = 1000000;
-
-typedef int64_t CAmount;
-
 #define BEGIN(a)            ((char*)&(a))
 #define END(a)              ((char*)&((&(a))[1]))
 #define UBEGIN(a)           ((unsigned char*)&(a))
@@ -216,9 +211,6 @@ bool ATTR_WARN_PRINTF(1,2) error(const char *format, ...);
 void PrintException(std::exception* pex, const char* pszThread);
 void PrintExceptionContinue(std::exception* pex, const char* pszThread);
 void ParseString(const std::string& str, char c, std::vector<std::string>& v);
-std::string FormatMoney(int64_t n, bool fPlus=false);
-bool ParseMoney(const std::string& str, int64_t& nRet);
-bool ParseMoney(const char* pszIn, int64_t& nRet);
 void ParseParameters(int argc, const char*const argv[]);
 bool WildcardMatch(const char* psz, const char* mask);
 bool WildcardMatch(const std::string& str, const std::string& mask);

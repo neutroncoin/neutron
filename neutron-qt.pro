@@ -155,6 +155,7 @@ HEADERS += src/qt/bitcoingui.h \
     src/coincontrol.h \
     src/sync.h \
     src/util.h \
+    src/utilmoneystr.h \
     src/utilstrencodings.h \
     src/uint256.h \
     src/kernel.h \
@@ -250,6 +251,7 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/version.cpp \
     src/sync.cpp \
     src/util.cpp \
+    src/utilmoneystr.cpp \
     src/utilstrencodings.cpp \
     src/netbase.cpp \
     src/key.cpp \

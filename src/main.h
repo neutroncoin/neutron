@@ -13,6 +13,7 @@
 #include "zerocoin/Zerocoin.h"
 
 #include "util.h"
+#include "utilmoneystr.h"
 #include "utilstrencodings.h"
 
 

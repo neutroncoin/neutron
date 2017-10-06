@@ -86,6 +86,7 @@ OBJS= \
     obj/script.o \
     obj/sync.o \
     obj/util.o \
+    obj/utilmoneystr.o \
     obj/utilstrencodings.o \
     obj/wallet.o \
     obj/walletdb.o \
