@@ -71,7 +71,7 @@ void RandAddSeedPerfmon()
     if (ret == ERROR_SUCCESS) {
         RAND_add(begin_ptr(vData), nSize, nSize / 100.0);
         OPENSSL_cleanse(begin_ptr(vData), nSize);
-        print("%s: %lu bytes\n", __func__, nSize);
+        printf("%s: %lu bytes\n", __func__, nSize);
     } else {
         static bool warned = false; // Warn only once
         if (!warned) {
