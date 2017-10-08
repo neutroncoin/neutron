@@ -5,6 +5,7 @@
 #include "addrman.h"
 #include "hash.h"
 #include "random.h"
+#include "streams.h"
 
 using namespace std;
 

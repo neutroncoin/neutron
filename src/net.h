@@ -23,6 +23,7 @@
 #include "keystore.h"
 #include "random.h"
 #include "script.h"
+#include "streams.h"
 #include "timedata.h"
 #include "utiltime.h"
 
