@@ -8,6 +8,7 @@
 #include "bitcoinrpc.h"
 #include "init.h"
 #include "base58.h"
+#include "utiltime.h"
 
 using namespace json_spirit;
 using namespace std;
@@ -1768,7 +1769,7 @@ Value makekeypair(const Array& params, bool fHelp)
     string strPrefix = "";
     if (params.size() > 0)
         strPrefix = params[0].get_str();
- 
+
     CKey key;
     key.MakeNewKey(false);
 

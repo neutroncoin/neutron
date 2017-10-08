@@ -5,6 +5,7 @@
 
 #include "util.h"
 #include "utilstrencodings.h"
+#include "utiltime.h"
 #include "sync.h"
 #include "strlcpy.h"
 #include "version.h"
@@ -741,20 +742,6 @@ void ShrinkDebugFile()
 //  - Median of other nodes clocks
 //  - The user (asking the user to fix the system clock if the first two disagree)
 //
-static int64_t nMockTime = 0;  // For unit testing
-
-int64_t GetTime()
-{
-    if (nMockTime) return nMockTime;
-
-    return time(NULL);
-}
-
-void SetMockTime(int64_t nMockTimeIn)
-{
-    nMockTime = nMockTimeIn;
-}
-
 static int64_t nTimeOffset = 0;
 
 int64_t GetTimeOffset()

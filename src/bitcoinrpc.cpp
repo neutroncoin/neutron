@@ -5,6 +5,7 @@
 
 #include "init.h"
 #include "util.h"
+#include "utiltime.h"
 #include "sync.h"
 #include "ui_interface.h"
 #include "base58.h"

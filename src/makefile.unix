@@ -125,6 +125,7 @@ OBJS= \
     obj/util.o \
     obj/utilmoneystr.o \
     obj/utilstrencodings.o \
+    obj/utiltime.o \
     obj/wallet.o \
     obj/walletdb.o \
     obj/noui.o \

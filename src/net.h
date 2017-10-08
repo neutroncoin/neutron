@@ -22,6 +22,7 @@
 #include "key.h"
 #include "keystore.h"
 #include "script.h"
+#include "utiltime.h"
 
 class CTxIn;
 class CTxOut;

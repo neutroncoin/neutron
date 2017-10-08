@@ -8,6 +8,7 @@
 #include "init.h"
 //#include "script/sign.h"
 #include "util.h"
+#include "utiltime.h"
 #include "masternode.h"
 #include "ui_interface.h"
 //#include "random.h"
@@ -245,7 +246,7 @@ void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& 
             int64_t nValueOut = 0;
             bool missingTx = false;
 
-            
+
             CTransaction tx;
 
             BOOST_FOREACH(CTxOut o, out){

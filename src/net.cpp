@@ -12,6 +12,7 @@
 #include "ui_interface.h"
 #include "darksend.h"
 #include "wallet.h"
+#include "utiltime.h"
 
 #ifdef WIN32
 #include <string.h>
@@ -1319,7 +1320,7 @@ void ThreadDNSAddressSeed2(void* parg)
 
 unsigned int pnSeed[] =
 {
-    
+
 };
 
 void DumpAddresses()

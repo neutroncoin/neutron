@@ -8,6 +8,7 @@
 #include "net.h"
 #include "init.h"
 #include "util.h"
+#include "utiltime.h"
 #include "ui_interface.h"
 #include "checkpoints.h"
 #include "zerocoin/ZeroTest.h"
@@ -727,8 +728,8 @@ bool AppInit2()
         return InitError(_("Error loading blkindex.dat"));
 
 
-    // as LoadBlockIndex can take several minutes, it's possible the user
-    // requested to kill bitcoin-qt during the last operation. If so, exit.
+    // As LoadBlockIndex can take several minutes, it's possible the user
+    // requested to kill the GUI during the last operation. If so, exit.
     // As the program has not fully started yet, Shutdown() is possibly overkill.
     if (fRequestShutdown)
     {
