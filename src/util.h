@@ -170,8 +170,6 @@ extern bool fNoListen;
 extern bool fLogTimestamps;
 extern bool fReopenDebugLog;
 
-void RandAddSeed();
-void RandAddSeedPerfmon();
 int ATTR_WARN_PRINTF(1,2) OutputDebugStringF(const char* pszFormat, ...);
 
 /*
@@ -220,14 +218,8 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map
 boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
 void ShrinkDebugFile();
-int GetRandInt(int nMax);
-uint64_t GetRand(uint64_t nMax);
-uint256 GetRandHash();
-int64_t GetAdjustedTime();
-int64_t GetTimeOffset();
 std::string FormatFullVersion();
 std::string FormatSubVersion(const std::string& name, int nClientVersion, const std::vector<std::string>& comments);
-void AddTimeData(const CNetAddr& ip, int64_t nTime);
 void runCommand(std::string strCommand);
 
 void GetRandBytes(unsigned char* buf, int num);
@@ -297,41 +289,6 @@ inline std::string leftTrim(std::string src, char chr)
 }
 
 
-inline int64_t GetPerformanceCounter()
-{
-    int64_t nCounter = 0;
-#ifdef WIN32
-    QueryPerformanceCounter((LARGE_INTEGER*)&nCounter);
-#else
-    timeval t;
-    gettimeofday(&t, NULL);
-    nCounter = (int64_t) t.tv_sec * 1000000 + t.tv_usec;
-#endif
-    return nCounter;
-}
-
-inline int64_t GetTimeMillis()
-{
-    return (boost::posix_time::ptime(boost::posix_time::microsec_clock::universal_time()) -
-            boost::posix_time::ptime(boost::gregorian::date(1970,1,1))).total_milliseconds();
-}
-
-inline std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
-{
-    time_t n = nTime;
-    struct tm* ptmTime = gmtime(&n);
-    char pszTime[200];
-    strftime(pszTime, sizeof(pszTime), pszFormat, ptmTime);
-    return pszTime;
-}
-
-static const std::string strTimestampFormat = "%Y-%m-%d %H:%M:%S UTC";
-inline std::string DateTimeStrFormat(int64_t nTime)
-{
-    return DateTimeStrFormat(strTimestampFormat.c_str(), nTime);
-}
-
-
 template<typename T>
 void skipspaces(T& it)
 {
@@ -394,170 +351,6 @@ bool SoftSetArg(const std::string& strArg, const std::string& strValue);
 bool SoftSetBoolArg(const std::string& strArg, bool fValue);
 
 
-
-
-
-
-
-
-
-template<typename T1>
-inline uint256 Hash(const T1 pbegin, const T1 pend)
-{
-    static unsigned char pblank[1];
-    uint256 hash1;
-    SHA256((pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]), (unsigned char*)&hash1);
-    uint256 hash2;
-    SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-    return hash2;
-}
-
-class CHashWriter
-{
-private:
-    SHA256_CTX ctx;
-
-public:
-    int nType;
-    int nVersion;
-
-    void Init() {
-        SHA256_Init(&ctx);
-    }
-
-    CHashWriter(int nTypeIn, int nVersionIn) : nType(nTypeIn), nVersion(nVersionIn) {
-        Init();
-    }
-
-    CHashWriter& write(const char *pch, size_t size) {
-        SHA256_Update(&ctx, pch, size);
-        return (*this);
-    }
-
-    // invalidates the object
-    uint256 GetHash() {
-        uint256 hash1;
-        SHA256_Final((unsigned char*)&hash1, &ctx);
-        uint256 hash2;
-        SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-        return hash2;
-    }
-
-    template<typename T>
-    CHashWriter& operator<<(const T& obj) {
-        // Serialize to this stream
-        ::Serialize(*this, obj, nType, nVersion);
-        return (*this);
-    }
-};
-
-
-template<typename T1, typename T2>
-inline uint256 Hash(const T1 p1begin, const T1 p1end,
-                    const T2 p2begin, const T2 p2end)
-{
-    static unsigned char pblank[1];
-    uint256 hash1;
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, (p1begin == p1end ? pblank : (unsigned char*)&p1begin[0]), (p1end - p1begin) * sizeof(p1begin[0]));
-    SHA256_Update(&ctx, (p2begin == p2end ? pblank : (unsigned char*)&p2begin[0]), (p2end - p2begin) * sizeof(p2begin[0]));
-    SHA256_Final((unsigned char*)&hash1, &ctx);
-    uint256 hash2;
-    SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-    return hash2;
-}
-
-template<typename T1, typename T2, typename T3>
-inline uint256 Hash(const T1 p1begin, const T1 p1end,
-                    const T2 p2begin, const T2 p2end,
-                    const T3 p3begin, const T3 p3end)
-{
-    static unsigned char pblank[1];
-    uint256 hash1;
-    SHA256_CTX ctx;
-    SHA256_Init(&ctx);
-    SHA256_Update(&ctx, (p1begin == p1end ? pblank : (unsigned char*)&p1begin[0]), (p1end - p1begin) * sizeof(p1begin[0]));
-    SHA256_Update(&ctx, (p2begin == p2end ? pblank : (unsigned char*)&p2begin[0]), (p2end - p2begin) * sizeof(p2begin[0]));
-    SHA256_Update(&ctx, (p3begin == p3end ? pblank : (unsigned char*)&p3begin[0]), (p3end - p3begin) * sizeof(p3begin[0]));
-    SHA256_Final((unsigned char*)&hash1, &ctx);
-    uint256 hash2;
-    SHA256((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-    return hash2;
-}
-
-template<typename T>
-uint256 SerializeHash(const T& obj, int nType=SER_GETHASH, int nVersion=PROTOCOL_VERSION)
-{
-    CHashWriter ss(nType, nVersion);
-    ss << obj;
-    return ss.GetHash();
-}
-
-inline uint160 Hash160(const std::vector<unsigned char>& vch)
-{
-    uint256 hash1;
-    SHA256(&vch[0], vch.size(), (unsigned char*)&hash1);
-    uint160 hash2;
-    RIPEMD160((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
-    return hash2;
-}
-
-/** Median filter over a stream of values.
- * Returns the median of the last N numbers
- */
-template <typename T> class CMedianFilter
-{
-private:
-    std::vector<T> vValues;
-    std::vector<T> vSorted;
-    unsigned int nSize;
-public:
-    CMedianFilter(unsigned int size, T initial_value):
-        nSize(size)
-    {
-        vValues.reserve(size);
-        vValues.push_back(initial_value);
-        vSorted = vValues;
-    }
-
-    void input(T value)
-    {
-        if(vValues.size() == nSize)
-        {
-            vValues.erase(vValues.begin());
-        }
-        vValues.push_back(value);
-
-        vSorted.resize(vValues.size());
-        std::copy(vValues.begin(), vValues.end(), vSorted.begin());
-        std::sort(vSorted.begin(), vSorted.end());
-    }
-
-    T median() const
-    {
-        int size = vSorted.size();
-        assert(size>0);
-        if(size & 1) // Odd number of elements
-        {
-            return vSorted[size/2];
-        }
-        else // Even number of elements
-        {
-            return (vSorted[size/2-1] + vSorted[size/2]) / 2;
-        }
-    }
-
-    int size() const
-    {
-        return vValues.size();
-    }
-
-    std::vector<T> sorted () const
-    {
-        return vSorted;
-    }
-};
 
 bool NewThread(void(*pfn)(void*), void* parg);
 

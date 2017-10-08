@@ -21,7 +21,9 @@
 #include "main.h"
 #include "key.h"
 #include "keystore.h"
+#include "random.h"
 #include "script.h"
+#include "timedata.h"
 #include "utiltime.h"
 
 class CTxIn;

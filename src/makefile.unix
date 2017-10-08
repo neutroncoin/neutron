@@ -114,6 +114,7 @@ OBJS= \
     obj/net.o \
     obj/protocol.o \
     obj/bitcoinrpc.o \
+    obj/random.o \
     obj/rpcdump.o \
     obj/rpcnet.o \
     obj/rpcmining.o \
@@ -122,6 +123,7 @@ OBJS= \
     obj/rpcrawtransaction.o \
     obj/script.o \
     obj/sync.o \
+    obj/timedata.o \
     obj/util.o \
     obj/utilmoneystr.o \
     obj/utilstrencodings.o \

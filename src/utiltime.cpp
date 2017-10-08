@@ -93,3 +93,10 @@ std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime)
     ss << boost::posix_time::from_time_t(nTime);
     return ss.str();
 }
+
+/* TODO: update the code to remove this convenience method */
+static const std::string strTimestampFormat = "%Y-%m-%d %H:%M:%S UTC";
+std::string DateTimeStrFormat(int64_t nTime)
+{
+    return DateTimeStrFormat(strTimestampFormat.c_str(), nTime);
+}

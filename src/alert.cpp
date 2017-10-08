@@ -9,6 +9,7 @@
 #include <map>
 
 #include "alert.h"
+#include "hash.h"
 #include "key.h"
 #include "net.h"
 #include "sync.h"

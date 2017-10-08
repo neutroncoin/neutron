@@ -4,6 +4,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "netbase.h"
+#include "hash.h"
 #include "util.h"
 #include "utilstrencodings.h"
 #include "sync.h"

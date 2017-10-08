@@ -153,11 +153,13 @@ HEADERS += src/qt/bitcoingui.h \
     src/checkpoints.h \
     src/compat.h \
     src/coincontrol.h \
+    src/random.h \
     src/sync.h \
     src/util.h \
     src/utilmoneystr.h \
     src/utilstrencodings.h \
     src/utiltime.h \
+    src/timedata.h \
     src/uint256.h \
     src/kernel.h \
     src/scrypt.h \
@@ -250,11 +252,13 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/bitcoinaddressvalidator.cpp \
     src/alert.cpp \
     src/version.cpp \
+    src/random.cpp \
     src/sync.cpp \
     src/util.cpp \
     src/utilmoneystr.cpp \
     src/utilstrencodings.cpp \
     src/utiltime.cpp \
+    src/timedata.cpp \
     src/netbase.cpp \
     src/key.cpp \
     src/script.cpp \

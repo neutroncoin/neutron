@@ -4,10 +4,13 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "util.h"
+
 #include "utilstrencodings.h"
 #include "utiltime.h"
+#include "random.h"
 #include "sync.h"
 #include "strlcpy.h"
+#include "timedata.h"
 #include "version.h"
 #include "ui_interface.h"
 #include <boost/algorithm/string/join.hpp>
@@ -139,86 +142,9 @@ public:
             delete ppmutexOpenSSL[i];
         OPENSSL_free(ppmutexOpenSSL);
     }
-}
-instance_of_cinit;
+} instance_of_cinit;
 
 
-
-
-
-
-
-
-void RandAddSeed()
-{
-    // Seed with CPU performance counter
-    int64_t nCounter = GetPerformanceCounter();
-    RAND_add(&nCounter, sizeof(nCounter), 1.5);
-    memset(&nCounter, 0, sizeof(nCounter));
-}
-
-void RandAddSeedPerfmon()
-{
-    RandAddSeed();
-
-    // This can take up to 2 seconds, so only do it every 10 minutes
-    static int64_t nLastPerfmon;
-    if (GetTime() < nLastPerfmon + 10 * 60)
-        return;
-    nLastPerfmon = GetTime();
-
-#ifdef WIN32
-    // Don't need this on Linux, OpenSSL automatically uses /dev/urandom
-    // Seed with the entire set of perfmon data
-    unsigned char pdata[250000];
-    memset(pdata, 0, sizeof(pdata));
-    unsigned long nSize = sizeof(pdata);
-    long ret = RegQueryValueExA(HKEY_PERFORMANCE_DATA, "Global", NULL, NULL, pdata, &nSize);
-    RegCloseKey(HKEY_PERFORMANCE_DATA);
-    if (ret == ERROR_SUCCESS)
-    {
-        RAND_add(pdata, nSize, nSize/100.0);
-        memset(pdata, 0, nSize);
-        printf("RandAddSeed() %lu bytes\n", nSize);
-    }
-#endif
-}
-
-uint64_t GetRand(uint64_t nMax)
-{
-    if (nMax == 0)
-        return 0;
-
-    // The range of the random source must be a multiple of the modulus
-    // to give every possible output value an equal possibility
-    uint64_t nRange = (std::numeric_limits<uint64_t>::max() / nMax) * nMax;
-    uint64_t nRand = 0;
-    do
-        RAND_bytes((unsigned char*)&nRand, sizeof(nRand));
-    while (nRand >= nRange);
-    return (nRand % nMax);
-}
-
-int GetRandInt(int nMax)
-{
-    return GetRand(nMax);
-}
-
-uint256 GetRandHash()
-{
-    uint256 hash;
-    RAND_bytes((unsigned char*)&hash, sizeof(hash));
-    return hash;
-}
-
-
-void GetRandBytes(unsigned char* buf, int num)
-{
-    if (RAND_bytes(buf, num) != 1) {
-        printf("%s: OpenSSL RAND_bytes() failed with error: %s\n", __func__, ERR_error_string(ERR_get_error(), NULL));
-        assert(false);
-    }
-}
 
 
 
@@ -734,84 +660,6 @@ void ShrinkDebugFile()
         }
     }
 }
-
-//
-// "Never go to sea with two chronometers; take one or three."
-// Our three time sources are:
-//  - System clock
-//  - Median of other nodes clocks
-//  - The user (asking the user to fix the system clock if the first two disagree)
-//
-static int64_t nTimeOffset = 0;
-
-int64_t GetTimeOffset()
-{
-    return nTimeOffset;
-}
-
-int64_t GetAdjustedTime()
-{
-    return GetTime() + GetTimeOffset();
-}
-
-void AddTimeData(const CNetAddr& ip, int64_t nTime)
-{
-    int64_t nOffsetSample = nTime - GetTime();
-
-    // Ignore duplicates
-    static set<CNetAddr> setKnown;
-    if (!setKnown.insert(ip).second)
-        return;
-
-    // Add data
-    vTimeOffsets.input(nOffsetSample);
-    printf("Added time data, samples %d, offset %+" PRId64 " (%+" PRId64 " minutes)\n", vTimeOffsets.size(), nOffsetSample, nOffsetSample/60);
-    if (vTimeOffsets.size() >= 5 && vTimeOffsets.size() % 2 == 1)
-    {
-        int64_t nMedian = vTimeOffsets.median();
-        std::vector<int64_t> vSorted = vTimeOffsets.sorted();
-        // Only let other nodes change our time by so much
-        if (abs64(nMedian) < 70 * 60)
-        {
-            nTimeOffset = nMedian;
-        }
-        else
-        {
-            nTimeOffset = 0;
-
-            static bool fDone;
-            if (!fDone)
-            {
-                // If nobody has a time different than ours but within 5 minutes of ours, give a warning
-                bool fMatch = false;
-                BOOST_FOREACH(int64_t nOffset, vSorted)
-                    if (nOffset != 0 && abs64(nOffset) < 5 * 60)
-                        fMatch = true;
-
-                if (!fMatch)
-                {
-                    fDone = true;
-                    string strMessage = _("Warning: Please check that your computer's date and time are correct! If your clock is wrong Neutron will not work properly.");
-                    strMiscWarning = strMessage;
-                    printf("*** %s\n", strMessage.c_str());
-                    uiInterface.ThreadSafeMessageBox(strMessage+" ", string("Neutron"), CClientUIInterface::OK | CClientUIInterface::ICON_EXCLAMATION);
-                }
-            }
-        }
-        if (fDebug) {
-            BOOST_FOREACH(int64_t n, vSorted)
-                printf("%+" PRId64 "  ", n);
-            printf("|  ");
-        }
-        printf("nTimeOffset = %+" PRId64 "  (%+" PRId64 " minutes)\n", nTimeOffset, nTimeOffset/60);
-    }
-}
-
-
-
-
-
-
 
 
 string FormatVersion(int nVersion)

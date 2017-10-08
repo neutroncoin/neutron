@@ -7,6 +7,7 @@
 #include <openssl/ecdsa.h>
 #include <openssl/obj_mac.h>
 
+#include "hash.h"
 #include "key.h"
 
 // Generate a private key from just the secret parameter

@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "allocators.h"
+#include "hash.h"
 #include "serialize.h"
 #include "uint256.h"
 #include "util.h"
@@ -62,7 +63,7 @@ public:
 
 /** An encapsulated public key. */
 class CPubKey {
-private:  
+private:
     friend class CKey;
 
 public:
@@ -77,7 +78,7 @@ public:
         READWRITE(vchPubKey);
     )
 
-    
+
 
     CKeyID GetID() const {
         return CKeyID(Hash160(vchPubKey));
@@ -99,7 +100,7 @@ public:
         return vchPubKey;
     }
 
-    
+
 };
 
 
