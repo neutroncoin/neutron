@@ -46,7 +46,7 @@ LIBS += \
  -lz
 endif
 
-DEFS=-DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE
+DEFS=-DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE -D__USE_MINGW_ANSI_STDIO
 
 ifdef RELEASE
 # Compile for maximum compatibility and smallest size.

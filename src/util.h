@@ -65,30 +65,8 @@ void LogStackTrace();
 #if defined(_MSC_VER) || defined(__MSVCRT__)
 #undef PRId64
 #define PRId64 "I64d"
-#undef PRIu64
-#define PRIu64 "I64u"
 #undef PRIx64
 #define PRIx64 "I64x"
-#endif
-
-/* Format characters for (s)size_t and ptrdiff_t */
-#if defined(_MSC_VER) || defined(__MSVCRT__)
-  /* (s)size_t and ptrdiff_t have the same size specifier in MSVC:
-     http://msdn.microsoft.com/en-us/library/tcxf1dw6%28v=vs.100%29.aspx
-   */
-  #define PRIszx    "Ix"
-  #define PRIszu    "Iu"
-  #define PRIszd    "Id"
-  #define PRIpdx    "Ix"
-  #define PRIpdu    "Iu"
-  #define PRIpdd    "Id"
-#else /* C99 standard */
-  #define PRIszx    "zx"
-  #define PRIszu    "zu"
-  #define PRIszd    "zd"
-  #define PRIpdx    "tx"
-  #define PRIpdu    "tu"
-  #define PRIpdd    "td"
 #endif
 
 // This is needed because the foreach macro can't get over the comma in pair<t1, t2>
