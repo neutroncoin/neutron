@@ -105,7 +105,7 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
         }
     }
     if (fDebug && GetBoolArg("-printstakemodifier"))
-        printf("SelectBlockFromCandidates: selection hash=%s\n", hashBest.ToString().c_str());
+        LogPrintf("SelectBlockFromCandidates: selection hash=%s\n", hashBest.ToString().c_str());
     return fSelected;
 }
 
@@ -138,7 +138,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         return error("ComputeNextStakeModifier: unable to get last modifier");
     if (fDebug)
     {
-        printf("ComputeNextStakeModifier: prev modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifier).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
+        LogPrintf("ComputeNextStakeModifier: prev modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifier).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
     }
     if (nModifierTime / nModifierInterval >= pindexPrev->GetBlockTime() / nModifierInterval)
         return true;
@@ -174,7 +174,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         // add the selected block from candidates to selected list
         mapSelectedBlocks.insert(make_pair(pindex->GetBlockHash(), pindex));
         if (fDebug && GetBoolArg("-printstakemodifier"))
-            printf("ComputeNextStakeModifier: selected round %d stop=%s height=%d bit=%d\n", nRound, DateTimeStrFormat(nSelectionIntervalStop).c_str(), pindex->nHeight, pindex->GetStakeEntropyBit());
+            LogPrintf("ComputeNextStakeModifier: selected round %d stop=%s height=%d bit=%d\n", nRound, DateTimeStrFormat(nSelectionIntervalStop).c_str(), pindex->nHeight, pindex->GetStakeEntropyBit());
     }
 
     // Print selection map for visualization of the selected blocks
@@ -197,11 +197,11 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
             // 'W' indicates selected proof-of-work blocks
             strSelectionMap.replace(item.second->nHeight - nHeightFirstCandidate, 1, item.second->IsProofOfStake()? "S" : "W");
         }
-        printf("ComputeNextStakeModifier: selection height [%d, %d] map %s\n", nHeightFirstCandidate, pindexPrev->nHeight, strSelectionMap.c_str());
+        LogPrintf("ComputeNextStakeModifier: selection height [%d, %d] map %s\n", nHeightFirstCandidate, pindexPrev->nHeight, strSelectionMap.c_str());
     }
     if (fDebug)
     {
-        printf("ComputeNextStakeModifier: new modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifierNew).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
+        LogPrintf("ComputeNextStakeModifier: new modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifierNew).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
     }
 
     nStakeModifier = nStakeModifierNew;
@@ -298,12 +298,12 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
     hashProofOfStake = Hash(ss.begin(), ss.end());
     if (fPrintProofOfStake)
     {
-        printf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
+        LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
             boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
             DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
             mapBlockIndex[hashBlockFrom]->nHeight,
             DateTimeStrFormat("%Y-%m-%d %H:%M:%S", blockFrom.GetBlockTime()).c_str());
-        printf("CheckStakeKernelHash() : check modifier=%s nTimeBlockFrom=%u prevoutHash=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
+        LogPrintf("CheckStakeKernelHash() : check modifier=%s nTimeBlockFrom=%u prevoutHash=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
             boost::lexical_cast<std::string>(nStakeModifier).c_str(),
             nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
             hashProofOfStake.ToString().c_str());
@@ -314,12 +314,12 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
         return false;
     if (fDebug && !fPrintProofOfStake)
     {
-        printf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
+        LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
             boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
             DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
             mapBlockIndex[hashBlockFrom]->nHeight,
             DateTimeStrFormat("%Y-%m-%d %H:%M:%S", blockFrom.GetBlockTime()).c_str());
-        printf("CheckStakeKernelHash() : pass modifier=%s nTimeBlockFrom=%u nTxPrevOffset=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
+        LogPrintf("CheckStakeKernelHash() : pass modifier=%s nTimeBlockFrom=%u nTxPrevOffset=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
             boost::lexical_cast<std::string>(nStakeModifier).c_str(),
             nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
             hashProofOfStake.ToString().c_str());
@@ -376,7 +376,7 @@ unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex)
     ss << pindex->nFlags << (pindex->IsProofOfStake() ? pindex->hashProof : 0) << pindex->nStakeModifier;
     uint256 hashChecksum = Hash(ss.begin(), ss.end());
     hashChecksum >>= (256 - 32);
-    // printf("stake modifier checksum: 0x%016" PRIx64 "\n", hashChecksum.Get64());
+    // LogPrintf("stake modifier checksum: 0x%016" PRIx64 "\n", hashChecksum.Get64());
     return hashChecksum.Get64();
 }
 

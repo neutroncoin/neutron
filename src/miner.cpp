@@ -71,10 +71,10 @@ public:
 
     void print() const
     {
-        printf("COrphan(hash=%s, dPriority=%.1f, dFeePerKb=%.1f)\n",
+        LogPrintf("COrphan(hash=%s, dPriority=%.1f, dFeePerKb=%.1f)\n",
                ptx->GetHash().ToString().substr(0,10).c_str(), dPriority, dFeePerKb);
         BOOST_FOREACH(uint256 hash, setDependsOn)
-            printf("   setDependsOn %s\n", hash.ToString().substr(0,10).c_str());
+            LogPrintf("   setDependsOn %s\n", hash.ToString().substr(0,10).c_str());
     }
 };
 
@@ -204,7 +204,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
                     // or other transactions in the memory pool.
                     if (!mempool.mapTx.count(txin.prevout.hash))
                     {
-                        printf("ERROR: mempool transaction missing input\n");
+                        LogPrintf("ERROR: mempool transaction missing input\n");
                         if (fDebug) assert("mempool transaction missing input" == 0);
                         fMissingInputs = true;
                         if (porphan)
@@ -331,7 +331,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
 
             if (fDebug && GetBoolArg("-printpriority"))
             {
-                printf("priority %.1f feeperkb %.1f txid %s\n",
+                LogPrintf("priority %.1f feeperkb %.1f txid %s\n",
                        dPriority, dFeePerKb, tx.GetHash().ToString().c_str());
             }
 
@@ -357,7 +357,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
         nLastBlockTx = nBlockTx;
         nLastBlockSize = nBlockSize;
         if (fDebug && GetBoolArg("-printpriority"))
-            printf("CreateNewBlock(): total size %u\n", nBlockSize);
+            LogPrintf("CreateNewBlock(): total size %u\n", nBlockSize);
 
         if (!fProofOfStake)
             pblock->vtx[0].vout[0].nValue = GetProofOfWorkReward(nFees, pindexPrev->nHeight + 1);
@@ -452,14 +452,14 @@ bool CheckWork(CBlock* pblock, CWallet& wallet, CReserveKey& reservekey)
         return error("CheckWork() : %s is not a proof-of-work block", hashBlock.GetHex().c_str());
 
     if (hashBlock > hashTarget) {
-        printf("blockhash=%s target=%s\n", hashBlock.GetHex().c_str(), hashTarget.GetHex().c_str());
+        LogPrintf("blockhash=%s target=%s\n", hashBlock.GetHex().c_str(), hashTarget.GetHex().c_str());
         return error("CheckWork() : proof-of-work not meeting target");
     }
 
     //// debug print
-    printf("CheckWork() : new proof-of-work block found  \n  hash: %s  \ntarget: %s\n", hashBlock.GetHex().c_str(), hashTarget.GetHex().c_str());
+    LogPrintf("CheckWork() : new proof-of-work block found  \n  hash: %s  \ntarget: %s\n", hashBlock.GetHex().c_str(), hashTarget.GetHex().c_str());
     pblock->print();
-    printf("generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
+    LogPrintf("generated %s\n", FormatMoney(pblock->vtx[0].vout[0].nValue).c_str());
 
     // Found a solution
     {
@@ -497,9 +497,9 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
         return error("CheckStake() : proof-of-stake checking failed");
 
     //// debug print
-    printf("CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex().c_str(), proofHash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    LogPrintf("CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex().c_str(), proofHash.GetHex().c_str(), hashTarget.GetHex().c_str());
     pblock->print();
-    printf("out %s\n", FormatMoney(pblock->vtx[1].GetValueOut()).c_str());
+    LogPrintf("out %s\n", FormatMoney(pblock->vtx[1].GetValueOut()).c_str());
 
     // Found a solution
     {
@@ -599,7 +599,7 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
         }
 
 
-        //printf("Running BitcoinMiner with %lu transactions in block (%u bytes)\n", pblock->vtx.size(),
+        //LogPrintf("Running BitcoinMiner with %lu transactions in block (%u bytes)\n", pblock->vtx.size(),
           //     ::GetSerializeSize(*pblock, SER_NETWORK, PROTOCOL_VERSION));
 
         //
@@ -671,7 +671,7 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
                         if (GetTime() - nLogTime > 30 * 60)
                         {
                             nLogTime = GetTime();
-                            printf("hashmeter %6.0f khash/s\n", dHashesPerSec/1000.0);
+                            LogPrintf("hashmeter %6.0f khash/s\n", dHashesPerSec/1000.0);
                         }
                     }
                 }
@@ -720,7 +720,7 @@ void static ThreadBitcoinMiner(void* parg)
     nHPSTimerStart = 0;
     if (vnThreadsRunning[THREAD_MINER] == 0)
         dHashesPerSec = 0;
-    printf("ThreadBitcoinMiner exiting, %d threads remaining\n", vnThreadsRunning[THREAD_MINER]);
+    LogPrintf("ThreadBitcoinMiner exiting, %d threads remaining\n", vnThreadsRunning[THREAD_MINER]);
 }
 
 void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
@@ -734,17 +734,17 @@ void GenerateBitcoins(bool fGenerate, CWallet* pwallet)
     if (fGenerate)
     {
         int nProcessors = boost::thread::hardware_concurrency();
-        printf("%d processors\n", nProcessors);
+        LogPrintf("%d processors\n", nProcessors);
         if (nProcessors < 1)
             nProcessors = 1;
         if (fLimitProcessors && nProcessors > nLimitProcessors)
             nProcessors = nLimitProcessors;
         int nAddThreads = nProcessors - vnThreadsRunning[THREAD_MINER];
-        printf("Starting %d BitcoinMiner threads\n", nAddThreads);
+        LogPrintf("Starting %d BitcoinMiner threads\n", nAddThreads);
         for (int i = 0; i < nAddThreads; i++)
         {
             if (!NewThread(ThreadBitcoinMiner, pwallet))
-                printf("Error: NewThread(ThreadBitcoinMiner) failed\n");
+                LogPrintf("Error: NewThread(ThreadBitcoinMiner) failed\n");
             MilliSleep(1000);
         }
     }

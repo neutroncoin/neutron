@@ -49,7 +49,7 @@ qint64 WalletModel::getBalance(const CCoinControl *coinControl) const
          BOOST_FOREACH(const COutput& out, vCoins)
 	    if(out.fSpendable)
                 nBalance += out.tx->vout[out.i].nValue;
- 
+
          return nBalance;
     }
 
@@ -222,7 +222,7 @@ WalletModel::SendCoinsReturn WalletModel::sendCoins(const QList<SendCoinsRecipie
         std::string strFailReason;
 
         bool fCreated = wallet->CreateTransaction(vecSend, wtx, keyChange, nFeeRequired, strFailReason, coinControl);
- 
+
         if(!fCreated)
         {
             if((total + nFeeRequired) > nBalance) // FIXME: could cause collisions in the future
@@ -351,13 +351,13 @@ bool WalletModel::backupWallet(const QString &filename)
 // Handlers for core signals
 static void NotifyKeyStoreStatusChanged(WalletModel *walletmodel, CCryptoKeyStore *wallet)
 {
-    OutputDebugStringF("NotifyKeyStoreStatusChanged\n");
+    LogPrintf("NotifyKeyStoreStatusChanged\n");
     QMetaObject::invokeMethod(walletmodel, "updateStatus", Qt::QueuedConnection);
 }
 
 static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet, const CTxDestination &address, const std::string &label, bool isMine, ChangeType status)
 {
-    OutputDebugStringF("NotifyAddressBookChanged %s %s isMine=%i status=%i\n", CBitcoinAddress(address).ToString().c_str(), label.c_str(), isMine, status);
+    LogPrintf("NotifyAddressBookChanged %s %s isMine=%i status=%i\n", CBitcoinAddress(address).ToString().c_str(), label.c_str(), isMine, status);
     QMetaObject::invokeMethod(walletmodel, "updateAddressBook", Qt::QueuedConnection,
                               Q_ARG(QString, QString::fromStdString(CBitcoinAddress(address).ToString())),
                               Q_ARG(QString, QString::fromStdString(label)),
@@ -367,7 +367,7 @@ static void NotifyAddressBookChanged(WalletModel *walletmodel, CWallet *wallet, 
 
 static void NotifyTransactionChanged(WalletModel *walletmodel, CWallet *wallet, const uint256 &hash, ChangeType status)
 {
-    OutputDebugStringF("NotifyTransactionChanged %s status=%i\n", hash.GetHex().c_str(), status);
+    LogPrintf("NotifyTransactionChanged %s status=%i\n", hash.GetHex().c_str(), status);
     QMetaObject::invokeMethod(walletmodel, "updateTransaction", Qt::QueuedConnection,
                               Q_ARG(QString, QString::fromStdString(hash.GetHex())),
                               Q_ARG(int, status));
@@ -393,7 +393,7 @@ void WalletModel::unsubscribeFromCoreSignals()
 WalletModel::UnlockContext WalletModel::requestUnlock()
 {
     bool was_locked = getEncryptionStatus() == Locked;
-    
+
     if ((!was_locked) && fWalletUnlockStakingOnly && isAnonymizeOnlyUnlocked())
     {
        setWalletLocked(true);
@@ -435,7 +435,7 @@ void WalletModel::UnlockContext::CopyFrom(const UnlockContext& rhs)
 
 bool WalletModel::getPubKey(const CKeyID &address, CPubKey& vchPubKeyOut) const
 {
-    return wallet->GetPubKey(address, vchPubKeyOut);   
+    return wallet->GetPubKey(address, vchPubKeyOut);
 }
 
 // returns a list of COutputs from COutPoints
@@ -451,7 +451,7 @@ void WalletModel::getOutputs(const std::vector<COutPoint>& vOutpoints, std::vect
     }
 }
 
-// AvailableCoins + LockedCoins grouped by wallet address (put change in one group with wallet address) 
+// AvailableCoins + LockedCoins grouped by wallet address (put change in one group with wallet address)
 void WalletModel::listCoins(std::map<QString, std::vector<COutput> >& mapCoins) const
 {
     std::vector<COutput> vCoins;

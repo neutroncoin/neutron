@@ -92,6 +92,7 @@ map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
 bool fDebugNet = false;
 bool fPrintToConsole = false;
+bool fPrintToDebugLog = true;
 bool fPrintToDebugger = false;
 bool fRequestShutdown = false;
 bool fShutdown = false;
@@ -150,151 +151,107 @@ public:
 
 
 
+/**
+ * LogPrintf() has been broken a couple of times now
+ * by well-meaning people adding mutexes in the most straightforward way.
+ * It breaks because it may be called by global destructors during shutdown.
+ * Since the order of destruction of static/global objects is undefined,
+ * defining a mutex as a global object doesn't work (the mutex gets
+ * destroyed, and then some later destructor calls OutputDebugStringF,
+ * maybe indirectly, and you get a core dump at shutdown trying to lock
+ * the mutex).
+ */
 
-
+static boost::once_flag debugPrintInitFlag = BOOST_ONCE_INIT;
+/**
+ * We use boost::call_once() to make sure these are initialized
+ * in a thread-safe manner the first time called:
+ */
 static FILE* fileout = NULL;
+static boost::mutex* mutexDebugLog = NULL;
 
-inline int OutputDebugStringF(const char* pszFormat, ...)
+static void DebugPrintInit()
 {
-    int ret = 0;
-    if (fPrintToConsole)
-    {
+    assert(fileout == NULL);
+    assert(mutexDebugLog == NULL);
+
+    boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
+    fileout = fopen(pathDebug.string().c_str(), "a");
+    if (fileout) setbuf(fileout, NULL); // unbuffered
+
+    mutexDebugLog = new boost::mutex();
+}
+
+bool LogAcceptCategory(const char* category)
+{
+    if (category != NULL) {
+        if (!fDebug)
+            return false;
+
+        // Give each thread quick access to -debug settings.
+        // This helps prevent issues debugging global destructors,
+        // where mapMultiArgs might be deleted before another
+        // global destructor calls LogPrint()
+        static boost::thread_specific_ptr<set<string> > ptrCategory;
+        if (ptrCategory.get() == NULL) {
+            const vector<string>& categories = mapMultiArgs["-debug"];
+            ptrCategory.reset(new set<string>(categories.begin(), categories.end()));
+            // thread_specific_ptr automatically deletes the set when the thread ends.
+            // "pivx" is a composite category enabling all PIVX-related debug output
+            if (ptrCategory->count(string("pivx"))) {
+                ptrCategory->insert(string("obfuscation"));
+                ptrCategory->insert(string("swifttx"));
+                ptrCategory->insert(string("masternode"));
+                ptrCategory->insert(string("mnpayments"));
+                ptrCategory->insert(string("mnbudget"));
+            }
+        }
+        const set<string>& setCategories = *ptrCategory.get();
+
+        // if not debugging everything and not debugging specific category, LogPrint does nothing.
+        if (setCategories.count(string("")) == 0 &&
+            setCategories.count(string(category)) == 0)
+            return false;
+    }
+    return true;
+}
+
+int LogPrintStr(const std::string& str)
+{
+    int ret = 0; // Returns total number of characters written
+    if (fPrintToConsole) {
         // print to console
-        va_list arg_ptr;
-        va_start(arg_ptr, pszFormat);
-        ret = vprintf(pszFormat, arg_ptr);
-        va_end(arg_ptr);
-    }
-    else if (!fPrintToDebugger)
-    {
-        // print to debug.log
+        ret = fwrite(str.data(), 1, str.size(), stdout);
+        fflush(stdout);
+    } else if (fPrintToDebugLog) {
+        static bool fStartedNewLine = true;
+        boost::call_once(&DebugPrintInit, debugPrintInitFlag);
 
-        if (!fileout)
-        {
+        if (fileout == NULL)
+            return ret;
+
+        boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
+
+        // reopen the log file, if requested
+        if (fReopenDebugLog) {
+            fReopenDebugLog = false;
             boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
-            fileout = fopen(pathDebug.string().c_str(), "a");
-            if (fileout) setbuf(fileout, NULL); // unbuffered
+            if (freopen(pathDebug.string().c_str(), "a", fileout) != NULL)
+                setbuf(fileout, NULL); // unbuffered
         }
-        if (fileout)
-        {
-            static bool fStartedNewLine = true;
 
-            // This routine may be called by global destructors during shutdown.
-            // Since the order of destruction of static/global objects is undefined,
-            // allocate mutexDebugLog on the heap the first time this routine
-            // is called to avoid crashes during shutdown.
-            static boost::mutex* mutexDebugLog = NULL;
-            if (mutexDebugLog == NULL) mutexDebugLog = new boost::mutex();
-            boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
+        // Debug print useful for profiling
+        if (fLogTimestamps && fStartedNewLine)
+            ret += fprintf(fileout, "%s ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
+        if (!str.empty() && str[str.size() - 1] == '\n')
+            fStartedNewLine = true;
+        else
+            fStartedNewLine = false;
 
-            // reopen the log file, if requested
-            if (fReopenDebugLog) {
-                fReopenDebugLog = false;
-                boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
-                if (freopen(pathDebug.string().c_str(),"a",fileout) != NULL)
-                    setbuf(fileout, NULL); // unbuffered
-            }
-
-            // Debug print useful for profiling
-            if (fLogTimestamps && fStartedNewLine)
-                fprintf(fileout, "%s ", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-            if (pszFormat[strlen(pszFormat) - 1] == '\n')
-                fStartedNewLine = true;
-            else
-                fStartedNewLine = false;
-
-            va_list arg_ptr;
-            va_start(arg_ptr, pszFormat);
-            ret = vfprintf(fileout, pszFormat, arg_ptr);
-            va_end(arg_ptr);
-        }
+        ret = fwrite(str.data(), 1, str.size(), fileout);
     }
 
-#ifdef WIN32
-    if (fPrintToDebugger)
-    {
-        static CCriticalSection cs_OutputDebugStringF;
-
-        // accumulate and output a line at a time
-        {
-            LOCK(cs_OutputDebugStringF);
-            static std::string buffer;
-
-            va_list arg_ptr;
-            va_start(arg_ptr, pszFormat);
-            buffer += vstrprintf(pszFormat, arg_ptr);
-            va_end(arg_ptr);
-
-            int line_start = 0, line_end;
-            while((line_end = buffer.find('\n', line_start)) != -1)
-            {
-                OutputDebugStringA(buffer.substr(line_start, line_end - line_start).c_str());
-                line_start = line_end + 1;
-            }
-            buffer.erase(0, line_start);
-        }
-    }
-#endif
     return ret;
-}
-
-string vstrprintf(const char *format, va_list ap)
-{
-    char buffer[50000];
-    char* p = buffer;
-    int limit = sizeof(buffer);
-    int ret;
-    while (true)
-    {
-        va_list arg_ptr;
-        va_copy(arg_ptr, ap);
-#ifdef WIN32
-        ret = _vsnprintf(p, limit, format, arg_ptr);
-#else
-        ret = vsnprintf(p, limit, format, arg_ptr);
-#endif
-        va_end(arg_ptr);
-        if (ret >= 0 && ret < limit)
-            break;
-        if (p != buffer)
-            delete[] p;
-        limit *= 2;
-        p = new char[limit];
-        if (p == NULL)
-            throw std::bad_alloc();
-    }
-    string str(p, p+ret);
-    if (p != buffer)
-        delete[] p;
-    return str;
-}
-
-string real_strprintf(const char *format, int dummy, ...)
-{
-    va_list arg_ptr;
-    va_start(arg_ptr, dummy);
-    string str = vstrprintf(format, arg_ptr);
-    va_end(arg_ptr);
-    return str;
-}
-
-string real_strprintf(const std::string &format, int dummy, ...)
-{
-    va_list arg_ptr;
-    va_start(arg_ptr, dummy);
-    string str = vstrprintf(format.c_str(), arg_ptr);
-    va_end(arg_ptr);
-    return str;
-}
-
-bool error(const char *format, ...)
-{
-    va_list arg_ptr;
-    va_start(arg_ptr, format);
-    std::string str = vstrprintf(format, arg_ptr);
-    va_end(arg_ptr);
-    printf("ERROR: %s\n", str.c_str());
-    return false;
 }
 
 
