@@ -147,7 +147,7 @@ extern std::string strMiscWarning;
 extern bool fTestNet;
 extern bool fNoListen;
 extern bool fLogTimestamps;
-extern bool fReopenDebugLog;
+extern volatile bool fReopenDebugLog;
 
 
 /** Return true if log accepts specified category */
