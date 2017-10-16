@@ -478,7 +478,7 @@ contains(USE_UPNP, -) {
 
 windows:DEFINES += WIN32
 windows:RC_FILE = src/qt/res/bitcoin-qt.rc
-windows:RC_DEFINES = -DWINDRES_PREPROC
+windows:RC_DEFINES = WINDRES_PREPROC
 
 windows:!contains(MINGW_THREAD_BUGFIX, 0) {
     # At least qmake's win32-g++-cross profile is missing the -lmingwthrd
