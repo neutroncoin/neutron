@@ -5,14 +5,18 @@
 #ifndef BITCOIN_MAIN_H
 #define BITCOIN_MAIN_H
 
+#include "clientversion.h"
 #include "bignum.h"
 #include "sync.h"
 #include "net.h"
 #include "script.h"
 #include "scrypt.h"
+#include "streams.h"
 #include "zerocoin/Zerocoin.h"
 
 #include "util.h"
+#include "utilmoneystr.h"
+#include "utilstrencodings.h"
 
 
 #include <iostream>
@@ -34,7 +38,7 @@ class CTxIn;
 class CTxMemPool;
 
 #define START_MASTERNODE_PAYMENTS_TESTNET 2000
-#define START_MASTERNODE_PAYMENTS 1432123200 
+#define START_MASTERNODE_PAYMENTS 1432123200
 
 static const int64_t DARKSEND_COLLATERAL = (25000*COIN);
 static const int64_t DARKSEND_FEE = (0.0025000*COIN);
@@ -676,7 +680,7 @@ public:
     {
         std::string str;
         str += IsCoinBase()? "Coinbase" : (IsCoinStake()? "Coinstake" : "CTransaction");
-        str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%" PRIszu ", vout.size=%" PRIszu ", nLockTime=%d)\n",
+        str += strprintf("(hash=%s, nTime=%d, ver=%d, vin.size=%u, vout.size=%u, nLockTime=%d)\n",
             GetHash().ToString().substr(0,10).c_str(),
             nTime,
             nVersion,
@@ -1106,7 +1110,7 @@ public:
 
     void print() const
     {
-        printf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%" PRIszu ", vchBlockSig=%s)\n",
+        printf("CBlock(hash=%s, ver=%d, hashPrevBlock=%s, hashMerkleRoot=%s, nTime=%u, nBits=%08x, nNonce=%u, vtx=%lu, vchBlockSig=%s)\n",
             GetHash().ToString().c_str(),
             nVersion,
             hashPrevBlock.ToString().c_str(),

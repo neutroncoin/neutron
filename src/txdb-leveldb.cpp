@@ -18,6 +18,7 @@
 #include "checkpoints.h"
 #include "txdb.h"
 #include "util.h"
+#include "utiltime.h"
 #include "main.h"
 
 using namespace std;

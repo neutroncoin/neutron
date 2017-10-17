@@ -6,7 +6,7 @@ DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd
 CONFIG += thread
 CONFIG += static
-CONFIG += c++14
+CONFIG += c++11
 
 greaterThan(QT_MAJOR_VERSION, 4) {
     QT += widgets
@@ -153,8 +153,14 @@ HEADERS += src/qt/bitcoingui.h \
     src/checkpoints.h \
     src/compat.h \
     src/coincontrol.h \
+    src/random.h \
+    src/streams.h \
     src/sync.h \
     src/util.h \
+    src/utilmoneystr.h \
+    src/utilstrencodings.h \
+    src/utiltime.h \
+    src/timedata.h \
     src/uint256.h \
     src/kernel.h \
     src/scrypt.h \
@@ -246,9 +252,14 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/qt/editaddressdialog.cpp \
     src/qt/bitcoinaddressvalidator.cpp \
     src/alert.cpp \
-    src/version.cpp \
+    src/clientversion.cpp \
+    src/random.cpp \
     src/sync.cpp \
     src/util.cpp \
+    src/utilmoneystr.cpp \
+    src/utilstrencodings.cpp \
+    src/utiltime.cpp \
+    src/timedata.cpp \
     src/netbase.cpp \
     src/key.cpp \
     src/script.cpp \
@@ -467,6 +478,7 @@ contains(USE_UPNP, -) {
 
 windows:DEFINES += WIN32
 windows:RC_FILE = src/qt/res/bitcoin-qt.rc
+windows:RC_DEFINES = WINDRES_PREPROC
 
 windows:!contains(MINGW_THREAD_BUGFIX, 0) {
     # At least qmake's win32-g++-cross profile is missing the -lmingwthrd

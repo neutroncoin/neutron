@@ -18,6 +18,7 @@
 #include <string>
 #include <vector>
 #include "bignum.h"
+#include "hash.h"
 #include "key.h"
 #include "script.h"
 
@@ -409,7 +410,7 @@ public:
             vchData.push_back(1);
     }
 
-    
+
 
 
     CSecret GetSecret(bool &fCompressedOut)

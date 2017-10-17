@@ -2,6 +2,7 @@
 #include "ui_loggerpage.h"
 #include "guiutil.h"
 #include "sync.h"
+#include "utiltime.h"
 
 LoggerPage::LoggerPage(QWidget *parent) :
     QWidget(parent),

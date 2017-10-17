@@ -17,6 +17,7 @@ using namespace std;
 #include <fstream>
 #include <exception>
 #include "Zerocoin.h"
+#include "../streams.h"
 #include "../util.h"
 
 using namespace libzerocoin;
@@ -364,11 +365,11 @@ Test_MintAndSpend()
 
 		// See if we can verify the deserialized proof (return our result)
 		bool ret =  newSpend.Verify(acc, m);
-		
+
 		// Extract the serial number
 		Bignum serialNumber = newSpend.getCoinSerialNumber();
 		gSerialNumberSize = ceil((double)serialNumber.bitSize() / 8.0);
-		
+
 		return ret;
 	} catch (runtime_error &e) {
 		printf("MintAndSpend exception %s\n", e.what());

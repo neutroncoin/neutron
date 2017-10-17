@@ -8,6 +8,7 @@
 #include "sync.h"
 #include "ui_interface.h"
 #include "util.h"
+#include "utiltime.h"
 
 #include <boost/foreach.hpp>
 

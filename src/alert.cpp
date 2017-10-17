@@ -9,6 +9,7 @@
 #include <map>
 
 #include "alert.h"
+#include "hash.h"
 #include "key.h"
 #include "net.h"
 #include "sync.h"
@@ -56,8 +57,8 @@ std::string CUnsignedAlert::ToString() const
     return strprintf(
         "CAlert(\n"
         "    nVersion     = %d\n"
-        "    nRelayUntil  = %" PRId64 "\n"
-        "    nExpiration  = %" PRId64 "\n"
+        "    nRelayUntil  = %d\n"
+        "    nExpiration  = %d\n"
         "    nID          = %d\n"
         "    nCancel      = %d\n"
         "    setCancel    = %s\n"

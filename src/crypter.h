@@ -5,6 +5,7 @@
 #define __CRYPTER_H__
 
 #include "allocators.h" /* for SecureString */
+#include "hash.h"
 #include "key.h"
 #include "serialize.h"
 
