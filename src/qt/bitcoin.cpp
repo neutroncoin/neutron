@@ -1,15 +1,17 @@
-/*
- * W.J. van der Laan 2011-2012
- */
+// Copyright (c) 2011-2016 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "bitcoingui.h"
+
 #include "clientmodel.h"
-#include "walletmodel.h"
-#include "optionsmodel.h"
 #include "guiutil.h"
 #include "guiconstants.h"
-
 #include "init.h"
+#include "networkstyle.h"
+#include "optionsmodel.h"
 #include "ui_interface.h"
+#include "walletmodel.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -108,6 +110,67 @@ static void handleRunawayException(std::exception *e)
     QMessageBox::critical(0, "Runaway exception", BitcoinGUI::tr("A fatal error occurred. Neutron can no longer continue safely and will quit.") + QString("\n\n") + QString::fromStdString(strMiscWarning));
     exit(1);
 }
+
+
+/** Main Neutron application object */
+class BitcoinApplication : public QApplication
+{
+    Q_OBJECT
+public:
+    explicit BitcoinApplication(int& argc, char** argv);
+    ~BitcoinApplication();
+
+#ifdef ENABLE_WALLET
+    /// Create payment server
+    void createPaymentServer();
+#endif
+    /// Create options model
+    void createOptionsModel();
+    /// Create main window
+    void createWindow(const NetworkStyle* networkStyle);
+    /// Create splash screen
+    void createSplashScreen(const NetworkStyle* networkStyle);
+
+    /// Request core initialization
+    void requestInitialize();
+    /// Request core shutdown
+    void requestShutdown();
+
+    /// Get process return value
+    int getReturnValue() { return returnValue; }
+
+    /// Get window identifier of QMainWindow (BitcoinGUI)
+    WId getMainWinId() const;
+
+public slots:
+    void initializeResult(int retval);
+    void shutdownResult(int retval);
+    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
+    void handleRunawayException(const QString& message);
+
+signals:
+    void requestedInitialize();
+    void requestedRestart(QStringList args);
+    void requestedShutdown();
+    void stopThread();
+    void splashFinished(QWidget* window);
+
+private:
+    QThread* coreThread;
+    OptionsModel* optionsModel;
+    ClientModel* clientModel;
+    BitcoinGUI* window;
+    QTimer* pollShutdownTimer;
+#ifdef ENABLE_WALLET
+    PaymentServer* paymentServer;
+    WalletModel* walletModel;
+#endif
+    int returnValue;
+
+    void startThread();
+};
+
+
 
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
