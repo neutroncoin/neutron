@@ -432,14 +432,14 @@ static std::string FormatException(std::exception* pex, const char* pszThread)
 void PrintException(std::exception* pex, const char* pszThread)
 {
     std::string message = FormatException(pex, pszThread);
-    printf("\n\n************************\n%s\n", message.c_str());
+    LogPrintf("\n\n************************\n%s\n", message.c_str());
     fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
     strMiscWarning = message;
     throw;
 }
 
 void LogStackTrace() {
-    printf("\n\n******* exception encountered *******\n");
+    LogPrintf("\n\n******* exception encountered *******\n");
     if (fileout)
     {
 #ifndef WIN32
@@ -454,7 +454,7 @@ void LogStackTrace() {
 void PrintExceptionContinue(std::exception* pex, const char* pszThread)
 {
     std::string message = FormatException(pex, pszThread);
-    printf("\n\n************************\n%s\n", message.c_str());
+    LogPrintf("\n\n************************\n%s\n", message.c_str());
     fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
     strMiscWarning = message;
 }
@@ -497,7 +497,7 @@ const boost::filesystem::path &GetDataDir(bool fNetSpecific)
 
     fs::path &path = pathCached[fNetSpecific];
 
-    // This can be called during exceptions by printf, so we cache the
+    // This can be called during exceptions by LogPrintf, so we cache the
     // value so we don't have to do memory allocations after that.
     if (cachedPath[fNetSpecific])
         return path;
@@ -635,7 +635,7 @@ boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate)
         return fs::path(pszPath);
     }
 
-    printf("SHGetSpecialFolderPathA() failed, could not obtain requested path.\n");
+    LogPrintf("SHGetSpecialFolderPathA() failed, could not obtain requested path.\n");
     return fs::path("");
 }
 #endif
@@ -644,7 +644,7 @@ void runCommand(std::string strCommand)
 {
     int nErr = ::system(strCommand.c_str());
     if (nErr)
-        printf("runCommand error: system(%s) returned %d\n", strCommand.c_str(), nErr);
+        LogPrintf("runCommand error: system(%s) returned %d\n", strCommand.c_str(), nErr);
 }
 
 void RenameThread(const char* name)
@@ -674,7 +674,7 @@ bool NewThread(void(*pfn)(void*), void* parg)
     {
         boost::thread(pfn, parg); // thread detaches when out of scope
     } catch(boost::thread_resource_error &e) {
-        printf("Error creating thread: %s\n", e.what());
+        LogPrintf("Error creating thread: %s\n", e.what());
         return false;
     }
     return true;
