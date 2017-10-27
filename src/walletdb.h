@@ -65,7 +65,7 @@ public:
 
     CAdrenalineNodeConfig()
     {
-	nVersion = 0;
+        nVersion = 0;
     }
 
     IMPLEMENT_SERIALIZE(
@@ -73,7 +73,7 @@ public:
         READWRITE(sAlias);
         READWRITE(sAddress);
         READWRITE(sCollateralAddress);
-	READWRITE(sMasternodePrivKey);
+        READWRITE(sMasternodePrivKey);
     )
 };
 

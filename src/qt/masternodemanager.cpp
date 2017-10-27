@@ -94,7 +94,7 @@ void MasternodeManager::on_tableWidget_2_itemSelectionChanged()
         ui->getConfigButton->setEnabled(true);
         ui->startButton->setEnabled(true);
         ui->stopButton->setEnabled(true);
-	ui->copyAddressButton->setEnabled(true);
+    ui->copyAddressButton->setEnabled(true);
     }
 }
 
@@ -179,26 +179,26 @@ void MasternodeManager::updateNodeList()
     {
         // populate list
         // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
-	    QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
-	    QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
+        QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
+        QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
         QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
-	    QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(seconds_to_DHMS((qint64)(mn.lastTimeSeen - mn.now)));
-	    QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat(mn.lastTimeSeen)));
+        QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(seconds_to_DHMS((qint64)(mn.lastTimeSeen - mn.now)));
+        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat(mn.lastTimeSeen)));
 
-	    CScript pubkey;
+        CScript pubkey;
         pubkey =GetScriptForDestination(mn.pubkey.GetID());
         CTxDestination address1;
         ExtractDestination(pubkey, address1);
         CBitcoinAddress address2(address1);
-	    QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
 
         ui->tableWidget->insertRow(0);
-	    ui->tableWidget->setItem(0, 0, addressItem);
-	    ui->tableWidget->setItem(0, 1, rankItem);
-	    ui->tableWidget->setItem(0, 2, activeItem);
-	    ui->tableWidget->setItem(0, 3, activeSecondsItem);
-	    ui->tableWidget->setItem(0, 4, lastSeenItem);
-	    ui->tableWidget->setItem(0, 5, pubkeyItem);
+        ui->tableWidget->setItem(0, 0, addressItem);
+        ui->tableWidget->setItem(0, 1, rankItem);
+        ui->tableWidget->setItem(0, 2, activeItem);
+        ui->tableWidget->setItem(0, 3, activeSecondsItem);
+        ui->tableWidget->setItem(0, 4, lastSeenItem);
+        ui->tableWidget->setItem(0, 5, pubkeyItem);
     }
 
     ui->countLabel->setText(QString::number(ui->tableWidget->rowCount()));
@@ -366,16 +366,16 @@ void MasternodeManager::on_startAllButton_clicked()
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {
         CAdrenalineNodeConfig c = adrenaline.second;
-	std::string errorMessage;
+    std::string errorMessage;
         bool result = activeMasternode.RegisterByPubKey(c.sAddress, c.sMasternodePrivKey, c.sCollateralAddress, errorMessage);
-	if(result)
-	{
-   	    results += c.sAddress + ": STARTED\n";
-	}
-	else
-	{
-	    results += c.sAddress + ": ERROR: " + errorMessage + "\n";
-	}
+    if(result)
+    {
+        results += c.sAddress + ": STARTED\n";
+    }
+    else
+    {
+        results += c.sAddress + ": ERROR: " + errorMessage + "\n";
+    }
     }
 
     QMessageBox msg;
@@ -391,16 +391,16 @@ void MasternodeManager::on_stopAllButton_clicked()
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {
         CAdrenalineNodeConfig c = adrenaline.second;
-	std::string errorMessage;
+    std::string errorMessage;
         bool result = activeMasternode.StopMasterNode(c.sAddress, c.sMasternodePrivKey, errorMessage);
-	if(result)
-	{
-   	    results += c.sAddress + ": STOPPED\n";
-	}
-	else
-	{
-	    results += c.sAddress + ": ERROR: " + errorMessage + "\n";
-	}
+    if(result)
+    {
+        results += c.sAddress + ": STOPPED\n";
+    }
+    else
+    {
+        results += c.sAddress + ": ERROR: " + errorMessage + "\n";
+    }
     }
 
     QMessageBox msg;
