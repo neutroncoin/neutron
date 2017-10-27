@@ -32,6 +32,7 @@ public:
 
 public slots:
     void updateNodeList();
+    void updateMyNodeList();
     void updateAdrenalineNode(QString alias, QString addr, QString privkey, QString collateral);
 
 signals:
@@ -56,6 +57,7 @@ private slots:
     void on_stopAllButton_clicked();
     void on_removeButton_clicked();
     void on_tableWidget_2_itemSelectionChanged();
+    void on_UpdateButton_clicked();
 };
 
 #endif // MASTERNODEMANAGER_H
