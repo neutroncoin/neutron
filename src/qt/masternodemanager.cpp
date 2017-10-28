@@ -45,9 +45,8 @@ MasternodeManager::MasternodeManager(QWidget *parent) :
 
     timer = new QTimer(this);
     connect(timer, SIGNAL(timeout()), this, SLOT(updateMyNodeList()));
-    // connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
-
-    timer->start(30000);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
+    timer->start(30 * 1000); // 30 seconds
 
     updateMyNodeList();
     updateNodeList();
@@ -181,7 +180,7 @@ void MasternodeManager::updateNodeList()
         // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
         QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
         QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
-        QTableWidgetItem *rankItem = new QTableWidgetItem(QString::number(GetMasternodeRank(mn.vin, pindexBest->nHeight)));
+        QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(mn.protocolVersion));
         QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(seconds_to_DHMS((qint64)(mn.lastTimeSeen - mn.now)));
         QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat(mn.lastTimeSeen)));
 
@@ -194,7 +193,7 @@ void MasternodeManager::updateNodeList()
 
         ui->tableWidget->insertRow(0);
         ui->tableWidget->setItem(0, 0, addressItem);
-        ui->tableWidget->setItem(0, 1, rankItem);
+        ui->tableWidget->setItem(0, 1, protocolItem);
         ui->tableWidget->setItem(0, 2, activeItem);
         ui->tableWidget->setItem(0, 3, activeSecondsItem);
         ui->tableWidget->setItem(0, 4, lastSeenItem);
@@ -202,7 +201,7 @@ void MasternodeManager::updateNodeList()
     }
 
     ui->countLabel->setText(QString::number(ui->tableWidget->rowCount()));
-    ui->tableWidget->setSortingEnabled(false);
+    ui->tableWidget->setSortingEnabled(true);
 }
 
 
