@@ -118,6 +118,9 @@ public:
     boost::signals2::signal<void (const uint256 &hash, ChangeType status)> NotifyAlertChanged;
 
     boost::signals2::signal<void (CAdrenalineNodeConfig nodeConfig)> NotifyAdrenalineNodeChanged;
+
+    /** Show progress e.g. for verifychain */
+    boost::signals2::signal<void(const std::string& title, int nProgress)> ShowProgress;
 };
 
 extern CClientUIInterface uiInterface;

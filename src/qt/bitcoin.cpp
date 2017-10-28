@@ -1,16 +1,17 @@
-/*
- * W.J. van der Laan 2011-2012
- */
+// Copyright (c) 2011-2016 The Bitcoin Core developers
+// Distributed under the MIT software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "bitcoingui.h"
+
 #include "clientmodel.h"
-#include "walletmodel.h"
-#include "optionsmodel.h"
 #include "guiutil.h"
 #include "guiconstants.h"
-
 #include "init.h"
+#include "networkstyle.h"
+#include "optionsmodel.h"
 #include "ui_interface.h"
-#include "qtipcserver.h"
+#include "walletmodel.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -110,12 +111,79 @@ static void handleRunawayException(std::exception *e)
     exit(1);
 }
 
+
+/** Main Neutron application object */
+class BitcoinApplication : public QApplication
+{
+    Q_OBJECT
+public:
+    explicit BitcoinApplication(int& argc, char** argv);
+    ~BitcoinApplication();
+
+#ifdef ENABLE_WALLET
+    /// Create payment server
+    void createPaymentServer();
+#endif
+    /// Create options model
+    void createOptionsModel();
+    /// Create main window
+    void createWindow(const NetworkStyle* networkStyle);
+    /// Create splash screen
+    void createSplashScreen(const NetworkStyle* networkStyle);
+
+    /// Request core initialization
+    void requestInitialize();
+    /// Request core shutdown
+    void requestShutdown();
+
+    /// Get process return value
+    int getReturnValue() { return returnValue; }
+
+    /// Get window identifier of QMainWindow (BitcoinGUI)
+    WId getMainWinId() const;
+
+public slots:
+    void initializeResult(int retval);
+    void shutdownResult(int retval);
+    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
+    void handleRunawayException(const QString& message);
+
+signals:
+    void requestedInitialize();
+    void requestedRestart(QStringList args);
+    void requestedShutdown();
+    void stopThread();
+    void splashFinished(QWidget* window);
+
+private:
+    QThread* coreThread;
+    OptionsModel* optionsModel;
+    ClientModel* clientModel;
+    BitcoinGUI* window;
+    QTimer* pollShutdownTimer;
+#ifdef ENABLE_WALLET
+    PaymentServer* paymentServer;
+    WalletModel* walletModel;
+#endif
+    int returnValue;
+
+    void startThread();
+};
+
+
+
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
 {
-    // Do this early as we don't want to bother initializing if we are just calling IPC
-    ipcScanRelay(argc, argv);
+    SetupEnvironment();
 
+    /// 1. Parse command-line options. These take precedence over anything else.
+    // Command-line options take precedence:
+    ParseParameters(argc, argv);
+
+    // Do not refer to data directory yet, this can be overridden by Intro::pickDataDirectory
+
+    /// 2. Basic Qt initialization (not dependent on parameters or configuration)
 #if QT_VERSION < 0x050000
     // Internal string conversion is all UTF-8
     QTextCodec::setCodecForTr(QTextCodec::codecForName("UTF-8"));
@@ -241,9 +309,6 @@ int main(int argc, char *argv[])
                 {
                     window.show();
                 }
-
-                // Place this here as guiref has to be defined if we don't want to lose URIs
-                ipcInit(argc, argv);
 
                 app.exec();
 

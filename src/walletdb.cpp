@@ -437,13 +437,13 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
             ssValue >> pwallet->nOrderPosNext;
         }
         else if (strType == "adrenaline")
-	{
-	    std::string sAlias;
-	    ssKey >> sAlias;
-	    CAdrenalineNodeConfig adrenalineNodeConfig;
-	    ssValue >> adrenalineNodeConfig;
-	    pwallet->mapMyAdrenalineNodes.insert(make_pair(sAlias, adrenalineNodeConfig));
-	}
+    {
+        std::string sAlias;
+        ssKey >> sAlias;
+        CAdrenalineNodeConfig adrenalineNodeConfig;
+        ssValue >> adrenalineNodeConfig;
+        pwallet->mapMyAdrenalineNodes.insert(make_pair(sAlias, adrenalineNodeConfig));
+    }
     } catch (...)
     {
         return false;

@@ -134,37 +134,100 @@ windows:QMAKE_CXXFLAGS_WARN_ON += -Wno-cpp -Wno-maybe-uninitialized
 
 # Input
 DEPENDPATH += src src/json src/qt
-HEADERS += src/qt/bitcoingui.h \
-    src/qt/transactiontablemodel.h \
-    src/qt/addresstablemodel.h \
-    src/qt/optionsdialog.h \
-    src/qt/coincontroldialog.h \
-    src/qt/coincontroltreewidget.h \
-    src/qt/sendcoinsdialog.h \
-    src/qt/addressbookpage.h \
-    src/qt/signverifymessagedialog.h \
-    src/qt/aboutdialog.h \
-    src/qt/editaddressdialog.h \
-    src/qt/bitcoinaddressvalidator.h \
-    src/alert.h \
+
+HEADERS += src/activemasternode.h \
     src/addrman.h \
+    src/alert.h \
+    src/allocators.h \
     src/base58.h \
     src/bignum.h \
+    src/bitcoinrpc.h \
     src/checkpoints.h \
+    src/clientversion.h \
+    src/crypter.h \
     src/compat.h \
     src/coincontrol.h \
+    src/darksend.h \
+    src/db.h \
+    src/init.h \
+    src/kernel.h \
+    src/key.h \
+    src/keystore.h \
+    src/main.h \
+    src/masternode.h \
+    src/miner.h \
+    src/mruset.h \
+    src/net.h \
+    src/netbase.h \
+    src/pbkdf2.h \
+    src/protocol.h \
     src/random.h \
+    src/script.h \
+    src/scrypt.h \
+    src/serialize.h \
+    src/spork.h \
     src/streams.h \
+    src/strlcpy.h \
     src/sync.h \
+    src/timedata.h \
+    src/txdb.h \
+    src/uint256.h \
+    src/ui_interface.h \
     src/util.h \
     src/utilmoneystr.h \
     src/utilstrencodings.h \
     src/utiltime.h \
-    src/timedata.h \
-    src/uint256.h \
-    src/kernel.h \
-    src/scrypt.h \
-    src/pbkdf2.h \
+    src/version.h \
+    src/wallet.h \
+    src/walletdb.h \
+    src/json/json_spirit.h \
+    src/json/json_spirit_error_position.h \
+    src/json/json_spirit_reader_template.h \
+    src/json/json_spirit_reader.h \
+    src/json/json_spirit_stream_reader.h \
+    src/json/json_spirit_value.h \
+    src/json/json_spirit_utils.h \
+    src/json/json_spirit_writer_template.h \
+    src/json/json_spirit_writer.h \
+    src/qt/aboutdialog.h \
+    src/qt/addeditadrenalinenode.h \
+    src/qt/addressbookpage.h \
+    src/qt/addresstablemodel.h \
+    src/qt/adrenalinenodeconfigdialog.h \
+    src/qt/askpassphrasedialog.h \
+    src/qt/bitcoinaddressvalidator.h \
+    src/qt/bitcoinamountfield.h \
+    src/qt/bitcoingui.h \
+    src/qt/bitcoinunits.h \
+    src/qt/clientmodel.h \
+    src/qt/coincontroldialog.h \
+    src/qt/coincontroltreewidget.h \
+    src/qt/csvmodelwriter.h \
+    src/qt/editaddressdialog.h \
+    src/qt/guiutil.h \
+    src/qt/guiconstants.h \
+    src/qt/loggerpage.h \
+    src/qt/masternodemanager.h \
+    src/qt/monitoreddatamapper.h \
+    src/qt/networkstyle.h \
+    src/qt/notificator.h \
+    src/qt/optionsdialog.h \
+    src/qt/optionsmodel.h \
+    src/qt/overviewpage.h \
+    src/qt/qvalidatedlineedit.h \
+    src/qt/qvaluecombobox.h \
+    src/qt/rpcconsole.h \
+    src/qt/sendcoinsdialog.h \
+    src/qt/sendcoinsentry.h \
+    src/qt/signverifymessagedialog.h \
+    src/qt/splashscreen.h \
+    src/qt/transactiondesc.h \
+    src/qt/transactiondescdialog.h \
+    src/qt/transactionfilterproxy.h \
+    src/qt/transactionrecord.h \
+    src/qt/transactiontablemodel.h \
+    src/qt/transactionview.h \
+    src/qt/walletmodel.h \
     src/zerocoin/Accumulator.h \
     src/zerocoin/AccumulatorProofOfKnowledge.h \
     src/zerocoin/Coin.h \
@@ -175,82 +238,9 @@ HEADERS += src/qt/bitcoingui.h \
     src/zerocoin/SerialNumberSignatureOfKnowledge.h \
     src/zerocoin/SpendMetaData.h \
     src/zerocoin/ZeroTest.h \
-    src/zerocoin/Zerocoin.h \
-    src/serialize.h \
-    src/strlcpy.h \
-    src/main.h \
-    src/miner.h \
-    src/net.h \
-    src/key.h \
-    src/db.h \
-    src/txdb.h \
-    src/walletdb.h \
-    src/script.h \
-    src/init.h \
-    src/mruset.h \
-    src/json/json_spirit_writer_template.h \
-    src/json/json_spirit_writer.h \
-    src/json/json_spirit_value.h \
-    src/json/json_spirit_utils.h \
-    src/json/json_spirit_stream_reader.h \
-    src/json/json_spirit_reader_template.h \
-    src/json/json_spirit_reader.h \
-    src/json/json_spirit_error_position.h \
-    src/json/json_spirit.h \
-    src/qt/clientmodel.h \
-    src/qt/guiutil.h \
-    src/qt/transactionrecord.h \
-    src/qt/guiconstants.h \
-    src/qt/loggerpage.h \
-    src/qt/optionsmodel.h \
-    src/qt/monitoreddatamapper.h \
-    src/qt/transactiondesc.h \
-    src/qt/transactiondescdialog.h \
-    src/qt/bitcoinamountfield.h \
-    src/wallet.h \
-    src/keystore.h \
-    src/qt/transactionfilterproxy.h \
-    src/qt/transactionview.h \
-    src/qt/walletmodel.h \
-    src/bitcoinrpc.h \
-    src/qt/overviewpage.h \
-    src/qt/csvmodelwriter.h \
-    src/crypter.h \
-    src/qt/sendcoinsentry.h \
-    src/qt/qvalidatedlineedit.h \
-    src/qt/bitcoinunits.h \
-    src/qt/qvaluecombobox.h \
-    src/qt/askpassphrasedialog.h \
-    src/protocol.h \
-    src/qt/notificator.h \
-    src/qt/qtipcserver.h \
-    src/allocators.h \
-    src/ui_interface.h \
-    src/qt/rpcconsole.h \
-    src/version.h \
-    src/netbase.h \
-    src/clientversion.h \
-    src/masternode.h \
-    src/darksend.h \
-    src/activemasternode.h \
-    src/spork.h \
-    src/qt/addeditadrenalinenode.h \
-    src/qt/adrenalinenodeconfigdialog.h \
-    src/qt/masternodemanager.h
+    src/zerocoin/Zerocoin.h
 
-SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
-    src/qt/transactiontablemodel.cpp \
-    src/qt/addresstablemodel.cpp \
-    src/qt/optionsdialog.cpp \
-    src/qt/sendcoinsdialog.cpp \
-    src/qt/coincontroldialog.cpp \
-    src/qt/coincontroltreewidget.cpp \
-    src/qt/addressbookpage.cpp \
-    src/qt/loggerpage.cpp \
-    src/qt/signverifymessagedialog.cpp \
-    src/qt/aboutdialog.cpp \
-    src/qt/editaddressdialog.cpp \
-    src/qt/bitcoinaddressvalidator.cpp \
+SOURCES += src/qt/bitcoin.cpp \
     src/alert.cpp \
     src/clientversion.cpp \
     src/random.cpp \
@@ -270,21 +260,6 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/checkpoints.cpp \
     src/addrman.cpp \
     src/db.cpp \
-    src/walletdb.cpp \
-    src/qt/clientmodel.cpp \
-    src/qt/guiutil.cpp \
-    src/qt/transactionrecord.cpp \
-    src/qt/optionsmodel.cpp \
-    src/qt/monitoreddatamapper.cpp \
-    src/qt/transactiondesc.cpp \
-    src/qt/transactiondescdialog.cpp \
-    src/qt/bitcoinstrings.cpp \
-    src/qt/bitcoinamountfield.cpp \
-    src/wallet.cpp \
-    src/keystore.cpp \
-    src/qt/transactionfilterproxy.cpp \
-    src/qt/transactionview.cpp \
-    src/qt/walletmodel.cpp \
     src/bitcoinrpc.cpp \
     src/rpcdump.cpp \
     src/rpcnet.cpp \
@@ -292,18 +267,11 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/rpcwallet.cpp \
     src/rpcblockchain.cpp \
     src/rpcrawtransaction.cpp \
-    src/qt/overviewpage.cpp \
-    src/qt/csvmodelwriter.cpp \
+    src/wallet.cpp \
+    src/keystore.cpp \
     src/crypter.cpp \
-    src/qt/sendcoinsentry.cpp \
-    src/qt/qvalidatedlineedit.cpp \
-    src/qt/bitcoinunits.cpp \
-    src/qt/qvaluecombobox.cpp \
-    src/qt/askpassphrasedialog.cpp \
+    src/walletdb.cpp \
     src/protocol.cpp \
-    src/qt/notificator.cpp \
-    src/qt/qtipcserver.cpp \
-    src/qt/rpcconsole.cpp \
     src/noui.cpp \
     src/kernel.cpp \
     src/scrypt-arm.S \
@@ -311,6 +279,51 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/scrypt-x86_64.S \
     src/scrypt.cpp \
     src/pbkdf2.cpp \
+    src/masternode.cpp \
+    src/darksend.cpp \
+    src/rpcdarksend.cpp \
+    src/activemasternode.cpp \
+    src/spork.cpp \
+    src/masternodeconfig.cpp \
+    src/qt/aboutdialog.cpp \
+    src/qt/addeditadrenalinenode.cpp \
+    src/qt/addressbookpage.cpp \
+    src/qt/addresstablemodel.cpp \
+    src/qt/adrenalinenodeconfigdialog.cpp \
+    src/qt/askpassphrasedialog.cpp \
+    src/qt/bitcoinaddressvalidator.cpp \
+    src/qt/bitcoinamountfield.cpp \
+    src/qt/bitcoingui.cpp \
+    src/qt/bitcoinstrings.cpp \
+    src/qt/bitcoinunits.cpp \
+    src/qt/clientmodel.cpp \
+    src/qt/coincontroldialog.cpp \
+    src/qt/coincontroltreewidget.cpp \
+    src/qt/csvmodelwriter.cpp \
+    src/qt/editaddressdialog.cpp \
+    src/qt/guiutil.cpp \
+    src/qt/loggerpage.cpp \
+    src/qt/masternodemanager.cpp \
+    src/qt/monitoreddatamapper.cpp \
+    src/qt/networkstyle.cpp \
+    src/qt/notificator.cpp \
+    src/qt/optionsdialog.cpp \
+    src/qt/optionsmodel.cpp \
+    src/qt/overviewpage.cpp \
+    src/qt/qvalidatedlineedit.cpp \
+    src/qt/qvaluecombobox.cpp \
+    src/qt/rpcconsole.cpp \
+    src/qt/sendcoinsdialog.cpp \
+    src/qt/sendcoinsentry.cpp \
+    src/qt/splashscreen.cpp \
+    src/qt/signverifymessagedialog.cpp \
+    src/qt/transactiondesc.cpp \
+    src/qt/transactiondescdialog.cpp \
+    src/qt/transactionfilterproxy.cpp \
+    src/qt/transactionrecord.cpp \
+    src/qt/transactiontablemodel.cpp \
+    src/qt/transactionview.cpp \
+    src/qt/walletmodel.cpp \
     src/zerocoin/Accumulator.cpp \
     src/zerocoin/AccumulatorProofOfKnowledge.cpp \
     src/zerocoin/Coin.cpp \
@@ -320,16 +333,7 @@ SOURCES += src/qt/bitcoin.cpp src/qt/bitcoingui.cpp \
     src/zerocoin/Params.cpp \
     src/zerocoin/SerialNumberSignatureOfKnowledge.cpp \
     src/zerocoin/SpendMetaData.cpp \
-    src/zerocoin/ZeroTest.cpp \
-    src/masternode.cpp \
-    src/darksend.cpp \
-    src/rpcdarksend.cpp \
-    src/activemasternode.cpp \
-    src/spork.cpp \
-    src/masternodeconfig.cpp \
-    src/qt/addeditadrenalinenode.cpp \
-    src/qt/adrenalinenodeconfigdialog.cpp \
-    src/qt/masternodemanager.cpp
+    src/zerocoin/ZeroTest.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc

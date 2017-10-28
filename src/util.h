@@ -149,6 +149,7 @@ extern bool fNoListen;
 extern bool fLogTimestamps;
 extern volatile bool fReopenDebugLog;
 
+void SetupEnvironment();
 
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);
