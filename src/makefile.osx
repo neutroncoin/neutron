@@ -4,20 +4,34 @@
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 # Mac OS X makefile for Neutron
-# Originally by Laszlo Hanyecz (solar@heliacal.net)
 
 CXX=llvm-g++
-DEPSDIR=/opt/local
+DEPSDIR=/usr/local/opt
+
+BOOST_LIB_PATH = /usr/local/Cellar/boost/1.58.0/lib
+BOOST_INCLUDE_PATH = /usr/local/Cellar/boost/1.58.0/include
+BDB_LIB_PATH = $(DEPSDIR)/berkeley-db@4/lib
+BDB_INCLUDE_PATH = $(DEPSDIR)/berkeley-db@4/include
+MINIUPNPC_LIB_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/lib
+MINIUPNPC_INCLUDE_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/include
+OPENSSL_LIB_PATH = /usr/local/Cellar/openssl/1.0.2k/lib
+OPENSSL_INCLUDE_PATH = /usr/local/Cellar/openssl/1.0.2k/include
+ZLIB_LIB_PATH = $(DEPSDIR)/zlib/lib
+ZLIB_INCLUDE_PATH = $(DEPSDIR)/zlib/include
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
- -I"$(CURDIR)"/obj \
- -I"$(DEPSDIR)/include" \
- -I"$(DEPSDIR)/include/db48"
+ -I"$(CURDIR)/obj" \
+ -I"$(BOOST_INCLUDE_PATH)" \
+ -I"$(BDB_INCLUDE_PATH)" \
+ -I"$(MINIUPNPC_INCLUDE_PATH)" \
+ -I"$(OPENSSL_INCLUDE_PATH)"
 
 LIBPATHS= \
- -L"$(DEPSDIR)/lib" \
- -L"$(DEPSDIR)/lib/db48"
+ -L"$(BOOST_LIB_PATH)" \
+ -L"$(BDB_LIB_PATH)" \
+ -L"$(MINIUPNPC_LIB_PATH)" \
+ -L"$(OPENSSL_LIB_PATH)"
 
 USE_UPNP:=1
 
@@ -25,16 +39,19 @@ LIBS= -dead_strip
 
 ifdef STATIC
 # Build STATIC if you are redistributing the neutrond binary
+$(info Using static linking)
+# $(info $$var is [${var}])
 LIBS += \
- $(DEPSDIR)/lib/db48/libdb_cxx-4.8.a \
- $(DEPSDIR)/lib/libboost_system-mt.a \
- $(DEPSDIR)/lib/libboost_filesystem-mt.a \
- $(DEPSDIR)/lib/libboost_program_options-mt.a \
- $(DEPSDIR)/lib/libboost_thread-mt.a \
- $(DEPSDIR)/lib/libssl.a \
- $(DEPSDIR)/lib/libcrypto.a \
- $(DEPSDIR)/lib/libz.a
+ $(BDB_LIB_PATH)/libdb_cxx-4.8.a \
+ $(BOOST_LIB_PATH)/libboost_system-mt.a \
+ $(BOOST_LIB_PATH)/libboost_filesystem-mt.a \
+ $(BOOST_LIB_PATH)/libboost_program_options-mt.a \
+ $(BOOST_LIB_PATH)/libboost_thread-mt.a \
+ $(OPENSSL_LIB_PATH)/libssl.a \
+ $(OPENSSL_LIB_PATH)/libcrypto.a \
+ $(ZLIB_LIB_PATH)/libz.a
 else
+$(info Using dynamic linking)
 LIBS += \
  -ldb_cxx-4.8 \
  -lboost_system-mt \
@@ -52,13 +69,12 @@ ifdef RELEASE
 # Compile for maximum compatibility and smallest size.
 # This requires that dependencies are compiled
 # the same way.
-CFLAGS = -mmacosx-version-min=10.7 -arch x86_64 -O3 -msse2
+CFLAGS = -mmacosx-version-min=10.10 -arch x86_64 -O3 -msse2
 else
 CFLAGS = -g -msse2
 endif
 
-# ppc doesn't work because we don't support big-endian
-CFLAGS += -std=c++11 -Wall -Wextra -Wformat -Wformat-security -Wno-unused-parameter \
+CFLAGS += -stdlib=libc++ -std=c++11 -Wall -Wextra -Wno-unused-local-typedefs -Wformat -Wformat-security -Wno-unused-parameter \
     $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
 
 OBJS= \
@@ -122,7 +138,7 @@ endif
 ifneq (${USE_UPNP}, -)
 	DEFS += -DUSE_UPNP=$(USE_UPNP)
 ifdef STATIC
-	LIBS += $(DEPSDIR)/lib/libminiupnpc.a
+	LIBS += $(MINIUPNPC_LIB_PATH)/libminiupnpc.a
 else
 	LIBS += -lminiupnpc
 endif
