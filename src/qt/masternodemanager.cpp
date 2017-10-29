@@ -89,11 +89,11 @@ void MasternodeManager::on_tableWidget_2_itemSelectionChanged()
 {
     if(ui->tableWidget_2->selectedItems().count() > 0)
     {
-        ui->editButton->setEnabled(true);
+        ui->editButton->setEnabled(false);
         ui->getConfigButton->setEnabled(true);
         ui->startButton->setEnabled(true);
         ui->stopButton->setEnabled(true);
-    ui->copyAddressButton->setEnabled(true);
+        ui->copyAddressButton->setEnabled(true);
     }
 }
 
