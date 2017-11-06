@@ -23,6 +23,7 @@
 #include "activemasternode.h"
 #include "spork.h"
 #include "darksend.h"
+#include "masternodeconfig.h"
 
 #ifndef WIN32
 #include <signal.h>
@@ -541,12 +542,17 @@ bool AppInit2()
     LogPrintf("Used data directory %s\n", strDataDir.c_str());
     std::ostringstream strErrors;
 
+    if (mapArgs.count("-sporkkey"))
+    {
+        if (!sporkManager.SetPrivKey(GetArg("-sporkkey", "")))
+            return InitError(_("Unable to sign spork message, wrong key?"));
+    }
+
     if (mapArgs.count("-masternodepaymentskey")) // masternode payments priv key
     {
         if (!masternodePayments.SetPrivKey(GetArg("-masternodepaymentskey", "")))
             return InitError(_("Unable to sign masternode payment winner, wrong key?"));
-        if (!sporkManager.SetPrivKey(GetArg("-masternodepaymentskey", "")))
-            return InitError(_("Unable to sign spork message, wrong key?"));
+
     }
 
     //ignore masternodes below protocol version
@@ -906,6 +912,10 @@ bool AppInit2()
 
     if (!CheckDiskSpace())
         return false;
+
+    string mnConfErr = "";
+    if (!masternodeConfig.read(mnConfErr))
+        return InitError("Masternode Conf Error: " + mnConfErr);
 
     fMasterNode = GetBoolArg("-masternode", false);
     if(fMasterNode) {

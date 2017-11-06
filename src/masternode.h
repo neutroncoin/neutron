@@ -41,6 +41,8 @@ class uint256;
 #define MASTERNODE_EXPIRATION_SECONDS          (65*60)
 #define MASTERNODE_REMOVAL_SECONDS             (70*60)
 
+#define MASTERNODE_BLOCK_OFFSET                50
+
 using namespace std;
 
 class CMasternodePaymentWinner;
@@ -105,7 +107,7 @@ public:
         protocolVersion = protocolVersionIn;
     }
 
-    uint256 CalculateScore(int mod=1, int64_t nBlockHeight=0);
+    uint256 CalculateScore(unsigned int nBlockHeight);
 
     void UpdateLastSeen(int64_t override=0)
     {
