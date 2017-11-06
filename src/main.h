@@ -76,6 +76,7 @@ static const int64_t MAX_MONEY = 50000000000 * COIN;
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
 static const string DEVELOPER_ADDRESS = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
+static const string DEVELOPER_ADDRESS_TESTNET = "mnZP88spijp7AxRvdr7hvJfK6HRCphcsXa";
 static const int64_t DEVELOPER_PAYMENT = 3 * CENT; //3% of reward
 
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
@@ -169,6 +170,8 @@ void ResendWalletTransactions(bool fForce = false);
 
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue);
+int64_t GetDeveloperPayment(int64_t nBlockValue);
+CScript GetDeveloperScript();
 bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree,
                         bool* pfMissingInputs);
 int GetInputAge(CTxIn& vin);

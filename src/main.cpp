@@ -1878,7 +1878,6 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString().substr(0,10).c_str());
 
         int64_t nCalculatedStakeReward = GetProofOfStakeReward(nCoinAge, nFees, pindex->nHeight);
-        int64_t nRequiredDevPmt = nCalculatedStakeReward * DEVELOPER_PAYMENT / COIN;
 
         if (pindex->nHeight > 17901 && nStakeReward > nCalculatedStakeReward)
             return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
@@ -1917,7 +1916,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             //Check developer payment
             bool fDeveloperAddress = false;
             bool fDeveloperPaid = false;
-            CScript scriptDev = GetScriptForDestination(CBitcoinAddress(DEVELOPER_ADDRESS).Get());
+            CScript scriptDev = GetDeveloperScript();
+            int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             for (const CTxOut out : vtx[1].vout) {
                 if (out.nValue == nRequiredDevPmt)
                     fDeveloperPaid = true;
@@ -4276,9 +4276,20 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
     return true;
 }
 
+CScript GetDeveloperScript()
+{
+    string strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET : DEVELOPER_ADDRESS;
+    return GetScriptForDestination(CBitcoinAddress(strAddress).Get());
+}
+
+int64_t GetDeveloperPayment(int64_t nBlockValue)
+{
+    return nBlockValue * DEVELOPER_PAYMENT / COIN;
+}
+
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
 {
-    int64_t ret = blockValue * 0.66; //66%
+    int64_t nDeveloperPayment = GetDeveloperPayment(blockValue);
+    return (blockValue - nDeveloperPayment) * 66 / 100; //66%
 
-    return ret;
 }
