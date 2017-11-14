@@ -153,7 +153,7 @@ Value spork(const Array& params, bool fHelp)
         }
 
         // SPORK VALUE
-        int64_t nValue = params[1].get_int();
+        int64_t nValue = boost::lexical_cast<int64_t>(params[1].get_str());
 
         //broadcast new spork
         if(sporkManager.UpdateSpork(nSporkID, nValue)){

@@ -219,7 +219,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         }
 
         if (sigTime <= GetAdjustedTime() - 60 * 60) {
-            LogPrintf("dseep - Signature rejected, too far into the past %s - %d %d \n", vin.ToString().c_str(), sigTime, GetAdjustedTime());
+            LogPrintf("dseep - Signature rejected, too far into the past %s - %ld %ld \n", vin.ToString().c_str(), sigTime, GetAdjustedTime());
             return;
         }
 
@@ -437,7 +437,7 @@ int GetCurrentMasterNode(int mod, int64_t nBlockHeight, int minProtocol)
         }
 
         // calculate the score for each masternode
-        uint256 n = mn.CalculateScore(mod, nBlockHeight);
+        uint256 n = mn.CalculateScore(nBlockHeight);
         unsigned int n2 = 0;
         memcpy(&n2, &n, sizeof(n2));
 
@@ -468,7 +468,7 @@ int GetMasternodeByRank(int findRank, int64_t nBlockHeight, int minProtocol)
             continue;
         }
 
-        uint256 n = mn.CalculateScore(1, nBlockHeight);
+        uint256 n = mn.CalculateScore(nBlockHeight);
         unsigned int n2 = 0;
         memcpy(&n2, &n, sizeof(n2));
 
@@ -500,7 +500,7 @@ int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
             continue;
         }
 
-        uint256 n = mn.CalculateScore(1, nBlockHeight);
+        uint256 n = mn.CalculateScore(nBlockHeight);
         unsigned int n2 = 0;
         memcpy(&n2, &n, sizeof(n2));
 
@@ -523,39 +523,17 @@ int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
 //Get the last hash that matches the modulus given. Processed in reverse order
 bool GetBlockHash(uint256& hash, int nBlockHeight)
 {
-    if (pindexBest == NULL) return false;
+    if (pindexBest == NULL || nBlockHeight < 0 || nBlockHeight > nBestHeight) {
+        LogPrintf("%s : failed to get block %d\n", __func__, nBlockHeight);
+        return false;
+    }
 
     if(nBlockHeight == 0)
         nBlockHeight = pindexBest->nHeight;
 
-    if(mapCacheBlockHashes.count(nBlockHeight)){
-        hash = mapCacheBlockHashes[nBlockHeight];
-        return true;
-    }
+    hash = FindBlockByHeight(nBlockHeight)->GetBlockHash();
 
-    const CBlockIndex *BlockLastSolved = pindexBest;
-    const CBlockIndex *BlockReading = pindexBest;
-
-    if (BlockLastSolved == NULL || BlockLastSolved->nHeight == 0 || pindexBest->nHeight+1 < nBlockHeight) return false;
-
-    int nBlocksAgo = 0;
-    if(nBlockHeight > 0) nBlocksAgo = (pindexBest->nHeight+1)-nBlockHeight;
-    assert(nBlocksAgo >= 0);
-
-    int n = 0;
-    for (unsigned int i = 1; BlockReading && BlockReading->nHeight > 0; i++) {
-        if(n >= nBlocksAgo){
-            hash = BlockReading->GetBlockHash();
-            mapCacheBlockHashes[nBlockHeight] = hash;
-            return true;
-        }
-        n++;
-
-        if (BlockReading->pprev == NULL) { assert(BlockReading); break; }
-        BlockReading = BlockReading->pprev;
-    }
-
-    return false;
+    return true;
 }
 
 //
@@ -563,14 +541,20 @@ bool GetBlockHash(uint256& hash, int nBlockHeight)
 // the proof of work for that block. The further away they are the better, the furthest will win the election
 // and get paid this block
 //
-uint256 CMasterNode::CalculateScore(int mod, int64_t nBlockHeight)
+uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
 {
-    if(pindexBest == NULL) return 0;
+    if(pindexBest == NULL) {
+        LogPrintf("%s : pindexbest is null\n", __func__);
+        return 0;
+    }
 
     uint256 hash = 0;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
 
-    if(!GetBlockHash(hash, nBlockHeight)) return 0;
+    if(!GetBlockHash(hash, nBlockHeight - MASTERNODE_BLOCK_OFFSET)) {
+        LogPrintf("%s : failed to get blockhash\n", __func__);
+        return 0;
+    }
 
     uint256 hash2 = Hash(BEGIN(hash), END(hash));
     uint256 hash3 = Hash(BEGIN(hash), END(aux));
@@ -655,20 +639,6 @@ bool CMasternodePayments::Sign(CMasternodePaymentWinner& winner)
     return true;
 }
 
-uint64_t CMasternodePayments::CalculateScore(uint256 blockHash, CTxIn& vin)
-{
-    uint256 n1 = blockHash;
-    uint256 n2 = Hash(BEGIN(n1), END(n1));
-    uint256 n3 = Hash(BEGIN(vin.prevout.hash), END(vin.prevout.hash));
-    uint256 n4 = n3 > n2 ? (n3 - n2) : (n2 - n3);
-
-    //LogPrintf(" -- CMasternodePayments CalculateScore() n2 = %d \n", n2.Get64());
-    //LogPrintf(" -- CMasternodePayments CalculateScore() n3 = %d \n", n3.Get64());
-    //LogPrintf(" -- CMasternodePayments CalculateScore() n4 = %d \n", n4.Get64());
-
-    return n4.Get64();
-}
-
 bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 {
     BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
@@ -695,13 +665,8 @@ bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
 
 bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerIn)
 {
-    uint256 blockHash = 0;
-    if(!GetBlockHash(blockHash, winnerIn.nBlockHeight-576)) {
-        return false;
-    }
-
-    winnerIn.score = CalculateScore(blockHash, winnerIn.vin);
-
+    //check to see if there is already a winner set for this block.
+    //if a winner is set, compare scores and update if new winner is higher score
     bool foundBlock = false;
     BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
         if(winner.nBlockHeight == winnerIn.nBlockHeight) {
@@ -719,6 +684,7 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
 
     // if it's not in the vector
     if(!foundBlock){
+        LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
         vWinning.push_back(winnerIn);
         mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
 
@@ -745,57 +711,67 @@ void CMasternodePayments::CleanPaymentList()
     }
 }
 
-bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+bool CMasternodePayments::AddBlock(int nBlockHeight)
 {
-    LOCK(cs_masternodes);
-    if(!enabled) return false;
     CMasternodePaymentWinner winner;
+    {
+        LOCK(cs_masternodes);
+        // scan for winner
+        unsigned int score = 0;
+        for(CMasterNode mn : vecMasternodes) {
+            mn.Check();
 
-    std::vector<CTxIn> vecLastPayments;
-    int c = 0;
-    BOOST_REVERSE_FOREACH(CMasternodePaymentWinner& winner, vWinning){
-        vecLastPayments.push_back(winner.vin);
-        //if we have one full payment cycle, break
-        if(++c > (int)vecMasternodes.size()) break;
-    }
+            if(!mn.IsEnabled()) {
+                continue;
+            }
 
-    std::random_shuffle ( vecMasternodes.begin(), vecMasternodes.end() );
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
-        bool found = false;
-        BOOST_FOREACH(CTxIn& vin, vecLastPayments)
-            if(mn.vin == vin) found = true;
+            // calculate the score for each masternode
+            uint256 nScore_256 = mn.CalculateScore(nBlockHeight);
+            unsigned int n2 = static_cast<unsigned int>(nScore_256.Get64());
 
-        if(found) continue;
-
-        mn.Check();
-        if(!mn.IsEnabled()) {
-            continue;
+            // determine the winner
+            if(n2 > score) {
+                score = n2;
+                winner.score = n2;
+                winner.nBlockHeight = nBlockHeight;
+                winner.vin = mn.vin;
+                winner.payee = GetScriptForDestination(mn.pubkey.GetID());
+            }
         }
-
-        winner.score = 0;
-        winner.nBlockHeight = nBlockHeight;
-        winner.vin = mn.vin;
-        winner.payee =GetScriptForDestination(mn.pubkey.GetID());
-
-        break;
     }
 
     //if we can't find someone to get paid, pick randomly
     if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0) {
+        LogPrintf("%s : using random mn as winner\n", __func__);
         winner.score = 0;
         winner.nBlockHeight = nBlockHeight;
-        winner.vin = vecMasternodes[0].vin;
-        winner.payee =GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
+
+        int nHeightOffset = nBlockHeight;
+        if (nHeightOffset > vecMasternodes.size() - 1)
+            nHeightOffset = (vecMasternodes.size() - 1) % nHeightOffset;
+        winner.vin = vecMasternodes[nHeightOffset].vin;
+        winner.payee = GetScriptForDestination(vecMasternodes[nHeightOffset].pubkey.GetID());
     }
 
-    if(Sign(winner)){
-        if(AddWinningMasternode(winner)){
-            Relay(winner);
-            return true;
+    if (AddWinningMasternode(winner)) {
+        if (enabled) {
+            if (Sign(winner))
+                Relay(winner);
         }
+        return true;
     }
-
     return false;
+}
+
+bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+{
+    if (vecMasternodes.empty())
+        return false;
+
+    for (int i = nBlockHeight + 1; i < nBlockHeight + 20; i++)
+        AddBlock(i);
+
+   return true;
 }
 
 void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
