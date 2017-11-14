@@ -1913,9 +1913,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             }
 
             if (!fCorrectNodePaid && IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT)) {
-                return DoS(100, error("ConnectBlock() : Stake does not pay correct masternode"));
+                return DoS(100, error("ConnectBlock() : Stake does not pay correct masternode:%s", payee.ToString()));
             } else {
-                LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED", payee.ToString());
+                LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED\n", payee.ToString());
             }
 
             if (!fValidPayment && IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT))
@@ -1924,18 +1924,17 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             //Check developer payment
             bool fDeveloperAddress = false;
             bool fDeveloperPaid = false;
+            bool fValidDevPmt = false;
             CScript scriptDev = GetDeveloperScript();
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             for (const CTxOut out : vtx[1].vout) {
-                if (out.nValue == nRequiredDevPmt)
-                    fDeveloperPaid = true;
-                if (out.scriptPubKey == scriptDev)
-                    fDeveloperAddress = true;
+                if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev)
+                    fValidDevPmt = true;
             }
 
-            if (!fDeveloperPaid || !fDeveloperAddress) {
+            if (!fValidDevPmt) {
                 if (IsSporkActive(SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT))
-                    return DoS(100, error("ConnectBlock() : Block does not pay %s to developer address", FormatMoney(nRequiredDevPmt).c_str()));
+                    return DoS(100, error("ConnectBlock() : Block fails to pay correct dev pmt of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
                 else
                     LogPrintf("ConnectBlock() : Block does not pay %s to developer address - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
             }
@@ -1976,7 +1975,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         SyncWithWallets(tx, this, true);
 
     if (!IsInitialBlockDownload())
-        masternodePayments.ProcessBlock(pindex->nHeight);
+        masternodePayments.AddBlock(pindex->nHeight + 1);
 
     return true;
 }

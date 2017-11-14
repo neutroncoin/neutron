@@ -523,8 +523,10 @@ int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
 //Get the last hash that matches the modulus given. Processed in reverse order
 bool GetBlockHash(uint256& hash, int nBlockHeight)
 {
-    if (pindexBest == NULL || nBlockHeight < 0 || nBlockHeight > nBestHeight)
+    if (pindexBest == NULL || nBlockHeight < 0 || nBlockHeight > nBestHeight) {
+        LogPrintf("%s : failed to get block %d\n", __func__, nBlockHeight);
         return false;
+    }
 
     if(nBlockHeight == 0)
         nBlockHeight = pindexBest->nHeight;
@@ -541,12 +543,18 @@ bool GetBlockHash(uint256& hash, int nBlockHeight)
 //
 uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
 {
-    if(pindexBest == NULL) return 0;
+    if(pindexBest == NULL) {
+        LogPrintf("%s : pindexbest is null\n", __func__);
+        return 0;
+    }
 
     uint256 hash = 0;
     uint256 aux = vin.prevout.hash + vin.prevout.n;
 
-    if(!GetBlockHash(hash, nBlockHeight - MASTERNODE_BLOCK_OFFSET)) return 0;
+    if(!GetBlockHash(hash, nBlockHeight - MASTERNODE_BLOCK_OFFSET)) {
+        LogPrintf("%s : failed to get blockhash\n", __func__);
+        return 0;
+    }
 
     uint256 hash2 = Hash(BEGIN(hash), END(hash));
     uint256 hash3 = Hash(BEGIN(hash), END(aux));
@@ -676,7 +684,7 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
 
     // if it's not in the vector
     if(!foundBlock){
-        LogPrintf("AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
+        LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
         vWinning.push_back(winnerIn);
         mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
 
@@ -705,17 +713,6 @@ void CMasternodePayments::CleanPaymentList()
 
 bool CMasternodePayments::AddBlock(int nBlockHeight)
 {
-    {
-        LOCK(cs_masternodes);
-
-        std::vector<CTxIn> vecLastPayments;
-        int c = 0;
-        BOOST_REVERSE_FOREACH(CMasternodePaymentWinner &winner, vWinning) {
-                        vecLastPayments.push_back(winner.vin);
-                        //if we have one full payment cycle, break
-                        if(++c > (int) vecMasternodes.size()) break;
-                    }
-    }
     CMasternodePaymentWinner winner;
     {
         LOCK(cs_masternodes);
@@ -729,26 +726,31 @@ bool CMasternodePayments::AddBlock(int nBlockHeight)
             }
 
             // calculate the score for each masternode
-            uint256 n = mn.CalculateScore(nBlockHeight);
-            unsigned int n2 = 0;
-            memcpy(&n2, &n, sizeof(n2));
+            uint256 nScore_256 = mn.CalculateScore(nBlockHeight);
+            unsigned int n2 = static_cast<unsigned int>(nScore_256.Get64());
 
             // determine the winner
             if(n2 > score) {
+                score = n2;
                 winner.score = n2;
-                winner.nBlockHeight = nBlockHeight + MASTERNODE_BLOCK_OFFSET;
-                winner.vin = vecMasternodes[0].vin;
-                winner.payee = GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
+                winner.nBlockHeight = nBlockHeight;
+                winner.vin = mn.vin;
+                winner.payee = GetScriptForDestination(mn.pubkey.GetID());
             }
         }
     }
 
     //if we can't find someone to get paid, pick randomly
     if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0) {
+        LogPrintf("%s : using random mn as winner\n", __func__);
         winner.score = 0;
-        winner.nBlockHeight = nBlockHeight + MASTERNODE_BLOCK_OFFSET;
-        winner.vin = vecMasternodes[0].vin;
-        winner.payee = GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
+        winner.nBlockHeight = nBlockHeight;
+
+        int nHeightOffset = nBlockHeight;
+        if (nHeightOffset > vecMasternodes.size() - 1)
+            nHeightOffset = (vecMasternodes.size() - 1) % nHeightOffset;
+        winner.vin = vecMasternodes[nHeightOffset].vin;
+        winner.payee = GetScriptForDestination(vecMasternodes[nHeightOffset].pubkey.GetID());
     }
 
     if (AddWinningMasternode(winner)) {
@@ -763,28 +765,13 @@ bool CMasternodePayments::AddBlock(int nBlockHeight)
 
 bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
-    //See if there is a winner assigned for the next block
-    bool fFound = false;
-    for (CMasternodePaymentWinner winner : vWinning) {
-        if (winner.nBlockHeight - MASTERNODE_BLOCK_OFFSET == nBlockHeight) {
-            fFound = true;
-            break;
-        }
-    }
-
-    //If there is no winner for the current block, then populate the list
-    if (!fFound) {
-        for (int i = nBlockHeight - MASTERNODE_BLOCK_OFFSET - 1; i < nBlockHeight; i++) {
-            if (!AddBlock(i))
-                return false;
-        }
-    }
-
-    //Add the block that is actually being processed
-    if (!AddBlock(nBlockHeight))
+    if (vecMasternodes.empty())
         return false;
 
-    return true;
+    for (int i = nBlockHeight + 1; i < nBlockHeight + 20; i++)
+        AddBlock(i);
+
+   return true;
 }
 
 void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
