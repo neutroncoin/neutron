@@ -1890,13 +1890,18 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             CScript payee;
             bool fMasternodePaid = false;
             bool fCorrectNodePaid = false;
-            if (masternodePayments.GetBlockPayee(pindexBest->nHeight, payee)){
+            bool fValidPayment = false;
+            if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)){
                 // check coinstake tx for masternode payment
                 for (const CTxOut out : vtx[1].vout) {
                     if(out.nValue == nPaymentRequired)
                         fMasternodePaid = true;
                     if (out.scriptPubKey == payee)
                         fCorrectNodePaid = true;
+                    if (out.nValue == nPaymentRequired && out.scriptPubKey == payee) {
+                        fValidPayment = true;
+                        break;
+                    }
                 }
 
                 if (!fMasternodePaid) {
@@ -1910,8 +1915,11 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (!fCorrectNodePaid && IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT)) {
                 return DoS(100, error("ConnectBlock() : Stake does not pay correct masternode"));
             } else {
-                LogPrintf("ConnectBlock() : Stake does not pay correct masternode, NOT ENFORCED\n");
+                LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED", payee.ToString());
             }
+
+            if (!fValidPayment && IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT))
+                return DoS(100, error("ConnectBlock() : Masternode payment is not valid."));
 
             //Check developer payment
             bool fDeveloperAddress = false;
@@ -1967,7 +1975,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     BOOST_FOREACH(CTransaction& tx, vtx)
         SyncWithWallets(tx, this, true);
 
-    masternodePayments.ProcessBlock(pindex->nHeight);
+    if (!IsInitialBlockDownload())
+        masternodePayments.ProcessBlock(pindex->nHeight);
 
     return true;
 }

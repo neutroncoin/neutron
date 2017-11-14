@@ -306,6 +306,7 @@ static const CRPCCommand vRPCCommands[] =
     { "sendalert",              &sendalert,              false,  false},
     { "setgenerate",            &setgenerate,            true,   false },
     { "gethashespersec",        &gethashespersec,        true,   false },
+    { "getblockversionstats",   &getblockversionstats,   true,   false },
 /* Dark features */
     { "spork",                  &spork,                  false,      false },
     { "masternode",             &masternode,             false,      true },
@@ -1238,6 +1239,8 @@ Array RPCConvertValues(const std::string &strMethod, const std::vector<std::stri
     if (strMethod == "keypoolrefill"          && n > 0) ConvertTo<int64_t>(params[0]);
     if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
     if (strMethod == "setgenerate"            && n > 1) ConvertTo<int64_t>(params[1]);
+    if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[0]);
+    if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[1]);
 
     return params;
 }

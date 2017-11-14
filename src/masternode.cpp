@@ -703,7 +703,7 @@ void CMasternodePayments::CleanPaymentList()
     }
 }
 
-bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+bool CMasternodePayments::AddBlock(int nBlockHeight)
 {
     {
         LOCK(cs_masternodes);
@@ -736,7 +736,7 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
             // determine the winner
             if(n2 > score) {
                 winner.score = n2;
-                winner.nBlockHeight = nBlockHeight;
+                winner.nBlockHeight = nBlockHeight + MASTERNODE_BLOCK_OFFSET;
                 winner.vin = vecMasternodes[0].vin;
                 winner.payee = GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
             }
@@ -746,9 +746,9 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     //if we can't find someone to get paid, pick randomly
     if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0) {
         winner.score = 0;
-        winner.nBlockHeight = nBlockHeight;
+        winner.nBlockHeight = nBlockHeight + MASTERNODE_BLOCK_OFFSET;
         winner.vin = vecMasternodes[0].vin;
-        winner.payee =GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
+        winner.payee = GetScriptForDestination(vecMasternodes[0].pubkey.GetID());
     }
 
     if (AddWinningMasternode(winner)) {
@@ -759,6 +759,32 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
         return true;
     }
     return false;
+}
+
+bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+{
+    //See if there is a winner assigned for the next block
+    bool fFound = false;
+    for (CMasternodePaymentWinner winner : vWinning) {
+        if (winner.nBlockHeight - MASTERNODE_BLOCK_OFFSET == nBlockHeight) {
+            fFound = true;
+            break;
+        }
+    }
+
+    //If there is no winner for the current block, then populate the list
+    if (!fFound) {
+        for (int i = nBlockHeight - MASTERNODE_BLOCK_OFFSET - 1; i < nBlockHeight; i++) {
+            if (!AddBlock(i))
+                return false;
+        }
+    }
+
+    //Add the block that is actually being processed
+    if (!AddBlock(nBlockHeight))
+        return false;
+
+    return true;
 }
 
 void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)

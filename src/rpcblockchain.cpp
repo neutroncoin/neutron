@@ -1,5 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2017 The Neutron developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -305,4 +306,36 @@ Value getcheckpoint(const Array& params, bool fHelp)
         result.push_back(Pair("checkpointmaster", true));
 
     return result;
+}
+
+Value getblockversionstats(const Array& params, bool fHelp) {
+    if (fHelp || params.size() != 2)
+        throw runtime_error(
+                "getblockversionstats <version #> <blocks to count>\n"
+                        "Return how many of the last n blocks have the version # specified\n");
+
+    int nVersion = params[0].get_int();
+    int nBlocks = params[1].get_int();
+
+    int nTotal = 0;
+    CBlockIndex* pindex = FindBlockByHeight(nBestHeight - nBlocks + 1);
+    while (true) {
+        if (pindex->nVersion == nVersion)
+            ++nTotal;
+
+        if (pindex->pnext)
+            pindex = pindex->pnext;
+        else
+            break;
+    }
+
+    Object results;
+    results.emplace_back(Pair("total_with_version", nTotal));
+
+    double dPercent = 0;
+    if (nBlocks)
+        dPercent = static_cast<double>(nTotal) / static_cast<double>(nBlocks) * 100;
+    results.emplace_back(Pair("percent", dPercent));
+
+    return results;
 }

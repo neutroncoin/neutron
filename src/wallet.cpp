@@ -2395,13 +2395,8 @@ bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int
     if(bMasterNodePayment) {
         //spork
         if(!masternodePayments.GetBlockPayee(pindexPrev->nHeight+1, payee)){
-            int winningNode = GetCurrentMasterNode(1);
-                if(winningNode >= 0){
-                    payee =GetScriptForDestination(vecMasternodes[winningNode].pubkey.GetID());
-                } else {
-                    return error("CreateCoinStake: Failed to detect masternode to pay\n");
-                    hasPayment = false;
-                }
+            hasPayment = false;
+            LogPrintf("CreateCoinStake: Failed to detect masternode to pay for block %d\n", pindexPrev->nHeight+1);
         }
     }
 
