@@ -2459,8 +2459,8 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 
 bool CBlock::AcceptBlock()
 {
-    if (nVersion > CURRENT_VERSION)
-        return DoS(100, error("AcceptBlock() : reject unknown block version %d", nVersion));
+    if (fTestNet && nVersion > CURRENT_VERSION)
+        return DoS(10, error("AcceptBlock() : reject unknown block version %d", nVersion));
 
     // Check for duplicate
     uint256 hash = GetHash();
