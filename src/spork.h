@@ -24,6 +24,7 @@ using namespace boost;
 #define SPORK_3_REPLAY_BLOCKS                                 10003
 #define SPORK_4_MASTERNODE_WINNER_ENFORCEMENT                 10004
 #define SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT                10005
+#define SPORK_6_PAYMENT_ENFORCEMENT_DOS_VALUE                 10006
 
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       4070908800 //OFF
@@ -31,6 +32,7 @@ using namespace boost;
 #define SPORK_3_REPLAY_BLOCKS_DEFAULT                         0
 #define SPORK_4_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         4070908800 //OFF
 #define SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT_DEFAULT        4070908800 //OFF
+#define SPORK_6_PAYMENT_ENFORCEMENT_DOS_VALUE_DEFAULT         0          //By default do not add to peer banscore
 
 class CSporkMessage;
 class CSporkManager;
