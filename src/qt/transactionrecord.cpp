@@ -27,6 +27,7 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     int64_t nTime = wtx.GetTxTime();
     int64_t nCredit = wtx.GetCredit(true);
     int64_t nDebit = wtx.GetDebit();
+    int64_t nOut = wtx.GetValueOut();
     int64_t nNet = nCredit - nDebit;
     uint256 hash = wtx.GetHash(), hashPrev = 0;
     std::map<std::string, std::string> mapValue = wtx.mapValue;
@@ -69,7 +70,16 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                         continue; // last coinstake output
 
                     sub.type = TransactionRecord::Generated;
-                    sub.credit = nNet > 0 ? nNet : txout.nValue - nDebit;
+                    if (nNet > 0) {
+                        sub.credit = nNet;
+                    } else {
+                        // masternode reward
+                        sub.credit = txout.nValue - nDebit;
+                        if (sub.credit < 0) {
+                            // stake reward
+                            sub.credit = wtx.GetValueOut() - nDebit;
+                        }
+                    }
                     hashPrev = hash;
                 }
 
@@ -148,16 +158,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
             //
             parts.append(TransactionRecord(hash, nTime, TransactionRecord::Other, "", nNet, 0));
         }
-    }
-
-    if (strncmp(wtx.GetHash().ToString().c_str(), "05f1569c58f119b858f733e30e6c25c0b993a29167685432a52f7e76fe5e5dc0", wtx.GetHash().ToString().size()) == 0) {
-        // do nothing
-        wtx.print();
-    }
-
-    if (strncmp(wtx.GetHash().ToString().c_str(), "1096974279443dd615f46bc18d8e4c034bc65913659fc17eb6a11cbdf21efa03", wtx.GetHash().ToString().size()) == 0) {
-        // do nothing
-        wtx.print();
     }
 
     return parts;
