@@ -569,7 +569,7 @@ void CMasterNode::Check()
     //once spent, stop doing the checks
     if(enabled==3) return;
 
-    //Only accept port 9999 for mainnet
+    //Only accept p2p port for mainnet and testnet
     if (addr.GetPort() != GetDefaultPort()) {
         enabled = 3;
         return;

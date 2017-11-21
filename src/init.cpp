@@ -208,6 +208,8 @@ int main(int argc, char* argv[])
 
 bool static InitError(const std::string &str)
 {
+    LogPrintf("%s\n", str.c_str());
+    uiInterface.InitMessage(str);
     uiInterface.ThreadSafeMessageBox(str, _("Neutron"), CClientUIInterface::OK | CClientUIInterface::MODAL);
     return false;
 }
@@ -928,6 +930,11 @@ bool AppInit2()
             CService addrTest = CService(strMasterNodeAddr);
             if (!addrTest.IsValid()) {
                 return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
+            }
+
+            if (addrTest.GetPort() != GetDefaultPort())  {
+                std::string errorMessage = strprintf("Invalid -masternodeaddr port %u detected in neutron.conf (only %d is supported for mainnet)", addrTest.GetPort(), GetDefaultPort());
+                return InitError(errorMessage);
             }
         }
 
