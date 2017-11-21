@@ -569,6 +569,12 @@ void CMasterNode::Check()
     //once spent, stop doing the checks
     if(enabled==3) return;
 
+    //Only accept port 9999 for mainnet
+    if (addr.GetPort() != GetDefaultPort()) {
+        enabled = 3;
+        return;
+    }
+
 
     if(!UpdatedWithin(MASTERNODE_REMOVAL_SECONDS)){
         enabled = 4;
