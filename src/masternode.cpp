@@ -8,8 +8,6 @@
 #include <boost/lexical_cast.hpp>
 
 
-int CMasterNode::minProtoVersion = MIN_MN_PROTO_VERSION;
-
 CCriticalSection cs_masternodes;
 
 /** The list of active masternodes */
@@ -81,8 +79,8 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         strMessage = addr.ToString() + boost::lexical_cast<std::string>(sigTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(protocolVersion);
 
-        if(protocolVersion < MIN_MN_PROTO_VERSION) {
-            LogPrintf("dsee - ignoring outdated masternode %s protocol version %d\n", vin.ToString().c_str(), protocolVersion);
+        if(protocolVersion < ActiveProtocol()) {
+            LogPrintf("dsee - ignoring masternode %s using outdated protocol version %d\n", vin.ToString().c_str(), protocolVersion);
             return;
         }
 
@@ -427,11 +425,11 @@ int GetCurrentMasterNode(int mod, int64_t nBlockHeight, int minProtocol)
     unsigned int score = 0;
     int winner = -1;
     LOCK(cs_masternodes);
+
     // scan for winner
     BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
         mn.Check();
-        if(mn.protocolVersion < minProtocol) continue;
-        if(!mn.IsEnabled()) {
+        if(mn.protocolVersion < minProtocol || !mn.IsEnabled()) {
             i++;
             continue;
         }

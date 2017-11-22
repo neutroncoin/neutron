@@ -69,7 +69,6 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 class CMasterNode
 {
 public:
-	static int minProtoVersion;
     CService addr;
     CTxIn vin;
     int64_t lastTimeSeen;
@@ -159,11 +158,11 @@ public:
 
 
 // Get the current winner for this block
-int GetCurrentMasterNode(int mod=1, int64_t nBlockHeight=0, int minProtocol=CMasterNode::minProtoVersion);
+int GetCurrentMasterNode(int mod=1, int64_t nBlockHeight=0, int minProtocol=0);
 
 int GetMasternodeByVin(CTxIn& vin);
-int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight=0, int minProtocol=CMasterNode::minProtoVersion);
-int GetMasternodeByRank(int findRank, int64_t nBlockHeight=0, int minProtocol=CMasterNode::minProtoVersion);
+int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight=0, int minProtocol=0);
+int GetMasternodeByRank(int findRank, int64_t nBlockHeight=0, int minProtocol=0);
 
 
 // for storing the winning payments
