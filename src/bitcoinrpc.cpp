@@ -307,7 +307,7 @@ static const CRPCCommand vRPCCommands[] =
     { "setgenerate",            &setgenerate,            true,   false },
     { "gethashespersec",        &gethashespersec,        true,   false },
     { "getblockversionstats",   &getblockversionstats,   true,   false },
-/* Dark features */
+    /* Dark features */
     { "spork",                  &spork,                  false,      false },
     { "masternode",             &masternode,             false,      true },
 };
