@@ -84,7 +84,7 @@ static void InitMessage(const std::string &message)
 {
     if(splashref)
     {
-        splashref->showMessage(QString::fromStdString(message), Qt::AlignBottom|Qt::AlignHCenter, QColor(232,186,63));
+        splashref->showMessage(QString::fromStdString(message), Qt::AlignBottom|Qt::AlignHCenter, QColor(232,186,163));
         QApplication::instance()->processEvents();
     }
 }
@@ -170,7 +170,12 @@ private:
     void startThread();
 };
 
-
+void createSplashScreen()
+{
+    QSplashScreen* splash = new QSplashScreen(QPixmap(":/images/splash"), 0);
+    splash->show();
+    splashref = splash;
+}
 
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
@@ -266,11 +271,8 @@ int main(int argc, char *argv[])
         return 1;
     }
 
-    QSplashScreen splash(QPixmap(":/images/splash"), 0);
-    if (GetBoolArg("-splash", true) && !GetBoolArg("-min"))
-    {
-        splash.show();
-        splashref = &splash;
+    if (GetBoolArg("-splash", true) && !GetBoolArg("-min")) {
+        createSplashScreen();
     }
 
     app.processEvents();
@@ -292,7 +294,7 @@ int main(int argc, char *argv[])
                 // calling Shutdown().
 
                 if (splashref)
-                    splash.finish(&window);
+                    splashref->finish(&window);
 
                 ClientModel clientModel(&optionsModel);
                 WalletModel walletModel(pwalletMain, &optionsModel);
