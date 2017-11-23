@@ -22,13 +22,17 @@ using namespace boost;
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10000
 #define SPORK_2_MAX_VALUE                                     10002
 #define SPORK_3_REPLAY_BLOCKS                                 10003
-#define SPORK_4_NOTUSED                                       10004
+#define SPORK_4_MASTERNODE_WINNER_ENFORCEMENT                 10004
+#define SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT                10005
+#define SPORK_6_PAYMENT_ENFORCEMENT_DOS_VALUE                 10006
 
 
-#define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       2428537599  //2015-4-8 23:59:59 GMT
+#define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       4070908800 //OFF
 #define SPORK_2_MAX_VALUE_DEFAULT                             500        //500 NTRN 
 #define SPORK_3_REPLAY_BLOCKS_DEFAULT                         0
-#define SPORK_4_RECONVERGE_DEFAULT                            1420070400  //2047-1-1
+#define SPORK_4_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         4070908800 //OFF
+#define SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT_DEFAULT        4070908800 //OFF
+#define SPORK_6_PAYMENT_ENFORCEMENT_DOS_VALUE_DEFAULT         0          //By default do not add to peer banscore
 
 class CSporkMessage;
 class CSporkManager;
@@ -96,8 +100,8 @@ private:
 public:
 
     CSporkManager() {
-        strMainPubKey = "04a983220ea7a38a7106385003fef77896538a382a0dcc389cc45f3c98751d9af423a097789757556259351198a8aaa628a1fd644c3232678c5845384c744ff8d7";
-        strTestPubKey = "04a983220ea7a38a7106385003fef77896538a382a0dcc389cc45f3c98751d9af423a097789757556259351198a8aaa628a1fd644c3232678c5845384c744ff8d7";
+        strMainPubKey = "049137799e0a1b99f14bfccd350ad2904cd36d6d6597b50dbf35dd2e972ab5e233e3f4ba756990735e8e2a7e255cd82fd62c76d795ab596346ea62aaba79e8f111";
+        strTestPubKey = "046d427a68dd144226a8a17b20e2b4330e98e07bbfe1cbb75657b180b58a801dd8f86420d4bc781a3c6eb4ddec695dfee2b677f6b43c097610caa35a010cdff7ca";
     }
 
     std::string GetSporkNameByID(int id);

@@ -462,8 +462,8 @@ Value masternode(const Array& params, bool fHelp)
 
     if (strCommand == "winners")
     {
+        masternodePayments.ProcessBlock(nBestHeight);
         Object obj;
-
         for(int nHeight = pindexBest->nHeight-10; nHeight < pindexBest->nHeight+20; nHeight++)
         {
             CScript payee;
