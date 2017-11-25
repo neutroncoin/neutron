@@ -1891,7 +1891,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             bool fMasternodePaid = false;
             bool fCorrectNodePaid = false;
             bool fValidPayment = false;
-            int nDoS_PMTs = GetSporkValue(SPORK_6_PAYMENT_ENFORCEMENT_DOS_VALUE);
+            int nDoS_PMTs = sporkManager.GetSporkValue(SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE);
             if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)){
                 // check coinstake tx for masternode payment
                 for (const CTxOut out : vtx[1].vout) {
@@ -1906,7 +1906,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 }
 
                 if (!fMasternodePaid) {
-                    if (IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT))
+                    if (sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT))
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode"));
                 }
             } else {
@@ -1918,13 +1918,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 bool fPrintAddress = ExtractDestination(payee, dest);
                 CBitcoinAddress addressMN(dest);
 
-                if (IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT))
+                if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode:%s", fPrintAddress ? addressMN.ToString() : ""));
                 else
                     LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED\n", fPrintAddress ? addressMN.ToString() : "");
             }
 
-            if (!fValidPayment && IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && IsSporkActive(SPORK_4_MASTERNODE_WINNER_ENFORCEMENT))
+            if (!fValidPayment && sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
                 return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment is not valid."));
 
             //Check developer payment
@@ -1939,7 +1939,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             }
 
             if (!fValidDevPmt) {
-                if (IsSporkActive(SPORK_5_DEVELOPER_PAYMENTS_ENFORCEMENT))
+                if (sporkManager.IsSporkActive(SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT))
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Block fails to pay correct dev pmt of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
                 else
                     LogPrintf("ConnectBlock() : Block does not pay %s to developer address - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
@@ -4001,7 +4001,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)
 
         ProcessMessageDarksend(pfrom, strCommand, vRecv);
         ProcessMessageMasternode(pfrom, strCommand, vRecv);
-        ProcessSpork(pfrom, strCommand, vRecv);
+        sporkManager.ProcessSpork(pfrom, strCommand, vRecv);
 
         // Ignore unknown commands for extensibility
     }
@@ -4022,7 +4022,7 @@ int ActiveProtocol()
     // SPORK_7 is used for 70910. Nodes < 70910 don't see it and still get their protocol version via SPORK_14 and their
     // own ModifierUpgradeBlock()
 
-    if (IsSporkActive(SPORK_7_ENFORCE_NEW_PROTOCOL_V200))
+    if (sporkManager.IsSporkActive(SPORK_5_ENFORCE_NEW_PROTOCOL_V200))
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
 
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
