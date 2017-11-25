@@ -137,18 +137,23 @@ Value sendalert(const Array& params, bool fHelp)
 +*/
 Value spork(const Array& params, bool fHelp)
 {
-    if(params.size() == 1 && params[0].get_str() == "show"){
-        std::map<int, CSporkMessage>::iterator it = mapSporksActive.begin();
-
+    if (params.size() == 1 && params[0].get_str() == "show") {
         Object ret;
-        while(it != mapSporksActive.end()) {
-            ret.push_back(Pair(sporkManager.GetSporkNameByID(it->second.nSporkID), it->second.nValue));
-            it++;
+        for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
+            if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
+                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
         }
         return ret;
-    } else if (params.size() == 2){
+    } else if (params.size() == 1 && params[0].get_str() == "active") {
+        Object ret;
+        for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
+            if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
+                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
+        }
+        return ret;
+    } else if (params.size() == 2) {
         int nSporkID = sporkManager.GetSporkIDByName(params[0].get_str());
-        if(nSporkID == -1){
+        if (nSporkID == -1) {
             return "Invalid spork name";
         }
 
@@ -156,17 +161,17 @@ Value spork(const Array& params, bool fHelp)
         int64_t nValue = boost::lexical_cast<int64_t>(params[1].get_str());
 
         //broadcast new spork
-        if(sporkManager.UpdateSpork(nSporkID, nValue)){
+        if (sporkManager.UpdateSpork(nSporkID, nValue)) {
+            sporkManager.ExecuteSpork(nSporkID, nValue);
             return "success";
         } else {
             return "failure";
         }
-
     }
 
     throw runtime_error(
         "spork <name> [<value>]\n"
-        "<name> is the corresponding spork name, or 'show' to show all current spork settings"
-        "<value> is a epoch datetime to enable or disable spork"
-        + HelpRequiringPassphrase());
+        "<name> is the corresponding spork name, or 'show' to show all current spork settings, active to show which sporks are active"
+        "<value> is a epoch datetime to enable or disable spork" +
+        HelpRequiringPassphrase());
 }
