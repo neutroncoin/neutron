@@ -553,9 +553,12 @@ uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
         LogPrintf("%s : failed to get blockhash\n", __func__);
         return 0;
     }
+    CDataStream ss(SER_GETHASH, 0);
+    ss << hash;
+    uint256 hash2 = Hash(ss.begin(), ss.end());
 
-    uint256 hash2 = Hash(BEGIN(hash), END(hash));
-    uint256 hash3 = Hash(BEGIN(hash), END(aux));
+    ss << aux;
+    uint256 hash3 = Hash(ss.begin(), ss.end());
 
     uint256 r = (hash3 > hash2 ? hash3 - hash2 : hash2 - hash3);
 
