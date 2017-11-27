@@ -460,6 +460,7 @@ Value masternode(const Array& params, bool fHelp)
         return s.ToString();
     }
 
+    // masternode winners
     if (strCommand == "winners")
     {
         masternodePayments.ProcessBlock(nBestHeight);
