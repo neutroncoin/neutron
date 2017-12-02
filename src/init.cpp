@@ -917,7 +917,7 @@ bool AppInit2()
 
     fMasterNode = GetBoolArg("-masternode", false);
     if(fMasterNode) {
-        LogPrintf("IS DARKSEND MASTER NODE\n");
+        LogPrintf("IS NEUTRON MASTER NODE\n");
         strMasterNodeAddr = GetArg("-masternodeaddr", "");
 
         LogPrintf(" addr %s\n", strMasterNodeAddr.c_str());

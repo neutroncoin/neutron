@@ -318,12 +318,13 @@ void MasternodeManager::on_startButton_clicked()
 
     std::string errorMessage;
     bool result = activeMasternode.RegisterByPubKey(c.sAddress, c.sMasternodePrivKey, c.sCollateralAddress, errorMessage);
-
     QMessageBox msg;
-    if(result)
-        msg.setText("Adrenaline Node at " + QString::fromStdString(c.sAddress) + " started.");
-    else
+
+    if(result) {
+        msg.setText("Nucleus Node at " + QString::fromStdString(c.sAddress) + " started.");
+    } else {
         msg.setText("Error: " + QString::fromStdString(errorMessage));
+    }
 
     msg.exec();
 }
@@ -346,12 +347,11 @@ void MasternodeManager::on_stopButton_clicked()
     std::string errorMessage;
     bool result = activeMasternode.StopMasterNode(c.sAddress, c.sMasternodePrivKey, errorMessage);
     QMessageBox msg;
-    if(result)
-    {
-        msg.setText("Adrenaline Node at " + QString::fromStdString(c.sAddress) + " stopped.");
+
+    if(result) {
+        msg.setText("Nucleus Node at " + QString::fromStdString(c.sAddress) + " stopped.");
     }
-    else
-    {
+    else {
         msg.setText("Error: " + QString::fromStdString(errorMessage));
     }
     msg.exec();
@@ -365,16 +365,15 @@ void MasternodeManager::on_startAllButton_clicked()
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {
         CAdrenalineNodeConfig c = adrenaline.second;
-    std::string errorMessage;
+        std::string errorMessage;
         bool result = activeMasternode.RegisterByPubKey(c.sAddress, c.sMasternodePrivKey, c.sCollateralAddress, errorMessage);
-    if(result)
-    {
-        results += c.sAddress + ": STARTED\n";
-    }
-    else
-    {
-        results += c.sAddress + ": ERROR: " + errorMessage + "\n";
-    }
+
+        if(result) {
+            results += c.sAddress + ": STARTED\n";
+        }
+        else {
+            results += c.sAddress + ": ERROR: " + errorMessage + "\n";
+        }
     }
 
     QMessageBox msg;
@@ -386,20 +385,20 @@ void MasternodeManager::on_stopAllButton_clicked()
 {
     if (ui->tableWidget_2->rowCount() == 0)
         return;
+
     std::string results;
     BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
     {
         CAdrenalineNodeConfig c = adrenaline.second;
-    std::string errorMessage;
+        std::string errorMessage;
         bool result = activeMasternode.StopMasterNode(c.sAddress, c.sMasternodePrivKey, errorMessage);
-    if(result)
-    {
-        results += c.sAddress + ": STOPPED\n";
-    }
-    else
-    {
-        results += c.sAddress + ": ERROR: " + errorMessage + "\n";
-    }
+
+        if(result) {
+            results += c.sAddress + ": STOPPED\n";
+        }
+        else {
+            results += c.sAddress + ": ERROR: " + errorMessage + "\n";
+        }
     }
 
     QMessageBox msg;
