@@ -1248,8 +1248,6 @@ void MapPort()
 static const char *strDNSSeed[][2] = {
     {"presstab", "ntrnseed.presstab.pw" },
     {"fuzzbawls", "ntrn.seed.fuzzbawls.pw"},
-    {"198.24.142.136", "198.24.142.136" },
-    //{"archon.darkfox.id.au", "foxy.seeds.darkfox.id.au"},
 };
 
 void ThreadDNSAddressSeed(void* parg)
