@@ -16,7 +16,7 @@ void CActiveMasternode::ManageStatus()
 
     if(!fMasterNode) return;
 
-    if (fDebug) LogPrintf("CActiveMasternode::ManageStatus() - Begin\n");
+    LogPrintf("CActiveMasternode::ManageStatus() - Begin\n");
 
     //need correct adjusted time to send ping
     bool fIsInitialDownload = IsInitialBlockDownload();
@@ -45,12 +45,12 @@ void CActiveMasternode::ManageStatus()
         LogPrintf("CActiveMasternode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString().c_str());
 
 
-            if(!ConnectNode((CAddress)service, service.ToString().c_str())){
-                notCapableReason = "Could not connect to " + service.ToString();
-                status = MASTERNODE_NOT_CAPABLE;
-                LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
-                return;
-            }
+        if(!ConnectNode((CAddress)service, service.ToString().c_str())){
+            notCapableReason = "Could not connect to " + service.ToString();
+            status = MASTERNODE_NOT_CAPABLE;
+            LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());
+            return;
+        }
 
 
         if(pwalletMain->IsLocked()){
