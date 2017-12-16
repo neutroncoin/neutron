@@ -39,7 +39,7 @@ void CActiveMasternode::ManageStatus()
                 return;
             }
         } else {
-        	service = CService(strMasterNodeAddr);
+            service = CService(strMasterNodeAddr);
         }
 
         LogPrintf("CActiveMasternode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString().c_str());
@@ -89,85 +89,85 @@ void CActiveMasternode::ManageStatus()
 
             if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode))
             {
-            	LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-            	return;
+                LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+                return;
             }
 
             if(!Register(vin, service, keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage)) {
-            	LogPrintf("CActiveMasternode::ManageStatus() - Error on Register: %s\n", errorMessage.c_str());
+                LogPrintf("CActiveMasternode::ManageStatus() - Error on Register: %s\n", errorMessage.c_str());
             }
 
             return;
         } else {
-        	LogPrintf("CActiveMasternode::ManageStatus() - Could not find suitable coins!\n");
+            LogPrintf("CActiveMasternode::ManageStatus() - Could not find suitable coins!\n");
         }
     }
 
     //send to all peers
     if(!Dseep(errorMessage)) {
-    	LogPrintf("CActiveMasternode::ManageStatus() - Error on Ping: %s", errorMessage.c_str());
+        LogPrintf("CActiveMasternode::ManageStatus() - Error on Ping: %s", errorMessage.c_str());
     }
 }
 
 // Send stop dseep to network for remote masternode
 bool CActiveMasternode::StopMasterNode(std::string strService, std::string strKeyMasternode, std::string& errorMessage) {
-	CTxIn vin;
+    CTxIn vin;
     CKey keyMasternode;
     CPubKey pubKeyMasternode;
 
     if(!darkSendSigner.SetKey(strKeyMasternode, errorMessage, keyMasternode, pubKeyMasternode)) {
-    	LogPrintf("CActiveMasternode::StopMasterNode() - Error: %s\n", errorMessage.c_str());
-		return false;
-	}
+        LogPrintf("CActiveMasternode::StopMasterNode() - Error: %s\n", errorMessage.c_str());
+        return false;
+    }
 
-	return StopMasterNode(vin, CService(strService), keyMasternode, pubKeyMasternode, errorMessage);
+    return StopMasterNode(vin, CService(strService), keyMasternode, pubKeyMasternode, errorMessage);
 }
 
 // Send stop dseep to network for main masternode
 bool CActiveMasternode::StopMasterNode(std::string& errorMessage) {
-	if(status != MASTERNODE_IS_CAPABLE && status != MASTERNODE_REMOTELY_ENABLED) {
-		errorMessage = "masternode is not in a running status";
-    	LogPrintf("CActiveMasternode::StopMasterNode() - Error: %s\n", errorMessage.c_str());
-		return false;
-	}
+    if(status != MASTERNODE_IS_CAPABLE && status != MASTERNODE_REMOTELY_ENABLED) {
+        errorMessage = "masternode is not in a running status";
+        LogPrintf("CActiveMasternode::StopMasterNode() - Error: %s\n", errorMessage.c_str());
+        return false;
+    }
 
-	status = MASTERNODE_STOPPED;
+    status = MASTERNODE_STOPPED;
 
     CPubKey pubKeyMasternode;
     CKey keyMasternode;
 
     if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode))
     {
-    	LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-    	return false;
+        LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+        return false;
     }
 
-	return StopMasterNode(vin, service, keyMasternode, pubKeyMasternode, errorMessage);
+    return StopMasterNode(vin, service, keyMasternode, pubKeyMasternode, errorMessage);
 }
 
 // Send stop dseep to network for any masternode
 bool CActiveMasternode::StopMasterNode(CTxIn vin, CService service, CKey keyMasternode, CPubKey pubKeyMasternode, std::string& errorMessage) {
-   	pwalletMain->UnlockCoin(vin.prevout);
-	return Dseep(vin, service, keyMasternode, pubKeyMasternode, errorMessage, true);
+    pwalletMain->UnlockCoin(vin.prevout);
+    return Dseep(vin, service, keyMasternode, pubKeyMasternode, errorMessage, true);
 }
 
 bool CActiveMasternode::Dseep(std::string& errorMessage) {
-	if(status != MASTERNODE_IS_CAPABLE && status != MASTERNODE_REMOTELY_ENABLED) {
-		errorMessage = "masternode is not in a running status";
-    	LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", errorMessage.c_str());
-		return false;
-	}
+    if(status != MASTERNODE_IS_CAPABLE && status != MASTERNODE_REMOTELY_ENABLED) {
+        errorMessage = "masternode is not in a running status";
+        LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", errorMessage.c_str());
+        return false;
+    }
 
     CPubKey pubKeyMasternode;
     CKey keyMasternode;
 
     if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, keyMasternode, pubKeyMasternode))
     {
-    	LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-    	return false;
+        LogPrintf("Register::ManageStatus() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+        return false;
     }
 
-	return Dseep(vin, service, keyMasternode, pubKeyMasternode, errorMessage, false);
+    return Dseep(vin, service, keyMasternode, pubKeyMasternode, errorMessage, false);
 }
 
 bool CActiveMasternode::Dseep(CTxIn vin, CService service, CKey keyMasternode, CPubKey pubKeyMasternode, std::string &retErrorMessage, bool stop) {
@@ -179,14 +179,14 @@ bool CActiveMasternode::Dseep(CTxIn vin, CService service, CKey keyMasternode, C
     std::string strMessage = service.ToString() + boost::lexical_cast<std::string>(masterNodeSignatureTime) + boost::lexical_cast<std::string>(stop);
 
     if(!darkSendSigner.SignMessage(strMessage, errorMessage, vchMasterNodeSignature, keyMasternode)) {
-    	retErrorMessage = "sign message failed: " + errorMessage;
-    	LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
+        retErrorMessage = "sign message failed: " + errorMessage;
+        LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
         return false;
     }
 
     if(!darkSendSigner.VerifyMessage(pubKeyMasternode, vchMasterNodeSignature, strMessage, errorMessage)) {
-    	retErrorMessage = "Verify message failed: " + errorMessage;
-    	LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
+        retErrorMessage = "Verify message failed: " + errorMessage;
+        LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
         return false;
     }
 
@@ -201,9 +201,9 @@ bool CActiveMasternode::Dseep(CTxIn vin, CService service, CKey keyMasternode, C
     }
 
     if(!found){
-    	// Seems like we are trying to send a ping while the masternode is not registered in the network
-    	retErrorMessage = "Darksend Masternode List doesn't include our masternode, Shutting down masternode pinging service! " + vin.ToString();
-    	LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
+        // Seems like we are trying to send a ping while the masternode is not registered in the network
+        retErrorMessage = "Darksend Masternode List doesn't include our masternode, Shutting down masternode pinging service! " + vin.ToString();
+        LogPrintf("CActiveMasternode::Dseep() - Error: %s\n", retErrorMessage.c_str());
         status = MASTERNODE_NOT_CAPABLE;
         notCapableReason = retErrorMessage;
         return false;
@@ -217,7 +217,7 @@ bool CActiveMasternode::Dseep(CTxIn vin, CService service, CKey keyMasternode, C
 }
 
 bool CActiveMasternode::RegisterByPubKey(std::string strService, std::string strKeyMasternode, std::string collateralAddress, std::string& errorMessage) {
-	CTxIn vin;
+    CTxIn vin;
     CPubKey pubKeyCollateralAddress;
     CKey keyCollateralAddress;
     CPubKey pubKeyMasternode;
@@ -225,20 +225,20 @@ bool CActiveMasternode::RegisterByPubKey(std::string strService, std::string str
 
     if(!darkSendSigner.SetKey(strKeyMasternode, errorMessage, keyMasternode, pubKeyMasternode))
     {
-    	LogPrintf("CActiveMasternode::RegisterByPubKey() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-    	return false;
+        LogPrintf("CActiveMasternode::RegisterByPubKey() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+        return false;
     }
 
     if(!GetMasterNodeVinForPubKey(collateralAddress, vin, pubKeyCollateralAddress, keyCollateralAddress)) {
-		errorMessage = "could not allocate vin for collateralAddress";
-    	LogPrintf("Register::Register() - Error: %s\n", errorMessage.c_str());
-		return false;
-	}
-	return Register(vin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage);
+        errorMessage = "could not allocate vin for collateralAddress";
+        LogPrintf("Register::Register() - Error: %s\n", errorMessage.c_str());
+        return false;
+    }
+    return Register(vin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage);
 }
 
 bool CActiveMasternode::Register(std::string strService, std::string strKeyMasternode, std::string txHash, std::string strOutputIndex, std::string& errorMessage) {
-	CTxIn vin;
+    CTxIn vin;
     CPubKey pubKeyCollateralAddress;
     CKey keyCollateralAddress;
     CPubKey pubKeyMasternode;
@@ -246,16 +246,16 @@ bool CActiveMasternode::Register(std::string strService, std::string strKeyMaste
 
     if(!darkSendSigner.SetKey(strKeyMasternode, errorMessage, keyMasternode, pubKeyMasternode))
     {
-    	LogPrintf("CActiveMasternode::Register() - Error upon calling SetKey: %s\n", errorMessage.c_str());
-    	return false;
+        LogPrintf("CActiveMasternode::Register() - Error upon calling SetKey: %s\n", errorMessage.c_str());
+        return false;
     }
 
     if(!GetMasterNodeVin(vin, pubKeyCollateralAddress, keyCollateralAddress, txHash, strOutputIndex)) {
-		errorMessage = "could not allocate vin";
-    	LogPrintf("Register::Register() - Error: %s\n", errorMessage.c_str());
-		return false;
-	}
-	return Register(vin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage);
+        errorMessage = "could not allocate vin";
+        LogPrintf("Register::Register() - Error: %s\n", errorMessage.c_str());
+        return false;
+    }
+    return Register(vin, CService(strService), keyCollateralAddress, pubKeyCollateralAddress, keyMasternode, pubKeyMasternode, errorMessage);
 }
 
 bool CActiveMasternode::Register(CTxIn vin, CService service, CKey keyCollateralAddress, CPubKey pubKeyCollateralAddress, CKey keyMasternode, CPubKey pubKeyMasternode, std::string &retErrorMessage) {
@@ -270,16 +270,16 @@ bool CActiveMasternode::Register(CTxIn vin, CService service, CKey keyCollateral
     std::string strMessage = service.ToString() + boost::lexical_cast<std::string>(masterNodeSignatureTime) + vchPubKey + vchPubKey2 + boost::lexical_cast<std::string>(PROTOCOL_VERSION);
 
     if(!darkSendSigner.SignMessage(strMessage, errorMessage, vchMasterNodeSignature, keyCollateralAddress)) {
-		retErrorMessage = "sign message failed: " + errorMessage;
-		LogPrintf("CActiveMasternode::Register() - Error: %s\n", retErrorMessage.c_str());
-		return false;
+        retErrorMessage = "sign message failed: " + errorMessage;
+        LogPrintf("CActiveMasternode::Register() - Error: %s\n", retErrorMessage.c_str());
+        return false;
     }
 
     if(!darkSendSigner.VerifyMessage(pubKeyCollateralAddress, vchMasterNodeSignature, strMessage, errorMessage)) {
-		retErrorMessage = "Verify message failed: " + errorMessage;
-		LogPrintf("CActiveMasternode::Register() - Error: %s\n", retErrorMessage.c_str());
-		return false;
-	}
+        retErrorMessage = "Verify message failed: " + errorMessage;
+        LogPrintf("CActiveMasternode::Register() - Error: %s\n", retErrorMessage.c_str());
+        return false;
+    }
 
     bool found = false;
     LOCK(cs_masternodes);
@@ -302,7 +302,7 @@ bool CActiveMasternode::Register(CTxIn vin, CService service, CKey keyCollateral
 }
 
 bool CActiveMasternode::GetMasterNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secretKey) {
-	return GetMasterNodeVin(vin, pubkey, secretKey, "", "");
+    return GetMasterNodeVin(vin, pubkey, secretKey, "", "");
 }
 
 bool CActiveMasternode::GetMasterNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secretKey, std::string strTxHash, std::string strOutputIndex) {
@@ -313,39 +313,39 @@ bool CActiveMasternode::GetMasterNodeVin(CTxIn& vin, CPubKey& pubkey, CKey& secr
     COutput *selectedOutput;
 
     // Find the vin
-	if(!strTxHash.empty()) {
-		// Let's find it
-		uint256 txHash(strTxHash);
+    if(!strTxHash.empty()) {
+        // Let's find it
+        uint256 txHash(strTxHash);
         int outputIndex = boost::lexical_cast<int>(strOutputIndex);
-		bool found = false;
-		BOOST_FOREACH(COutput& out, possibleCoins) {
-			if(out.tx->GetHash() == txHash && out.i == outputIndex)
-			{
-				selectedOutput = &out;
-				found = true;
-				break;
-			}
-		}
-		if(!found) {
-			LogPrintf("CActiveMasternode::GetMasterNodeVin - Could not locate valid vin\n");
-			return false;
-		}
-	} else {
-		// No output specified,  Select the first one
-		if(possibleCoins.size() > 0) {
-			selectedOutput = &possibleCoins[0];
-		} else {
-			LogPrintf("CActiveMasternode::GetMasterNodeVin - Could not locate specified vin from possible list\n");
-			return false;
-		}
+        bool found = false;
+        BOOST_FOREACH(COutput& out, possibleCoins) {
+            if(out.tx->GetHash() == txHash && out.i == outputIndex)
+            {
+                selectedOutput = &out;
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            LogPrintf("CActiveMasternode::GetMasterNodeVin - Could not locate valid vin\n");
+            return false;
+        }
+    } else {
+        // No output specified,  Select the first one
+        if(possibleCoins.size() > 0) {
+            selectedOutput = &possibleCoins[0];
+        } else {
+            LogPrintf("CActiveMasternode::GetMasterNodeVin - Could not locate specified vin from possible list\n");
+            return false;
+        }
     }
 
-	// At this point we have a selected output, retrieve the associated info
-	return GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey);
+    // At this point we have a selected output, retrieve the associated info
+    return GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey);
 }
 
 bool CActiveMasternode::GetMasterNodeVinForPubKey(std::string collateralAddress, CTxIn& vin, CPubKey& pubkey, CKey& secretKey) {
-	return GetMasterNodeVinForPubKey(collateralAddress, vin, pubkey, secretKey, "", "");
+    return GetMasterNodeVinForPubKey(collateralAddress, vin, pubkey, secretKey, "", "");
 }
 
 bool CActiveMasternode::GetMasterNodeVinForPubKey(std::string collateralAddress, CTxIn& vin, CPubKey& pubkey, CKey& secretKey, std::string strTxHash, std::string strOutputIndex) {
@@ -356,35 +356,35 @@ bool CActiveMasternode::GetMasterNodeVinForPubKey(std::string collateralAddress,
     COutput *selectedOutput;
 
     // Find the vin
-	if(!strTxHash.empty()) {
-		// Let's find it
-		uint256 txHash(strTxHash);
+    if(!strTxHash.empty()) {
+        // Let's find it
+        uint256 txHash(strTxHash);
         int outputIndex = boost::lexical_cast<int>(strOutputIndex);
-		bool found = false;
-		BOOST_FOREACH(COutput& out, possibleCoins) {
-			if(out.tx->GetHash() == txHash && out.i == outputIndex)
-			{
-				selectedOutput = &out;
-				found = true;
-				break;
-			}
-		}
-		if(!found) {
-			LogPrintf("CActiveMasternode::GetMasterNodeVinForPubKey - Could not locate valid vin\n");
-			return false;
-		}
-	} else {
-		// No output specified,  Select the first one
-		if(possibleCoins.size() > 0) {
-			selectedOutput = &possibleCoins[0];
-		} else {
-			LogPrintf("CActiveMasternode::GetMasterNodeVinForPubKey - Could not locate specified vin from possible list\n");
-			return false;
-		}
+        bool found = false;
+        BOOST_FOREACH(COutput& out, possibleCoins) {
+            if(out.tx->GetHash() == txHash && out.i == outputIndex)
+            {
+                selectedOutput = &out;
+                found = true;
+                break;
+            }
+        }
+        if(!found) {
+            LogPrintf("CActiveMasternode::GetMasterNodeVinForPubKey - Could not locate valid vin\n");
+            return false;
+        }
+    } else {
+        // No output specified,  Select the first one
+        if(possibleCoins.size() > 0) {
+            selectedOutput = &possibleCoins[0];
+        } else {
+            LogPrintf("CActiveMasternode::GetMasterNodeVinForPubKey - Could not locate specified vin from possible list\n");
+            return false;
+        }
     }
 
-	// At this point we have a selected output, retrieve the associated info
-	return GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey);
+    // At this point we have a selected output, retrieve the associated info
+    return GetVinFromOutput(*selectedOutput, vin, pubkey, secretKey);
 }
 
 
@@ -393,10 +393,10 @@ bool CActiveMasternode::GetVinFromOutput(COutput out, CTxIn& vin, CPubKey& pubke
 
     CScript pubScript;
 
-	vin = CTxIn(out.tx->GetHash(),out.i);
+    vin = CTxIn(out.tx->GetHash(),out.i);
     pubScript = out.tx->vout[out.i].scriptPubKey; // the inputs PubKey
 
-	CTxDestination address1;
+    CTxDestination address1;
     ExtractDestination(pubScript, address1);
     CBitcoinAddress address2(address1);
 
@@ -428,7 +428,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternode()
     BOOST_FOREACH(const COutput& out, vCoins)
     {
         if(out.tx->vout[out.i].nValue == 25000*COIN) { //exactly
-        	filteredCoins.push_back(out);
+            filteredCoins.push_back(out);
         }
     }
     return filteredCoins;
@@ -450,7 +450,7 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternodeForPubKey(std::string co
     BOOST_FOREACH(const COutput& out, vCoins)
     {
         if(out.tx->vout[out.i].scriptPubKey == scriptPubKey && out.tx->vout[out.i].nValue == 25000*COIN) { //exactly
-        	filteredCoins.push_back(out);
+            filteredCoins.push_back(out);
         }
     }
     return filteredCoins;
@@ -461,22 +461,22 @@ vector<COutput> CActiveMasternode::SelectCoinsMasternodeForPubKey(std::string co
 /*
 bool CActiveMasternode::SelectCoinsMasternode(CTxIn& vin, int64& nValueIn, CScript& pubScript, std::string strTxHash, std::string strOutputIndex)
 {
-	CWalletTx ctx;
+    CWalletTx ctx;
 
-	// Convert configuration strings
-	uint256 txHash;
-	int outputIndex;
-	txHash.SetHex(strTxHash);
-	std::istringstream(strOutputIndex) >> outputIndex;
+    // Convert configuration strings
+    uint256 txHash;
+    int outputIndex;
+    txHash.SetHex(strTxHash);
+    std::istringstream(strOutputIndex) >> outputIndex;
 
-	if(pwalletMain->GetTransaction(txHash, ctx)) {
-		if(ctx.vout[outputIndex].nValue == 1000*COIN) { //exactly
-			vin = CTxIn(ctx.GetHash(), outputIndex);
-			pubScript = ctx.vout[outputIndex].scriptPubKey; // the inputs PubKey
-			nValueIn = ctx.vout[outputIndex].nValue;
-		return true;
-		}
-	}
+    if(pwalletMain->GetTransaction(txHash, ctx)) {
+        if(ctx.vout[outputIndex].nValue == 1000*COIN) { //exactly
+            vin = CTxIn(ctx.GetHash(), outputIndex);
+            pubScript = ctx.vout[outputIndex].scriptPubKey; // the inputs PubKey
+            nValueIn = ctx.vout[outputIndex].nValue;
+        return true;
+        }
+    }
 
     return false;
 }
