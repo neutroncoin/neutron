@@ -4,12 +4,40 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "protocol.h"
+
 #include "util.h"
 #include "netbase.h"
 
 #ifndef WIN32
 # include <arpa/inet.h>
 #endif
+
+namespace NetMsgType {
+// Bitcoin message types
+const char *VERSION="version";
+const char *VERACK="verack";
+const char *ADDR="addr";
+const char *INV="inv";
+const char *GETDATA="getdata";
+const char *MERKLEBLOCK="merkleblock";
+const char *GETBLOCKS="getblocks";
+const char *GETHEADERS="getheaders";
+const char *TX="tx";
+const char *HEADERS="headers";
+const char *BLOCK="block";
+const char *GETADDR="getaddr";
+const char *MEMPOOL="mempool";
+const char *PING="ping";
+const char *PONG="pong";
+const char *NOTFOUND="notfound";
+const char *FILTERLOAD="filterload";
+const char *FILTERADD="filteradd";
+const char *FILTERCLEAR="filterclear";
+const char *REJECT="reject";
+const char *SENDHEADERS="sendheaders";
+// Neutron message types
+// TODO
+};
 
 static const char* ppszTypeName[] =
 {
@@ -27,6 +55,37 @@ static const char* ppszTypeName[] =
     "unknown",
     "unknown"
 };
+
+/** All known message types. Keep this in the same order as the list of
+ * messages above and in protocol.h.
+ */
+const static std::string allNetMessageTypes[] = {
+    // Bitcoin message types
+    NetMsgType::VERSION,
+    NetMsgType::VERACK,
+    NetMsgType::ADDR,
+    NetMsgType::INV,
+    NetMsgType::GETDATA,
+    NetMsgType::MERKLEBLOCK,
+    NetMsgType::GETBLOCKS,
+    NetMsgType::GETHEADERS,
+    NetMsgType::TX,
+    NetMsgType::HEADERS,
+    NetMsgType::BLOCK,
+    NetMsgType::GETADDR,
+    NetMsgType::MEMPOOL,
+    NetMsgType::PING,
+    NetMsgType::PONG,
+    NetMsgType::ALERT,
+    NetMsgType::NOTFOUND,
+    NetMsgType::FILTERLOAD,
+    NetMsgType::FILTERADD,
+    NetMsgType::FILTERCLEAR,
+    NetMsgType::REJECT,
+    NetMsgType::SENDHEADERS,
+    // Neutron message types
+};
+const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 
 CMessageHeader::CMessageHeader()
 {
@@ -158,3 +217,7 @@ void CInv::print() const
     printf("CInv(%s)\n", ToString().c_str());
 }
 
+const std::vector<std::string> &getAllNetMessageTypes()
+{
+    return allNetMessageTypesVec;
+}
