@@ -38,6 +38,13 @@ const char *REJECT="reject";
 const char *SENDHEADERS="sendheaders";
 // Neutron message types
 // TODO
+// "dstx"
+// "mnw"
+// "spork"
+// "checkpoint"
+// "checkorder"
+// "reply"
+// TODO
 };
 
 static const char* ppszTypeName[] =
