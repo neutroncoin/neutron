@@ -43,13 +43,10 @@ void ProcessMasternodeConnections(){
 
 void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
+    if (fLiteMode and strCommand != "mnw") return; //disable all Darksend/Masternode related functionality
+    if(IsInitialBlockDownload()) return;
 
-    if (strCommand == "dsee") { //DarkSend Election Entry
-        if(fLiteMode) return; //disable all darksend/masternode related functionality
-
-        bool fIsInitialDownload = IsInitialBlockDownload();
-        if(fIsInitialDownload) return;
-
+    if (strCommand == NetMsgType::DSEE) { //DarkSend Election Entry
         CTxIn vin;
         CService addr;
         CPubKey pubkey;
@@ -67,7 +64,8 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         // make sure signature isn't in the future (past is OK)
         if (sigTime > GetAdjustedTime() + 60 * 60) {
-            LogPrintf("dsee - Signature rejected, too far into the future %s\n", vin.ToString().c_str());
+            LogPrintf("dsee - Signature rejected, too far into the future %s\n", vin.prevout.hash.ToString()); // vin.ToString().c_str());
+            pfrom->Misbehaving(1);
             return;
         }
 
@@ -81,6 +79,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         if(protocolVersion < ActiveProtocol()) {
             LogPrintf("dsee - ignoring masternode %s using outdated protocol version %d\n", vin.ToString().c_str(), protocolVersion);
+            pfrom->Misbehaving(1);
             return;
         }
 
@@ -198,11 +197,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         }
     }
 
-    else if (strCommand == "dseep") { //DarkSend Election Entry Ping
-        if(fLiteMode) return; //disable all darksend/masternode related functionality
-        bool fIsInitialDownload = IsInitialBlockDownload();
-        if(fIsInitialDownload) return;
-
+    else if (strCommand == NetMsgType::DSEEP) { //DarkSend Election Entry Ping
         CTxIn vin;
         vector<unsigned char> vchSig;
         int64_t sigTime;
@@ -270,8 +265,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         int64_t askAgain = GetTime()+(60*60*24);
         askedForMasternodeListEntry[vin.prevout] = askAgain;
 
-    } else if (strCommand == "dseg") { //Get masternode list or specific entry
-        if(fLiteMode) return; //disable all darksend/masternode related functionality
+    } else if (strCommand == NetMsgType::DSEG) { //Get masternode list or specific entry
         CTxIn vin;
         vRecv >> vin;
 
@@ -321,9 +315,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         LogPrintf("dseg - Sent %d masternode entries to %s\n", count, pfrom->addr.ToString().c_str());
     }
 
-    else if (strCommand == "mnget") { //Masternode Payments Request Sync
-        if(fLiteMode) return; //disable all darksend/masternode related functionality
-
+    else if (strCommand == NetMsgType::MASTERNODEPAYMENTSYNC) { //Masternode Payments Request Sync
         /*if(pfrom->HasFulfilledRequest("mnget")) {
             LogPrintf("mnget - peer already asked me for the list\n");
             Misbehaving(pfrom->GetId(), 20);
@@ -334,7 +326,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         masternodePayments.Sync(pfrom);
         LogPrintf("mnget - Sent masternode winners to %s\n", pfrom->addr.ToString().c_str());
     }
-    else if (strCommand == "mnw") { //Masternode Payments Declare Winner
+    else if (strCommand == NetMsgType::MASTERNODEPAYMENTVOTE) { //Masternode Payments Declare Winner
         //this is required in litemode
         CMasternodePaymentWinner winner;
         int a = 0;

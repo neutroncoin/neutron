@@ -63,14 +63,14 @@ int CountMasternodesAboveProtocol(int protocolVersion);
 void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
 
 //
-// The Masternode Class. For managing the darksend process. It contains the input of the 25000 NTRN, signature to prove
+// The Masternode Class. For managing the Darksend process. It contains the input of the 25000 NTRN, signature to prove
 // it's the one who own that ip address and code for calculating the payment election.
 //
 class CMasterNode
 {
 public:
-    CService addr;
     CTxIn vin;
+    CService addr;
     int64_t lastTimeSeen;
     CPubKey pubkey;
     CPubKey pubkey2;
