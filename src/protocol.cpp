@@ -37,31 +37,45 @@ const char *FILTERCLEAR="filterclear";
 const char *REJECT="reject";
 const char *SENDHEADERS="sendheaders";
 // Neutron message types
+const char *SPORK="spork";
+const char *GETSPORKS="getsporks";
+const char *MASTERNODEPAYMENTVOTE="mnw";
+const char *MASTERNODEPAYMENTSYNC="mnget";
+const char *DSTX="dstx";
+const char *DSEG="dseg";
+const char *DSEE="dsee";
+const char *DSEEP="dseep";
 // TODO
-// "dstx"
-// "mnw"
-// "spork"
 // "checkpoint"
-// "checkorder"
-// "reply"
 // TODO
 };
 
 static const char* ppszTypeName[] =
 {
-    "ERROR",
-    "tx",
-    "block",
-    "filtered block",
-    "tx lock request",
-    "tx lock vote",
-    "spork",
-    "masternode winner",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown",
-    "unknown"
+    // before 2017-12
+    // "ERROR",
+    // "tx",
+    // "block",
+    // "filtered block",
+    // "tx lock request",
+    // "tx lock vote",
+    // "spork",
+    // "masternode winner",
+    // "unknown",
+    // "unknown",
+    // "unknown",
+    // "unknown",
+    // "unknown"
+
+    // after 2017-12
+    "ERROR", // Should never occur
+    NetMsgType::TX,
+    NetMsgType::BLOCK,
+    "filtered block", // Should never occur
+    // "tx lock request",
+    // "tx lock vote",
+    NetMsgType::SPORK,
+    NetMsgType::MASTERNODEPAYMENTVOTE,
 };
 
 /** All known message types. Keep this in the same order as the list of
@@ -92,6 +106,16 @@ const static std::string allNetMessageTypes[] = {
     NetMsgType::REJECT,
     NetMsgType::SENDHEADERS,
     // Neutron message types
+    NetMsgType::SPORK,
+    NetMsgType::GETSPORKS,
+    NetMsgType::MASTERNODEPAYMENTVOTE,
+    NetMsgType::MASTERNODEPAYMENTSYNC,
+    // DSEE
+    // DSEEP
+    NetMsgType::DSTX,
+    NetMsgType::DSEG,
+    NetMsgType::DSEE,
+    NetMsgType::DSEEP,
 };
 const static std::vector<std::string> allNetMessageTypesVec(allNetMessageTypes, allNetMessageTypes+ARRAYLEN(allNetMessageTypes));
 

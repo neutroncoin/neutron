@@ -220,7 +220,17 @@ extern const char *REJECT;
 extern const char *SENDHEADERS;
 
 // Neutron message types
-// TODO
+// NOTE: do NOT declare non-implmented here, we don't want them to be exposed to the outside
+// TODO: add description
+extern const char *SPORK;
+extern const char *GETSPORKS;
+extern const char *MASTERNODEPAYMENTVOTE;
+extern const char *MASTERNODEPAYMENTSYNC;
+extern const char *DSTX;
+extern const char *DSEG;
+extern const char *DSEE;
+extern const char *DSEEP;
+// TODO: add all commands
 };
 
 /* Get a vector of all valid message types (see above) */
@@ -294,6 +304,19 @@ class CInv
     public:
         int type;
         uint256 hash;
+};
+
+enum
+{
+    MSG_TX = 1,
+    MSG_BLOCK,
+    // Nodes may always request a MSG_FILTERED_BLOCK in a getdata, however,
+    // MSG_FILTERED_BLOCK should not appear in any invs except as a part of getdata.
+    MSG_FILTERED_BLOCK,
+    // Neutron message types
+    // NOTE: declare non-implmented here, we must keep this enum consistent and backwards compatible
+    MSG_SPORK,
+    MSG_MASTERNODE_WINNER,
 };
 
 #endif // __INCLUDED_PROTOCOL_H__
