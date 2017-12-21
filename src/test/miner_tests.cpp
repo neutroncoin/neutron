@@ -72,7 +72,7 @@ BOOST_AUTO_TEST_CASE(CreateNewBlock_validity)
             txFirst.push_back(new CTransaction(pblock->vtx[0]));
         pblock->hashMerkleRoot = pblock->BuildMerkleTree();
         pblock->nNonce = blockinfo[i].nonce;
-        assert(ProcessBlock(NULL, pblock));
+        assert(ProcessNewBlock(NULL, pblock));
         pblock->hashPrevBlock = pblock->GetHash();
     }
     delete pblock;
