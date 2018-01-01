@@ -2154,6 +2154,14 @@ void RelayDarkSendCompletedTransaction(const int sessionID, const bool error, co
 }
 
 
+CNode::~CNode()
+{
+    if (hSocket != INVALID_SOCKET)
+    {
+        closesocket(hSocket);
+        hSocket = INVALID_SOCKET;
+    }
+}
 
 void CNode::AskFor(const CInv& inv)
 {

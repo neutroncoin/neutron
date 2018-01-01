@@ -306,18 +306,12 @@ public:
             PushVersion();
     }
 
-    ~CNode()
-    {
-        if (hSocket != INVALID_SOCKET)
-        {
-            closesocket(hSocket);
-            hSocket = INVALID_SOCKET;
-        }
-    }
+    ~CNode();
 
 private:
     CNode(const CNode&);
     void operator=(const CNode&);
+
 public:
     NodeId GetId() const {
       return id;
