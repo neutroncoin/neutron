@@ -40,6 +40,7 @@ class uint256;
 #define MASTERNODE_PING_SECONDS                (1*60)
 #define MASTERNODE_EXPIRATION_SECONDS          (65*60)
 #define MASTERNODE_REMOVAL_SECONDS             (70*60)
+#define MASTERNODE_DSEG_SECONDS                (3*60*60)
 
 #define MASTERNODE_BLOCK_OFFSET                50
 

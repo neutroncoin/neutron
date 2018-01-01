@@ -15,7 +15,7 @@
 #include "wallet.h"
 #include "darksend.h"
 
-// Responsible for activating the masternode and pinging the network
+// Responsible for activating the Masternode and pinging the network
 class CActiveMasternode
 {
 public:
@@ -31,7 +31,7 @@ public:
     std::string notCapableReason;
 
     CActiveMasternode()
-    {        
+    {
         status = MASTERNODE_NOT_PROCESSED;
     }
 
