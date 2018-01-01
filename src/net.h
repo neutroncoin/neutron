@@ -298,6 +298,7 @@ public:
         hashLastGetBlocksEnd = 0;
         nStartingHeight = -1;
         fGetAddr = false;
+        fRelayTxes = false;
         nMisbehavior = 0;
         hashCheckpointKnown = 0;
         setInventoryKnown.max_size(SendBufferSize() / 1000);
