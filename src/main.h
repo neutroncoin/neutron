@@ -65,6 +65,7 @@ static const int64_t DARKSEND_POOL_MAX = (250000.99*COIN);
 static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
 
 /** "reject" message codes */ // TODO: move to consensus/validation.h eventually
+static const unsigned char REJECT_MALFORMED = 0x01;
 static const unsigned char REJECT_OBSOLETE = 0x11;
 
 static const int LAST_POW_BLOCK = 4000;
