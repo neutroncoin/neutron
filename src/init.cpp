@@ -783,7 +783,7 @@ bool AppInit2()
     // ********************************************************* Step 8: load wallet
 
     uiInterface.InitMessage(_("Loading wallet..."));
-    LogPrintf("Loading wallet...\n");
+
     nStart = GetTimeMillis();
     bool fFirstRun = true;
     pwalletMain = new CWallet(strWalletFileName);
@@ -1019,7 +1019,6 @@ bool AppInit2()
     // ********************************************************* Step 12: finished
 
     uiInterface.InitMessage(_("Done loading"));
-    LogPrintf("Done loading\n");
 
     if (!strErrors.str().empty())
         return InitError(strErrors.str());
