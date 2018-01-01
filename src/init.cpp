@@ -726,7 +726,6 @@ bool AppInit2()
     }
 
     uiInterface.InitMessage(_("Loading block index..."));
-    LogPrintf("Loading block index...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
         return InitError(_("Error loading blkindex.dat"));
@@ -894,15 +893,13 @@ bool AppInit2()
     // ********************************************************* Step 10: load peers
 
     uiInterface.InitMessage(_("Loading addresses..."));
-    LogPrintf("Loading addresses...\n");
+    // Load addresses for peers.dat
     nStart = GetTimeMillis();
-
     {
         CAddrDB adb;
         if (!adb.Read(addrman))
             LogPrintf("Invalid or missing peers.dat; recreating\n");
     }
-
     LogPrintf("Loaded %i addresses from peers.dat  %dms\n",
            addrman.size(), GetTimeMillis() - nStart);
 
