@@ -2,6 +2,7 @@
 // Copyright (c) 2009-2012 The Bitcoin developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
@@ -694,4 +695,15 @@ void SendDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned c
 void RelayDarkSendCompletedTransaction(const int sessionID, const bool error, const std::string errorMessage);
 void RelayDarkSendMasterNodeContestant();
 
-#endif
+/** Access to the (IP) address database (peers.dat) */
+class CAddrDB
+{
+private:
+    boost::filesystem::path pathAddr;
+public:
+    CAddrDB();
+    bool Write(const CAddrMan& addr);
+    bool Read(CAddrMan& addr);
+};
+
+#endif // BITCOIN_NET_H
