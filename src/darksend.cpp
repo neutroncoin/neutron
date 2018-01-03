@@ -2157,7 +2157,7 @@ void ThreadCheckDarkSendPool(void* parg)
                 it = vecMasternodes.begin();
                 while(it != vecMasternodes.end()){
                     if((*it).enabled == 4 || (*it).enabled == 3){
-                        LogPrintf("Removing inactive masternode %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).enabled);
+                        LogPrintf("ThreadCheckDarkSendPool::Removing inactive masternode %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).enabled);
                         it = vecMasternodes.erase(it);
                     } else {
                         ++it;
