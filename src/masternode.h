@@ -22,6 +22,7 @@
 
 class CMasterNode;
 class CMasternodePayments;
+class CMasternodeMan;
 class uint256;
 
 #define MASTERNODE_NOT_PROCESSED               0 // initial state
@@ -51,6 +52,7 @@ class CMasternodePaymentWinner;
 extern CCriticalSection cs_masternodes;
 extern std::vector<CMasterNode> vecMasternodes;
 extern CMasternodePayments masternodePayments;
+extern CMasternodeMan mnodeman;
 extern std::vector<CTxIn> vecMasternodeAskedFor;
 extern map<uint256, CMasternodePaymentWinner> mapSeenMasternodeVotes;
 extern map<int64_t, uint256> mapCacheBlockHashes;
@@ -194,7 +196,7 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion){
-	unsigned int nSerSize = 0;
+    unsigned int nSerSize = 0;
         READWRITE(nBlockHeight);
         READWRITE(payee);
         READWRITE(vin);
@@ -249,6 +251,17 @@ public:
     bool GetBlockPayee(int nBlockHeight, CScript& payee);
 };
 
+
+class CMasternodeMan
+{
+private:
+    // critical section to protect the inner data structures
+    mutable CCriticalSection cs;
+
+public:
+    /// Find an entry
+    CMasterNode* Find(const CTxIn& vin);
+};
 
 
 #endif
