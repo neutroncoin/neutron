@@ -2122,21 +2122,25 @@ void ThreadCheckDarkSendPool(void* parg)
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
 
+    static bool fOneThread;
+    if(fOneThread) return;
+    fOneThread = true;
+
     // Make this thread recognisable as the wallet flushing thread
     RenameThread("neutron-darksend");
 
-    unsigned int c = 0;
+    unsigned int nTick = 0;
     std::string errorMessage;
 
     while (true)
     {
-        c++;
+        nTick++;
 
         MilliSleep(5000);
         //LogPrintf("ThreadCheckDarkSendPool::check timeout\n");
         darkSendPool.CheckTimeout();
 
-        if(c % 60 == 0){
+        if(nTick % 60 == 0){
             LOCK(cs_main);
             /*
                 cs_main is required for doing masternode.Check because something
@@ -2170,7 +2174,7 @@ void ThreadCheckDarkSendPool(void* parg)
         }
 
         //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
-        if(c % (5*5) == 0 && RequestedMasterNodeList < 3){
+        if(nTick % (5*5) == 0 && RequestedMasterNodeList < 3){
             bool fIsInitialDownload = IsInitialBlockDownload();
             if(!fIsInitialDownload) {
                 LOCK(cs_vNodes);
@@ -2181,29 +2185,29 @@ void ThreadCheckDarkSendPool(void* parg)
                         if(pnode->HasFulfilledRequest("mnsync")) continue;
                         pnode->FulfilledRequest("mnsync");
 
-                        LogPrintf("Successfully synced, asking for Masternode list and payment list\n");
+                        LogPrintf("ThreadCheckDarkSendPool::Successfully synced, asking for Masternode list and payment list\n");
 
-                        pnode->PushMessage("dseg", CTxIn()); //request full mn list
-                        pnode->PushMessage("mnget"); //sync payees
-                        pnode->PushMessage("getsporks"); //get current network sporks
+                        pnode->PushMessage(NetMsgType::DSEG, CTxIn()); //request full mn list
+                        pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees
+                        pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
                         RequestedMasterNodeList++;
                     }
                 }
             }
         }
 
-        if(c % MASTERNODE_PING_SECONDS == 0){
+        if(nTick % MASTERNODE_PING_SECONDS == 0){
             activeMasternode.ManageStatus();
         }
 
-        if(c % (60*5) == 0){
+        if(nTick % (60*5) == 0){
             //if we've used 1/5 of the masternode list, then clear the list.
             if((int)vecMasternodesUsed.size() > (int)vecMasternodes.size() / 5)
                 vecMasternodesUsed.clear();
         }
 
         //auto denom every 2.5 minutes (liquidity provides try less often)
-        if(c % (60*5)*(nLiquidityProvider+1) == 0){
+        if(nTick % (60*5)*(nLiquidityProvider+1) == 0){
             if(nLiquidityProvider!=0){
                 int nRand = rand() % (101+nLiquidityProvider);
                 //about 1/100 chance of starting over after 4 rounds.

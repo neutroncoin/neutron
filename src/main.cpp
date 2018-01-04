@@ -3348,7 +3348,7 @@ void static ProcessGetData(CNode* pfrom)
                         int a = 0;
                         ss.reserve(1000);
                         ss << mapSeenMasternodeVotes[inv.hash] << a;
-                        pfrom->PushMessage("mnw", ss);
+                        pfrom->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, ss);
                         pushed = true;
                     }
                 }
