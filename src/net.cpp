@@ -101,7 +101,7 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    PushMessage("getblocks", CBlockLocator(pindexBegin), hashEnd);
+    PushMessage(NetMsgType::GETBLOCKS, CBlockLocator(pindexBegin), hashEnd);
 }
 
 // find 'best' local address for a particular peer
@@ -2112,7 +2112,7 @@ void RelayDarkSendElectionEntry(const CTxIn vin, const CService addr, const std:
     {
         if(!pnode->fRelayTxes) continue;
 
-        pnode->PushMessage("dsee", vin, addr, vchSig, nNow, pubkey, pubkey2, count, current, lastUpdated, protocolVersion);
+        pnode->PushMessage(NetMsgType::DSEE, vin, addr, vchSig, nNow, pubkey, pubkey2, count, current, lastUpdated, protocolVersion);
     }
 }
 
@@ -2121,7 +2121,7 @@ void SendDarkSendElectionEntry(const CTxIn vin, const CService addr, const std::
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
     {
-        pnode->PushMessage("dsee", vin, addr, vchSig, nNow, pubkey, pubkey2, count, current, lastUpdated, protocolVersion);
+        pnode->PushMessage(NetMsgType::DSEE, vin, addr, vchSig, nNow, pubkey, pubkey2, count, current, lastUpdated, protocolVersion);
     }
 }
 
@@ -2132,7 +2132,7 @@ void RelayDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned 
     {
         if(!pnode->fRelayTxes) continue;
 
-        pnode->PushMessage("dseep", vin, vchSig, nNow, stop);
+        pnode->PushMessage(NetMsgType::DSEEP, vin, vchSig, nNow, stop);
     }
 }
 
@@ -2141,7 +2141,7 @@ void SendDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned c
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes)
     {
-        pnode->PushMessage("dseep", vin, vchSig, nNow, stop);
+        pnode->PushMessage(NetMsgType::DSEEP, vin, vchSig, nNow, stop);
     }
 }
 

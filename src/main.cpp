@@ -3283,7 +3283,7 @@ void static ProcessGetData(CNode* pfrom)
                 {
                     CBlock block;
                     block.ReadFromDisk((*mi).second);
-                    pfrom->PushMessage("block", block);
+                    pfrom->PushMessage(NetMsgType::BLOCK, block);
 
                     // Trigger them to send a getblocks request for the next batch of inventory
                     if (inv.hash == pfrom->hashContinue)
@@ -3328,7 +3328,7 @@ void static ProcessGetData(CNode* pfrom)
                             CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
                             ss.reserve(1000);
                             ss << tx;
-                            pfrom->PushMessage("tx", ss);
+                            pfrom->PushMessage(NetMsgType::TX, ss);
                             pushed = true;
                         }
                     }

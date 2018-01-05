@@ -77,7 +77,7 @@ void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& 
             vInv.push_back(inv);
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes)
-                pnode->PushMessage("inv", vInv);
+                pnode->PushMessage(NetMsgType::INV, vInv);
 
             DoConsensusVote(tx, nBlockHeight);
 
@@ -165,7 +165,7 @@ void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& 
             vInv.push_back(inv);
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes)
-                pnode->PushMessage("inv", vInv);
+                pnode->PushMessage(NetMsgType::INV, vInv);
 
         }
 
@@ -302,7 +302,7 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
     vInv.push_back(inv);
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes){
-        pnode->PushMessage("inv", vInv);
+        pnode->PushMessage(NetMsgType::INV, vInv);
     }
 
 }
