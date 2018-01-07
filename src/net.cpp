@@ -2187,6 +2187,16 @@ CNode::CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn, bool fIn
     hashCheckpointKnown = 0;
     setInventoryKnown.max_size(SendBufferSize() / 1000);
 
+    {
+        LOCK(cs_nLastNodeId);
+        id = nLastNodeId++;
+    }
+
+    if (fLogIPs)
+        LogPrintf("Added connection to %s peer=%d\n", addrName, id);
+    else
+        LogPrintf("Added connection peer=%d\n", id);
+
     // Be shy and don't send version until we hear
     if (hSocket != INVALID_SOCKET && !fInbound)
         PushVersion();
