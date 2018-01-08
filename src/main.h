@@ -61,12 +61,13 @@ static const int64_t DARKSEND_POOL_MAX = (250000.99*COIN);
 #define MASTERNODE_EXPIRATION_SECONDS          (65*60)
 #define MASTERNODE_REMOVAL_SECONDS             (70*60)
 
-/** Maximum length of reject messages. */ // TODO: move to validation.h eventually
+/** Maximum length of reject messages. */ // TODO: NTRN - move to validation.h eventually
 static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
 
-/** "reject" message codes */ // TODO: move to consensus/validation.h eventually
+/** "reject" message codes */ // TODO: NTRN - move to consensus/validation.h eventually
 static const unsigned char REJECT_MALFORMED = 0x01;
 static const unsigned char REJECT_OBSOLETE = 0x11;
+static const unsigned char REJECT_DUPLICATE = 0x12;
 
 static const int LAST_POW_BLOCK = 4000;
 

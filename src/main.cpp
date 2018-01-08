@@ -3385,7 +3385,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 {
     static map<CService, CPubKey> mapReuseKey;
     RandAddSeedPerfmon();
-    LogPrint("net", "received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
+    LogPrintf("received: %s (%u bytes) peer=%d\n", SanitizeString(strCommand), vRecv.size(), pfrom->id);
 
     if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
     {
@@ -3393,13 +3393,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         return true;
     }
 
-    /* TODO: look into bloom */
+    /* TODO: NTRN - look into bloom */
 
     if (strCommand == NetMsgType::VERSION)
     {
         // Each connection can only send one version message
         if (pfrom->nVersion != 0)
         {
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, string("Duplicate version message"));
             pfrom->Misbehaving(1);
             return false;
         }
@@ -3415,6 +3416,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             LogPrintf("%s : peer=%d (%s) using obsolete version %i; disconnecting\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE, strprintf("Version must be %d or greater", ActiveProtocol()));
             pfrom->fDisconnect = true;
+            pfrom->Misbehaving(50);
             return false;
         }
 
@@ -3729,6 +3731,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CSyncCheckpoint checkpoint;
         vRecv >> checkpoint;
 
+        if(fDebug) LogPrintf("checkpoint - Received: hash=%s", checkpoint.hashCheckpoint.ToString());
+
         if (checkpoint.ProcessSyncCheckpoint(pfrom))
         {
             // Relay
@@ -3773,7 +3777,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
         pfrom->PushMessage(NetMsgType::HEADERS, vHeaders);
     }
-
 
     else if (strCommand == NetMsgType::TX || strCommand == NetMsgType::DSTX)
     {
