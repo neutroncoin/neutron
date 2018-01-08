@@ -115,8 +115,10 @@ public:
     {
         if(override == 0){
             lastTimeSeen = GetAdjustedTime();
+            if(fDebug) LogPrintf("UpdateLastSeen - addr=%s lastTimeSeen=%s using GetAdjustedTime\n", addr.ToString(), lastTimeSeen);
         } else {
             lastTimeSeen = override;
+            if(fDebug) LogPrintf("UpdateLastSeen - addr=%s lastTimeSeen=%s using override\n", addr.ToString(), lastTimeSeen);
         }
     }
 
@@ -259,6 +261,8 @@ private:
     mutable CCriticalSection cs;
 
 public:
+    int CountEnabled(int protocolVersion = -1);
+
     /// Find an entry
     CMasterNode* Find(const CTxIn& vin);
 };
