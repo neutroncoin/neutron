@@ -160,22 +160,20 @@ public:
 
     bool GetAddress(CService &addr)
     {
-        BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
-            if(mn.vin == vin){
-                addr = mn.addr;
-                return true;
-            }
+        CMasterNode* pmn = mnodeman.Find(vin);
+        if (pmn != NULL) {
+            addr = pmn->addr;
+            return true;
         }
         return false;
     }
 
     bool GetProtocolVersion(int &protocolVersion)
     {
-        BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
-            if(mn.vin == vin){
-                protocolVersion = mn.protocolVersion;
-                return true;
-            }
+        CMasterNode* pmn = mnodeman.Find(vin);
+        if (pmn != NULL) {
+            protocolVersion = pmn->protocolVersion;
+            return true;
         }
         return false;
     }
