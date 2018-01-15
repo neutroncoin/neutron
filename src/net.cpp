@@ -37,7 +37,6 @@ void ThreadOpenAddedConnections2(void* parg);
 #ifdef USE_UPNP
 void ThreadMapPort2(void* parg);
 #endif
-void ThreadDNSAddressSeed2(void* parg);
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
 
@@ -1255,6 +1254,7 @@ std::vector<CDNSSeedData> vSeeds;
 const std::vector<CDNSSeedData>& DNSSeeds() {
     vSeeds.push_back(CDNSSeedData("presstab", "ntrnseed.presstab.pw"));
     vSeeds.push_back(CDNSSeedData("fuzzbawls", "ntrn.seed.fuzzbawls.pw"));
+    vSeeds.push_back(CDNSSeedData("cryptotools", "ntrn.seed.cryptotools.pw"));
     return vSeeds;
 }
 
@@ -1274,19 +1274,19 @@ void ThreadDNSAddressSeed(void* parg)
 
         if (!fTestNet)
         {
-            LogPrintf("ThreadDNSAddressSeed2 - Loading addresses from DNS seeds (could take a while)\n");
+            LogPrintf("ThreadDNSAddressSeed - Loading addresses from DNS seeds (could take a while)\n");
 
             BOOST_FOREACH (const CDNSSeedData& seed, vSeeds) {
                 if (HaveNameProxy()) {
-                    LogPrintf("ThreadDNSAddressSeed2 - Trying %s using proxy\n", seed.host);
+                    LogPrintf("ThreadDNSAddressSeed - Trying %s using proxy\n", seed.host);
                     AddOneShot(seed.host);
                 } else {
-                    LogPrintf("ThreadDNSAddressSeed2 - Trying %s (%s)\n", seed.host, seed.name);
+                    LogPrintf("ThreadDNSAddressSeed - Trying %s (%s)\n", seed.host, seed.name);
                     vector<CNetAddr> vaddr;
                     vector<CAddress> vAdd;
                     if (LookupHost(seed.host.c_str(), vaddr))
                     {
-                        LogPrintf("ThreadDNSAddressSeed2 - Found %d addresses from %s\n", vaddr.size(), seed.host);
+                        LogPrintf("ThreadDNSAddressSeed - Found %d addresses from %s\n", vaddr.size(), seed.host);
                         BOOST_FOREACH(CNetAddr& ip, vaddr)
                         {
                             int nOneDay = 24*3600;
