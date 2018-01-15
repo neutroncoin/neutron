@@ -649,7 +649,7 @@ bool AppInit2()
     }
 
     // see Step 2: parameter interactions for more information about these
-    fNoListen = !GetBoolArg("-listen", true);
+    fListen = GetBoolArg("-listen", DEFAULT_LISTEN);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
 #ifdef USE_UPNP
@@ -657,7 +657,7 @@ bool AppInit2()
 #endif
 
     bool fBound = false;
-    if (!fNoListen)
+    if (fListen)
     {
         std::string strError;
         if (mapArgs.count("-bind")) {

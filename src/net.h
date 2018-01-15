@@ -39,6 +39,8 @@ extern int nBestHeight;
 static const unsigned int MAX_ADDR_TO_SEND = 1000;
 /** Maximum length of incoming protocol messages (no message over 2 MiB is currently acceptable). */
 static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 2 * 1024 * 1024;
+/** -listen default */
+static const bool DEFAULT_LISTEN = true;
 
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
@@ -122,6 +124,7 @@ enum threadId
 
 extern bool fClient;
 extern bool fDiscover;
+extern bool fListen;
 extern bool fUseUPnP;
 extern uint64_t nLocalServices;
 extern uint64_t nLocalHostNonce;
