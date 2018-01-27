@@ -87,8 +87,7 @@ public:
     bool allowFreeTx;
     int protocolVersion;
 
-    //the dsq count from the last dsq broadcast of this node
-    int64_t nLastDsq;
+    int64_t nLastDsq; //the dsq count from the last dsq broadcast of this node
 
     CMasterNode(CService newAddr, CTxIn newVin, CPubKey newPubkey, std::vector<unsigned char> newSig, int64_t newNow, CPubKey newPubkey2, int protocolVersionIn)
     {
@@ -98,7 +97,7 @@ public:
         pubkey2 = newPubkey2;
         sig = newSig;
         now = newNow;
-        enabled = 1;
+        enabled = 1; // active
         lastTimeSeen = 0;
         unitTest = false;
         cacheInputAge = 0;
@@ -261,6 +260,15 @@ private:
     mutable CCriticalSection cs;
 
 public:
+    /// Check all Masternodes
+    void Check();
+
+    /// Check all Masternodes and remove inactive
+    void CheckAndRemove();
+
+    /// Clear Masternode vector
+    void Clear();
+
     int CountEnabled(int protocolVersion = -1);
 
     /// Find an entry

@@ -116,7 +116,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         //search existing masternode list, this is where we update existing masternodes with new dsee broadcasts
         CMasterNode* pmn = mnodeman.Find(vin);
         if (pmn != NULL) {
-            LogPrintf("dsee - Found existing masternode %s - %s - %s\n", addr.ToString().c_str(), pmn->addr.ToString().c_str(), vin.ToString().c_str());
+            LogPrintf("dsee - Found existing masternode %s - %s - %s\n", pmn->addr.ToString().c_str(), vin.ToString().c_str(), pmn->UpdatedWithin(MASTERNODE_MIN_DSEE_SECONDS));
 
             // count == -1 when it's a new entry
             //   e.g. We don't want the entry relayed/time updated when we're syncing the list
@@ -227,11 +227,13 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         // see if we have this masternode
         CMasterNode* pmn = mnodeman.Find(vin);
         if (pmn != NULL) {
-            if(fDebug) LogPrintf("dseep - Found corresponding mn for vin: %s\n", vin.ToString().c_str());
+            if(fDebug) LogPrintf("dseep - Found corresponding mn for vin=%s addr=%s\n", vin.ToString().c_str(), pmn->addr.ToString());
 
             // take this only if it's newer
             if(pmn->lastDseep < sigTime){
                 std::string strMessage = pmn->addr.ToString() + boost::lexical_cast<std::string>(sigTime) + boost::lexical_cast<std::string>(stop);
+
+                if(fDebug) LogPrintf("dseep - Got newer sigTime - sigTime=%d lastDseep=%d\n", sigTime, pmn->lastDseep);
 
                 std::string errorMessage = "";
                 if(!darkSendSigner.VerifyMessage(pmn->pubkey2, vchSig, strMessage, errorMessage)){
@@ -243,6 +245,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 pmn->lastDseep = sigTime;
 
                 if(!pmn->UpdatedWithin(MASTERNODE_MIN_DSEEP_SECONDS)){
+                    if(fDebug) LogPrintf("dseep - UpdatingLastSeen addr=%s\n", pmn->addr.ToString());
                     pmn->UpdateLastSeen();
                     if(stop) {
                         pmn->Disable();
@@ -570,6 +573,9 @@ uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
 
 void CMasterNode::Check()
 {
+    // if(!fForce && (GetTime() - lastTimeChecked < MASTERNODE_CHECK_SECONDS)) return;
+    // lastTimeChecked = GetTime();
+
     //once spent, stop doing the checks
     if(enabled==3) return;
 
@@ -824,6 +830,41 @@ bool CMasternodePayments::SetPrivKey(std::string strPrivKey)
 }
 
 
+void CMasternodeMan::Check()
+{
+    LOCK(cs_masternodes);
+
+    BOOST_FOREACH (CMasterNode& mn, vecMasternodes) {
+        mn.Check();
+    }
+}
+
+void CMasternodeMan::CheckAndRemove()
+{
+    Check();
+
+    LOCK(cs_masternodes);
+
+    //remove inactive and outdated
+    vector<CMasterNode>::iterator it = vecMasternodes.begin();
+    while (it != vecMasternodes.end()) {
+        if((*it).enabled == 4 || (*it).enabled == 3){
+            LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
+            it = vecMasternodes.erase(it);
+        } else {
+            ++it;
+        }
+    }
+
+    // TODO: NTRN - do more checks here
+}
+
+void CMasternodeMan::Clear()
+{
+    LOCK(cs_masternodes);
+    vecMasternodes.clear();
+}
+
 int CMasternodeMan::CountEnabled(int protocolVersion)
 {
     int i = 0;
@@ -848,3 +889,4 @@ CMasterNode* CMasternodeMan::Find(const CTxIn& vin)
     }
     return NULL;
 }
+
