@@ -71,19 +71,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 //
 class CMasterNode
 {
-// private:
-//     // critical section to protect the inner data structures
-//     mutable CCriticalSection cs;
-
 public:
-    enum state {
-        MASTERNODE_ENABLED = 1,
-        MASTERNODE_EXPIRED = 2,
-        MASTERNODE_VIN_SPENT = 3,
-        MASTERNODE_REMOVE = 4,
-        MASTERNODE_POS_ERROR = 5
-    };
-
     CTxIn vin;
     CService addr;
     int64_t lastTimeSeen;
