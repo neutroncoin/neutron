@@ -39,8 +39,8 @@ class uint256;
 #define MASTERNODE_MIN_DSEEP_SECONDS           (30*60)
 #define MASTERNODE_MIN_DSEE_SECONDS            (5*60)
 #define MASTERNODE_PING_SECONDS                (1*60)
-#define MASTERNODE_EXPIRATION_SECONDS          (65*60)
-#define MASTERNODE_REMOVAL_SECONDS             (70*60)
+#define MASTERNODE_EXPIRATION_SECONDS          (120*60)
+#define MASTERNODE_REMOVAL_SECONDS             (130*60)
 #define MASTERNODE_DSEG_SECONDS                (3*60*60)
 
 #define MASTERNODE_BLOCK_OFFSET                50
@@ -71,7 +71,19 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 //
 class CMasterNode
 {
+// private:
+//     // critical section to protect the inner data structures
+//     mutable CCriticalSection cs;
+
 public:
+    enum state {
+        MASTERNODE_ENABLED = 1,
+        MASTERNODE_EXPIRED = 2,
+        MASTERNODE_VIN_SPENT = 3,
+        MASTERNODE_REMOVE = 4,
+        MASTERNODE_POS_ERROR = 5
+    };
+
     CTxIn vin;
     CService addr;
     int64_t lastTimeSeen;
