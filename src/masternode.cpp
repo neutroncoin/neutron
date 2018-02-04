@@ -219,7 +219,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         }
 
         if (sigTime <= GetAdjustedTime() - 60 * 60) {
-            LogPrintf("dseep - Signature rejected, too far into the past %s - %s - %ld less than %ld - %ld \n", pfrom->addr.ToString().c_str(), vin.ToString().c_str(), sigTime, GetAdjustedTime() - 60 * 60, GetAdjustedTime());
+            LogPrintf("dseep - Signature rejected, too far into the past %s - %s - %ld less than %ld\n", pfrom->addr.ToString().c_str(), vin.ToString().c_str(), sigTime, GetAdjustedTime() - 60 * 60);
             // pfrom->Misbehaving(1);
             return;
         }
@@ -230,7 +230,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             if(fDebug) LogPrintf("dseep - Found corresponding mn for vin=%s addr=%s\n", vin.ToString().c_str(), pmn->addr.ToString());
 
             // take this only if it's newer
-            if(pmn->lastDseep < sigTime){
+            if(sigTime - pmn->lastDseep > MASTERNODE_MIN_DSEEP_SECONDS) {
                 std::string strMessage = pmn->addr.ToString() + boost::lexical_cast<std::string>(sigTime) + boost::lexical_cast<std::string>(stop);
 
                 if(fDebug) LogPrintf("dseep - Got newer sigTime - sigTime=%d lastDseep=%d\n", sigTime, pmn->lastDseep);
@@ -243,14 +243,20 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 }
 
                 pmn->lastDseep = sigTime;
+                pmn->Check();
 
-                if(!pmn->UpdatedWithin(MASTERNODE_MIN_DSEEP_SECONDS)){
-                    if(fDebug) LogPrintf("dseep - UpdatingLastSeen addr=%s\n", pmn->addr.ToString());
-                    pmn->UpdateLastSeen();
+                if(pmn->IsEnabled()) {
+                    if(fDebug) LogPrintf("dseep - Masternode is enabled addr=%s\n", pmn->addr.ToString());
+
                     if(stop) {
                         pmn->Disable();
-                        pmn->Check();
+                    } else {
+                        if(fDebug) LogPrintf("dseep - UpdatingLastSeen addr=%s\n", pmn->addr.ToString());
+                        pmn->UpdateLastSeen();
                     }
+                    TRY_LOCK(cs_vNodes, lockNodes);
+                    if (!lockNodes) return;
+                    if(fDebug) LogPrintf("dseep - relaying %s - %s \n", pmn->addr.ToString(), vin.prevout.hash.ToString());
                     RelayDarkSendElectionEntryPing(vin, vchSig, sigTime, stop);
                 }
             }
