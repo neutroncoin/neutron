@@ -289,7 +289,8 @@ int main(int argc, char *argv[])
 
         BitcoinGUI window;
         guiref = &window;
-        if(AppInit2())
+        boost::thread_group threadGroup;
+        if(AppInit2(threadGroup))
         {
             {
                 // Put this in a block, so that the Model objects are cleaned up before
@@ -297,6 +298,7 @@ int main(int argc, char *argv[])
 
                 if (splashref)
                     splashref->finish(&window);
+                    splashref = NULL;
 
                 ClientModel clientModel(&optionsModel);
                 WalletModel walletModel(pwalletMain, &optionsModel);
@@ -322,7 +324,7 @@ int main(int argc, char *argv[])
                 guiref = 0;
             }
             // Shutdown the core and its threads, but don't exit Bitcoin-Qt here
-            Shutdown(NULL);
+            Shutdown();
         }
         else
         {
