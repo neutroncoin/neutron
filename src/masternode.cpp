@@ -579,26 +579,27 @@ uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
 
 void CMasterNode::Check()
 {
-    // if(!fForce && (GetTime() - lastTimeChecked < MASTERNODE_CHECK_SECONDS)) return;
-    // lastTimeChecked = GetTime();
+    if(GetTime() - lastTimeChecked < MASTERNODE_CHECK_SECONDS) return;
+    lastTimeChecked = GetTime();
+
 
     //once spent, stop doing the checks
-    if(enabled==3) return;
+    if(enabled==MASTERNODE_VIN_SPENT) return;
 
     //Only accept p2p port for mainnet and testnet
     if (addr.GetPort() != GetDefaultPort()) {
-        enabled = 3;
+        enabled = MASTERNODE_POS_ERROR;
         return;
     }
 
 
     if(!UpdatedWithin(MASTERNODE_REMOVAL_SECONDS)){
-        enabled = 4;
+        enabled = MASTERNODE_REMOVE;
         return;
     }
 
     if(!UpdatedWithin(MASTERNODE_EXPIRATION_SECONDS)){
-        enabled = 2;
+        enabled = MASTERNODE_EXPIRED;
         return;
     }
 
@@ -611,12 +612,12 @@ void CMasterNode::Check()
         //if(!AcceptableInputs(mempool, state, tx)){
         bool pfMissingInputs = false;
         if(!AcceptableInputs(mempool, tx, false, &pfMissingInputs)){
-            enabled = 3;
+            enabled = MASTERNODE_VIN_SPENT;
             return;
         }
     }
 
-    enabled = 1; // OK
+    enabled = MASTERNODE_ENABLED; // OK
 }
 
 bool CMasternodePayments::CheckSignature(CMasternodePaymentWinner& winner)
@@ -854,7 +855,7 @@ void CMasternodeMan::CheckAndRemove()
     //remove inactive and outdated
     vector<CMasterNode>::iterator it = vecMasternodes.begin();
     while (it != vecMasternodes.end()) {
-        if((*it).enabled == 4 || (*it).enabled == 3){
+        if((*it).enabled == CMasterNode::MASTERNODE_REMOVE || (*it).enabled == CMasterNode::MASTERNODE_VIN_SPENT){
             LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
             it = vecMasternodes.erase(it);
         } else {

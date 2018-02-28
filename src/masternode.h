@@ -19,6 +19,8 @@
 #include "main.h"
 #include "timedata.h"
 #include "script.h"
+#include <boost/lexical_cast.hpp>
+
 
 class CMasterNode;
 class CMasternodePayments;
@@ -41,6 +43,7 @@ class uint256;
 #define MASTERNODE_PING_SECONDS                (1*60)
 #define MASTERNODE_EXPIRATION_SECONDS          (120*60)
 #define MASTERNODE_REMOVAL_SECONDS             (130*60)
+#define MASTERNODE_CHECK_SECONDS               5
 #define MASTERNODE_DSEG_SECONDS                (3*60*60)
 
 #define MASTERNODE_BLOCK_OFFSET                50
@@ -71,7 +74,18 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 //
 class CMasterNode
 {
+private:
+    int64_t lastTimeChecked;
+
 public:
+    enum state {
+        MASTERNODE_ENABLED = 1,
+        MASTERNODE_EXPIRED = 2,
+        MASTERNODE_VIN_SPENT = 3,
+        MASTERNODE_REMOVE = 4,
+        MASTERNODE_POS_ERROR = 5
+    };
+
     CTxIn vin;
     CService addr;
     int64_t lastTimeSeen;
@@ -97,7 +111,7 @@ public:
         pubkey2 = newPubkey2;
         sig = newSig;
         now = newNow;
-        enabled = 1; // active
+        enabled = MASTERNODE_ENABLED;
         lastTimeSeen = 0;
         unitTest = false;
         cacheInputAge = 0;
@@ -106,6 +120,7 @@ public:
         lastDseep = 0;
         allowFreeTx = true;
         protocolVersion = protocolVersionIn;
+        lastTimeChecked = 0;
     }
 
     uint256 CalculateScore(unsigned int nBlockHeight);
@@ -144,7 +159,7 @@ public:
 
     bool IsEnabled()
     {
-        return enabled == 1;
+        return enabled == MASTERNODE_ENABLED;
     }
 
     int GetMasternodeInputAge()
@@ -158,6 +173,19 @@ public:
 
         return cacheInputAge+(pindexBest->nHeight-cacheInputAgeBlock);
     }
+
+    std::string Status(){
+        std::string strStatus = "ACTIVE";
+
+        if(enabled == CMasterNode::MASTERNODE_ENABLED) strStatus   = "ENABLED";
+        if(enabled == CMasterNode::MASTERNODE_EXPIRED) strStatus   = "EXPIRED";
+        if(enabled == CMasterNode::MASTERNODE_VIN_SPENT) strStatus = "VIN_SPENT";
+        if(enabled == CMasterNode::MASTERNODE_REMOVE) strStatus    = "REMOVE";
+        if(enabled == CMasterNode::MASTERNODE_POS_ERROR) strStatus = "POS_ERROR";
+
+        return strStatus;
+    }
+
 };
 
 
@@ -186,6 +214,14 @@ public:
         payee = CScript();
     }
 
+    CMasternodePaymentWinner(CTxIn vinIn)
+    {
+        nBlockHeight = 0;
+        score = 0;
+        vin = vinIn;
+        payee = CScript();
+    }
+
     uint256 GetHash(){
         uint256 n2 = Hash(BEGIN(nBlockHeight), END(nBlockHeight));
         uint256 n3 = vin.prevout.hash > n2 ? (vin.prevout.hash - n2) : (n2 - vin.prevout.hash);
@@ -204,6 +240,17 @@ public:
         READWRITE(score);
         READWRITE(vchSig);
      }
+
+    std::string ToString()
+    {
+        std::string ret = "";
+        ret += vin.ToString();
+        ret += ", " + boost::lexical_cast<std::string>(nBlockHeight);
+        ret += ", " + payee.ToString();
+        ret += ", " + boost::lexical_cast<std::string>((int)vchSig.size());
+        return ret;
+    }
+
 };
 
 //
