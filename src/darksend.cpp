@@ -2143,7 +2143,7 @@ void ThreadCheckDarkSendPool(void* parg)
                 if(nTick % 60 == 0){
                     // // LOCK2(cs_main, cs_masternodes);
 
-                    // LOCK(cs_main);
+                    LOCK(cs_main);
 
                     //     cs_main is required for doing CMasterNode.Check because something
                     //     is modifying the coins view without a mempool lock. It causes
