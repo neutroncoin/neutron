@@ -296,9 +296,9 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 {
                     int64_t t = (*i).second;
                     if (GetTime() < t) {
-                        pfrom->Misbehaving(34);
-                        LogPrintf("dseg - peer already asked me for the list, peer=%d\n", pfrom->id);
-                        return;
+                        // pfrom->Misbehaving(34);
+                        // LogPrintf("dseg - peer already asked me for the list, peer=%d\n", pfrom->id);
+                        // return;
                     }
                 }
 
