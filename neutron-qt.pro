@@ -221,6 +221,9 @@ HEADERS += src/activemasternode.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
     src/qt/walletmodel.h \
+    src/qt/bitcoin.moc \
+    src/qt/overviewpage.moc \
+    src/qt/rpcconsole.moc \
     src/zerocoin/Accumulator.h \
     src/zerocoin/AccumulatorProofOfKnowledge.h \
     src/zerocoin/Coin.h \

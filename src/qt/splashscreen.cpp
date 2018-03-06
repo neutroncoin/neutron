@@ -30,7 +30,7 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
     float fontFactor            = 1.0;
 
     // define text to place
-    QString titleText       = tr("Neutron Core");
+    // QString titleText       = tr("Neutron Core");
     // QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
     // QString copyrightTextBtc   = QChar(0xA9)+QString(" 2009-2015 ").arg(COPYRIGHT_YEAR) + QString(tr("The Bitcoin Core developers"));
 
@@ -40,22 +40,22 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
     QPixmap newPixmap;
     newPixmap     = QPixmap(":/images/splash");
 
-    QPainter pixPaint(&newPixmap);
-    pixPaint.setPen(QColor(232,186,163));
+    // QPainter pixPaint(&newPixmap);
+    // pixPaint.setPen(QColor(232,186,163));
 
-    // check font size and drawing with
-    pixPaint.setFont(QFont(font, 28*fontFactor));
-    QFontMetrics fm = pixPaint.fontMetrics();
-    int titleTextWidth  = fm.width(titleText);
-    if(titleTextWidth > 160) {
-        // strange font rendering, Arial probably not found
-        fontFactor = 0.75;
-    }
+    // // check font size and drawing with
+    // pixPaint.setFont(QFont(font, 28*fontFactor));
+    // QFontMetrics fm = pixPaint.fontMetrics();
+    // int titleTextWidth  = fm.width(titleText);
+    // if(titleTextWidth > 160) {
+    //     // strange font rendering, Arial probably not found
+    //     fontFactor = 0.75;
+    // }
 
-    pixPaint.setFont(QFont(font, 28*fontFactor));
-    fm = pixPaint.fontMetrics();
-    titleTextWidth  = fm.width(titleText);
-    pixPaint.drawText(paddingLeft,paddingTop,titleText);
+    // pixPaint.setFont(QFont(font, 28*fontFactor));
+    // fm = pixPaint.fontMetrics();
+    // titleTextWidth  = fm.width(titleText);
+    // pixPaint.drawText(paddingLeft,paddingTop,titleText);
 
     // pixPaint.setFont(QFont(font, 15*fontFactor));
     // pixPaint.drawText(paddingLeft,paddingTop+titleVersionVSpace,versionText);
@@ -64,7 +64,7 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
     // pixPaint.setFont(QFont(font, 10*fontFactor));
     // pixPaint.drawText(paddingLeft,paddingTop+titleCopyrightVSpace,copyrightTextBtc);
 
-    pixPaint.end();
+    // pixPaint.end();
 
     this->setPixmap(newPixmap);
 
