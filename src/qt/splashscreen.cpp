@@ -36,9 +36,22 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
 
     QString font            = "Arial";
 
-    // load the bitmap for writing some text over it
-    QPixmap newPixmap;
-    newPixmap     = QPixmap(":/images/splash");
+
+    // overlay the logo bitmap on a colored background
+
+    QPixmap overlay = QPixmap(":/images/splash");
+
+    QPixmap base(overlay.width(),overlay.height());
+    base.fill(Qt::white);
+
+    QPixmap newPixmap(base.width(), base.height());
+    newPixmap.fill(Qt::transparent); // force alpha channel
+    {
+        QPainter painter(&newPixmap);
+        painter.drawPixmap(0, 0, base);
+        painter.drawPixmap(0, 0, overlay);
+    }
+
 
     // QPainter pixPaint(&newPixmap);
     // pixPaint.setPen(QColor(232,186,163));
