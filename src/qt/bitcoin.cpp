@@ -246,6 +246,8 @@ void createSplashScreenStandalone()
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
 {
+    boost::thread_group threadGroup;
+
     SetupEnvironment();
 
     /// 1. Parse command-line options. These take precedence over anything else.
@@ -349,7 +351,7 @@ int main(int argc, char *argv[])
 
         BitcoinGUI window;
         guiref = &window;
-        if(AppInit2())
+        if(AppInit2(threadGroup))
         {
             {
                 // Put this in a block, so that the Model objects are cleaned up before

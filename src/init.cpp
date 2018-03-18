@@ -135,6 +135,8 @@ void HandleSIGHUP(int)
 #if !defined(QT_GUI)
 bool AppInit(int argc, char* argv[])
 {
+    boost::thread_group threadGroup;
+
     bool fRet = false;
     try
     {
@@ -177,7 +179,7 @@ bool AppInit(int argc, char* argv[])
             exit(ret);
         }
 
-        fRet = AppInit2();
+        fRet = AppInit2(threadGroup);
     }
     catch (std::exception& e) {
         PrintException(&e, "AppInit()");
@@ -340,7 +342,7 @@ std::string HelpMessage()
 /** Initialize bitcoin.
  *  @pre Parameters should be parsed and config file should be read.
  */
-bool AppInit2()
+bool AppInit2(boost::thread_group& threadGroup)
 {
     // ********************************************************* Step 1: setup
 #ifdef _MSC_VER
@@ -997,8 +999,7 @@ bool AppInit2()
     LogPrintf("mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
     LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain->mapAddressBook.size());
 
-    if (!NewThread(StartNode, NULL))
-        InitError(_("Error: could not start node"));
+    StartNode(threadGroup);
 
     if (fServer)
         NewThread(ThreadRPCServer, NULL);
