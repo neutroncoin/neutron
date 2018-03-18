@@ -33,6 +33,9 @@
 #include "macdockiconhandler.h"
 #endif
 
+#include <QAction>
+#include <QSettings>
+
 #include <QApplication>
 #include <QMainWindow>
 #include <QMenuBar>
@@ -58,6 +61,8 @@
 #include <QDragEnterEvent>
 #include <QUrl>
 #include <QStyle>
+#include <QLineEdit>
+
 
 #include <iostream>
 
@@ -77,8 +82,13 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
+    openRPCConsoleAction(0),
+    openAction(0),
     nWeight(0)
+
+
 {
+
     resize(850, 550);
     setWindowTitle(tr("Neutron") + " - " + tr("Wallet"));
 #ifndef Q_OS_MAC
@@ -88,6 +98,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     setUnifiedTitleAndToolBarOnMac(true);
     QApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
 #endif
+
+
     // Accept D&D of URIs
     setAcceptDrops(true);
 
@@ -194,7 +206,10 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), transactionView, SLOT(focusTransaction(QModelIndex)));
 
-    // Double-clicking on a transaction on the transaction history page shows details
+	// Open conf file
+    connect(openConfEditorAction, SIGNAL(triggered()), rpcConsole, SLOT(showConfEditor()));
+
+	// Double-clicking on a transaction on the transaction history page shows details
     connect(transactionView, SIGNAL(doubleClicked(QModelIndex)), transactionView, SLOT(showDetails()));
 
     rpcConsole = new RPCConsole(this);
@@ -298,7 +313,9 @@ void BitcoinGUI::createActions()
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
     optionsAction->setToolTip(tr("Modify configuration options for Neutron"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
-    toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
+    openConfEditorAction = new QAction(QIcon(":/icons/edit"), tr("Open &Configuration File"), this);
+	openConfEditorAction->setStatusTip(tr("Open Configuration File"));
+	toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
     encryptWalletAction->setToolTip(tr("Encrypt or decrypt wallet"));
     encryptWalletAction->setCheckable(true);
@@ -313,10 +330,26 @@ void BitcoinGUI::createActions()
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
     verifyMessageAction = new QAction(QIcon(":/icons/transaction_0"), tr("&Verify message..."), this);
 
+    openInfoAction = new QAction(QIcon(":/icons/edit"), tr("&Information"), this);
+    openInfoAction->setStatusTip(tr("Show diagnostic information"));
+    openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug console"), this);
+    openRPCConsoleAction->setStatusTip(tr("Open debugging console"));
+    openConfEditorAction = new QAction(QIcon(":/icons/configure"), tr("Open Wallet &Configuration File"), this);
+    openConfEditorAction->setStatusTip(tr("Open configuration file"));
+    openMNConfEditorAction = new QAction(QIcon(":/icons/configure"), tr("Open &Masternode Configuration File"), this);
+    openMNConfEditorAction->setStatusTip(tr("Open Masternode configuration file"));
+    showBackupsAction = new QAction(QIcon(":/icons/filesave"), tr("Show &Backups"), this);
+    showBackupsAction->setStatusTip(tr("Show Wallet backups"));
+    // initially disable the debug window menu items
+    openInfoAction->setEnabled(false);
+    openRPCConsoleAction->setEnabled(false);
+
+
     exportAction = new QAction(QIcon(":/icons/export"), tr("&Export..."), this);
     exportAction->setToolTip(tr("Export the data in the current tab to a file"));
     openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug window"), this);
     openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
+
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
@@ -330,6 +363,25 @@ void BitcoinGUI::createActions()
     connect(lockWalletAction, SIGNAL(triggered()), this, SLOT(lockWallet()));
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
+
+    // Jump directly to tabs in RPC-console
+    connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
+    connect(openRPCConsoleAction, SIGNAL(triggered()), this, SLOT(showConsole()));
+
+    // Open configs and backup folder from menu
+    connect(openConfEditorAction, SIGNAL(triggered()), this, SLOT(showConfEditor()));
+    connect(openMNConfEditorAction, SIGNAL(triggered()), this, SLOT(showMNConfEditor()));
+    connect(showBackupsAction, SIGNAL(triggered()), this, SLOT(showBackups()));
+
+    // Get restart command-line parameters and handle restart
+    connect(rpcConsole, SIGNAL(handleRestart(QStringList)), this, SLOT(handleRestart(QStringList)));
+
+    // prevents an open debug window from becoming stuck/unusable on client shutdown
+    connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
+
+
+
+
 }
 
 void BitcoinGUI::createMenuBar()
@@ -343,27 +395,38 @@ void BitcoinGUI::createMenuBar()
 #endif
 
     // Configure the menus
-    QMenu *file = appMenuBar->addMenu(tr("&File"));
-    file->addAction(backupWalletAction);
-    file->addAction(exportAction);
-    file->addAction(signMessageAction);
-    file->addAction(verifyMessageAction);
-    file->addSeparator();
-    file->addAction(quitAction);
+	QMenu *file = appMenuBar->addMenu(tr("&File"));
+    	file->addAction(backupWalletAction);
+		file->addAction(exportAction);
+		file->addAction(signMessageAction);
+		file->addAction(verifyMessageAction);
+		file->addSeparator();
+		file->addAction(quitAction);
 
     QMenu *settings = appMenuBar->addMenu(tr("&Settings"));
-    settings->addAction(encryptWalletAction);
-    settings->addAction(changePassphraseAction);
-    settings->addAction(unlockWalletAction);
-    settings->addAction(lockWalletAction);
-    settings->addSeparator();
+
+		settings->addAction(encryptWalletAction);
+		settings->addAction(changePassphraseAction);
+		settings->addAction(unlockWalletAction);
+		settings->addAction(lockWalletAction);
+		settings->addSeparator();
+		settings->addAction(optionsAction);
+
+
     settings->addAction(optionsAction);
 
+		QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+		tools->addAction(openConfEditorAction);
+		tools->addAction(openMNConfEditorAction);
+		tools->addSeparator();
+		tools->addAction(showBackupsAction);
+
+
+
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
-    help->addAction(openRPCConsoleAction);
-    help->addSeparator();
-    help->addAction(aboutAction);
-    help->addAction(aboutQtAction);
+        help->addAction(aboutAction);
+        help->addAction(aboutQtAction);
+        help->addAction(openRPCConsoleAction);
 }
 
 void BitcoinGUI::createToolBars()
@@ -376,12 +439,12 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
     toolbar->addAction(masternodeManagerAction);
+    toolbar->addAction(openRPCConsoleAction);
+
+
 #if 0
     toolbar->addAction(openLoggerAction);
 # endif
-    QToolBar *toolbar2 = addToolBar(tr("Actions toolbar"));
-    toolbar2->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
-    toolbar2->addAction(exportAction);
 }
 
 void BitcoinGUI::setClientModel(ClientModel *clientModel)
@@ -484,12 +547,14 @@ void BitcoinGUI::createTrayIcon()
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(optionsAction);
     trayIconMenu->addAction(openRPCConsoleAction);
+    trayIconMenu->addAction(openConfEditorAction);
+
 #ifndef Q_OS_MAC // This is built-in on Mac
     trayIconMenu->addSeparator();
     trayIconMenu->addAction(quitAction);
 #endif
 
-    notificator = new Notificator(QApplication::applicationName(), trayIcon, this);
+    notificator = new Notificator(qApp->applicationName(), trayIcon);
 }
 
 #ifndef Q_OS_MAC
@@ -517,6 +582,40 @@ void BitcoinGUI::aboutClicked()
     AboutDialog dlg;
     dlg.setModel(clientModel);
     dlg.exec();
+}
+
+void BitcoinGUI::showDebugWindow()
+{
+    rpcConsole->showNormal();
+    rpcConsole->show();
+    rpcConsole->raise();
+    rpcConsole->activateWindow();
+}
+
+void BitcoinGUI::showInfo()
+{
+    rpcConsole->show();
+    showDebugWindow();
+}
+void BitcoinGUI::showConsole()
+{
+    rpcConsole->show();
+    showDebugWindow();
+}
+
+void BitcoinGUI::showConfEditor()
+{
+    GUIUtil::openConfigfile();
+}
+
+void BitcoinGUI::showMNConfEditor()
+{
+    GUIUtil::openMNConfigfile();
+}
+
+void BitcoinGUI::showBackups()
+{
+    GUIUtil::showBackups();
 }
 
 void BitcoinGUI::setNumConnections(int count)
@@ -589,7 +688,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     // Represent time from last generated block in human readable text
     if(secs <= 0)
     {
-        // Fully up to date. Leave text empty.
+    // Fully up to date. Leave text empty.
     }
     else if(secs < 60)
     {
@@ -947,6 +1046,7 @@ void BitcoinGUI::lockWallet()
     walletModel->setWalletLocked(true);
 }
 
+
 void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
 {
     // activateWindow() (sometimes) helps with keyboard focus on Windows
@@ -1034,5 +1134,5 @@ void BitcoinGUI::updateStakingIcon()
             labelStakingIcon->setToolTip(tr("Not staking because you don't have mature coins"));
         else
             labelStakingIcon->setToolTip(tr("Not staking"));
-    }
 }
+    }

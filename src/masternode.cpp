@@ -65,7 +65,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         // 70047 and greater
         vRecv >> vin >> addr >> vchSig >> sigTime >> pubkey >> pubkey2 >> count >> current >> lastUpdated >> protocolVersion;
 
-        if(fDebug) LogPrintf("dsee - Received: node: %s, vin: %s, addr: %s, sigTime: %lld, count: %d, current: %d, lastUpdated: %lld, protocol: %d\n", pfrom->addr.ToString().c_str(), vin.ToString().c_str(), addr.ToString(), sigTime, count, current, lastUpdated, protocolVersion);
+        if(fDebug) LogPrintf("dsee - Received: node: %s, vin: %s, addr: %s, sigTime: %lld, pubkey: %s, pubkey2: %s, count: %d, current: %d, lastUpdated: %lld, protocol: %d\n", pfrom->addr.ToString().c_str(), vin.ToString().c_str(), addr.ToString(), sigTime, pubkey.GetHash().ToString(), pubkey2.GetHash().ToString(), count, current, lastUpdated, protocolVersion);
 
         // make sure signature isn't in the future (past is OK)
         if (sigTime > GetAdjustedTime() + 60 * 60) {
