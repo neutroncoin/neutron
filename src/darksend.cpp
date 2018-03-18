@@ -2157,7 +2157,7 @@ void ThreadCheckDarkSendPool(void* parg)
                 }
             }
 
-            if (fDebug) LogPrintf("ThreadCheckDarkSendPool::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
+            // if (fDebug) LogPrintf("ThreadCheckDarkSendPool::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
 
             //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
@@ -2171,10 +2171,10 @@ void ThreadCheckDarkSendPool(void* parg)
                     }
                 }
 
+                if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Asking peers for Spork and Masternode lists\n");
+
                 LOCK(cs_vNodes);
                 BOOST_FOREACH(CNode* pnode, vNodes){
-                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Asking for Spork, Masternode, Winners Masternode list and payment list peer=%s\n", pnode->id);
-
                     // TODO: NTRN - should probably cycle through a few nodes at a time until all used, then reset the list...
 
                     if (pnode->HasFulfilledRequest("getspork")) continue;
@@ -2189,6 +2189,8 @@ void ThreadCheckDarkSendPool(void* parg)
                     // if (pnode->HasFulfilledRequest("mnwsync")) continue;
                         // pnode->FulfilledRequest("mnwsync");
                     // pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
+
+                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Synced with peer=%s\n", pnode->id);
 
                     RequestedMasterNodeList++;
                 }
