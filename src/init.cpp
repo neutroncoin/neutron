@@ -999,7 +999,9 @@ bool AppInit2(boost::thread_group& threadGroup)
     LogPrintf("mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
     LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain->mapAddressBook.size());
 
-    StartNode(threadGroup);
+    if (!NewThread(StartNode, NULL))
+        InitError(_("Error: could not start node"));
+    // StartNode(threadGroup);
 
     if (fServer)
         NewThread(ThreadRPCServer, NULL);
