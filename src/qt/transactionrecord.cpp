@@ -27,12 +27,36 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
     int64_t nTime = wtx.GetTxTime();
     int64_t nCredit = wtx.GetCredit(true);
     int64_t nDebit = wtx.GetDebit();
-    int64_t nOut = wtx.GetValueOut();
     int64_t nNet = nCredit - nDebit;
     uint256 hash = wtx.GetHash(), hashPrev = 0;
     std::map<std::string, std::string> mapValue = wtx.mapValue;
 
-    if (nNet > 0 || wtx.IsCoinBase() || wtx.IsCoinStake())
+    if (wtx.IsCoinStake()) {
+        TransactionRecord sub(hash, nTime);
+        CTxDestination address;
+        if (!ExtractDestination(wtx.vout[1].scriptPubKey, address))
+            return parts;
+
+        if (!IsMine(*wallet, address)) {
+            //if the address is not yours then it means you have a tx sent to you in someone elses coinstake tx
+            for (unsigned int i = 1; i < wtx.vout.size(); i++) {
+                CTxDestination outAddress;
+                if (ExtractDestination(wtx.vout[i].scriptPubKey, outAddress)) {
+                    if (IsMine(*wallet, outAddress)) {
+                        sub.type = TransactionRecord::Generated;
+                        sub.address = CBitcoinAddress(outAddress).ToString();
+                        sub.credit = wtx.vout[i].nValue;
+                    }
+                }
+            }
+        } else {
+            //stake reward
+            sub.type = TransactionRecord::Generated;
+            sub.address = CBitcoinAddress(address).ToString();
+            sub.credit = nNet;
+        }
+        parts.append(sub);
+    } else if (nNet > 0 || wtx.IsCoinBase())
     {
         //
         // Credit
@@ -61,26 +85,6 @@ QList<TransactionRecord> TransactionRecord::decomposeTransaction(const CWallet *
                 {
                     // Generated (proof-of-work)
                     sub.type = TransactionRecord::Generated;
-                }
-                if (wtx.IsCoinStake())
-                {
-                    // Generated (proof-of-stake)
-
-                    if (hashPrev == hash)
-                        continue; // last coinstake output
-
-                    sub.type = TransactionRecord::Generated;
-                    if (nNet > 0) {
-                        sub.credit = nNet;
-                    } else {
-                        // masternode reward
-                        sub.credit = txout.nValue - nDebit;
-                        if (sub.credit < 0) {
-                            // stake reward
-                            sub.credit = wtx.GetValueOut() - nDebit;
-                        }
-                    }
-                    hashPrev = hash;
                 }
 
                 parts.append(sub);
