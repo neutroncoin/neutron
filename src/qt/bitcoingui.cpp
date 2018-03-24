@@ -79,6 +79,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     unlockWalletAction(0),
     lockWalletAction(0),
     aboutQtAction(0),
+    openRPCConsoleAction(0),
+    openAction(0),
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
@@ -206,10 +208,10 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), transactionView, SLOT(focusTransaction(QModelIndex)));
 
-	// Open conf file
-    connect(openConfEditorAction, SIGNAL(triggered()), rpcConsole, SLOT(showConfEditor()));
+  	// Open conf file
+    connect(openConfEditorAction, SIGNAL(triggered()), this, SLOT(showConfEditor()));
 
-	// Double-clicking on a transaction on the transaction history page shows details
+    // Double-clicking on a transaction on the transaction history page shows details
     connect(transactionView, SIGNAL(doubleClicked(QModelIndex)), transactionView, SLOT(showDetails()));
 
     rpcConsole = new RPCConsole(this);
@@ -314,8 +316,8 @@ void BitcoinGUI::createActions()
     optionsAction->setToolTip(tr("Modify configuration options for Neutron"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
     openConfEditorAction = new QAction(QIcon(":/icons/edit"), tr("Open &Configuration File"), this);
-	openConfEditorAction->setStatusTip(tr("Open Configuration File"));
-	toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
+    openConfEditorAction->setStatusTip(tr("Open Configuration File"));
+    toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
     encryptWalletAction = new QAction(QIcon(":/icons/lock_closed"), tr("&Encrypt Wallet..."), this);
     encryptWalletAction->setToolTip(tr("Encrypt or decrypt wallet"));
     encryptWalletAction->setCheckable(true);
@@ -379,9 +381,6 @@ void BitcoinGUI::createActions()
     // prevents an open debug window from becoming stuck/unusable on client shutdown
     connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
 
-
-
-
 }
 
 void BitcoinGUI::createMenuBar()
@@ -415,12 +414,22 @@ void BitcoinGUI::createMenuBar()
 
     settings->addAction(optionsAction);
 
+
 		QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
 		tools->addAction(openConfEditorAction);
 		tools->addAction(openMNConfEditorAction);
 		tools->addSeparator();
 		tools->addAction(showBackupsAction);
 
+
+    settings->addAction(optionsAction);
+
+    QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
+    tools->addAction(openConfEditorAction);
+    // TODO: NTRN - hide this option for now
+    // tools->addAction(openMNConfEditorAction);
+    tools->addSeparator();
+    tools->addAction(showBackupsAction);
 
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
