@@ -79,11 +79,11 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     unlockWalletAction(0),
     lockWalletAction(0),
     aboutQtAction(0),
+    openRPCConsoleAction(0),
+    openAction(0),
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
-    openRPCConsoleAction(0),
-    openAction(0),
     nWeight(0)
 {
     resize(850, 550);
