@@ -84,13 +84,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
-    openRPCConsoleAction(0),
-    openAction(0),
     nWeight(0)
-
-
 {
-
     resize(850, 550);
     setWindowTitle(tr("Neutron") + " - " + tr("Wallet"));
 #ifndef Q_OS_MAC
@@ -100,8 +95,6 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     setUnifiedTitleAndToolBarOnMac(true);
     QApplication::setAttribute(Qt::AA_DontShowIconsInMenus);
 #endif
-
-
     // Accept D&D of URIs
     setAcceptDrops(true);
 
@@ -208,7 +201,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), transactionView, SLOT(focusTransaction(QModelIndex)));
 
-  	// Open conf file
+	// Open conf file
     connect(openConfEditorAction, SIGNAL(triggered()), this, SLOT(showConfEditor()));
 
     // Double-clicking on a transaction on the transaction history page shows details
@@ -352,7 +345,6 @@ void BitcoinGUI::createActions()
     openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug window"), this);
     openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
 
-
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
     connect(aboutQtAction, SIGNAL(triggered()), qApp, SLOT(aboutQt()));
@@ -374,13 +366,6 @@ void BitcoinGUI::createActions()
     connect(openConfEditorAction, SIGNAL(triggered()), this, SLOT(showConfEditor()));
     connect(openMNConfEditorAction, SIGNAL(triggered()), this, SLOT(showMNConfEditor()));
     connect(showBackupsAction, SIGNAL(triggered()), this, SLOT(showBackups()));
-
-    // Get restart command-line parameters and handle restart
-    connect(rpcConsole, SIGNAL(handleRestart(QStringList)), this, SLOT(handleRestart(QStringList)));
-
-    // prevents an open debug window from becoming stuck/unusable on client shutdown
-    connect(quitAction, SIGNAL(triggered()), rpcConsole, SLOT(hide()));
-
 }
 
 void BitcoinGUI::createMenuBar()
@@ -394,32 +379,21 @@ void BitcoinGUI::createMenuBar()
 #endif
 
     // Configure the menus
-	QMenu *file = appMenuBar->addMenu(tr("&File"));
-    	file->addAction(backupWalletAction);
-		file->addAction(exportAction);
-		file->addAction(signMessageAction);
-		file->addAction(verifyMessageAction);
-		file->addSeparator();
-		file->addAction(quitAction);
+    QMenu *file = appMenuBar->addMenu(tr("&File"));
+    file->addAction(backupWalletAction);
+    file->addAction(exportAction);
+    file->addAction(signMessageAction);
+    file->addAction(verifyMessageAction);
+    file->addSeparator();
+    file->addAction(quitAction);
 
     QMenu *settings = appMenuBar->addMenu(tr("&Settings"));
-
-		settings->addAction(encryptWalletAction);
-		settings->addAction(changePassphraseAction);
-		settings->addAction(unlockWalletAction);
-		settings->addAction(lockWalletAction);
-		settings->addSeparator();
-		settings->addAction(optionsAction);
-
-
+    settings->addAction(encryptWalletAction);
+    settings->addAction(changePassphraseAction);
+    settings->addAction(unlockWalletAction);
+    settings->addAction(lockWalletAction);
+    settings->addSeparator();
     settings->addAction(optionsAction);
-
-
-		QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
-		tools->addAction(openConfEditorAction);
-		tools->addAction(openMNConfEditorAction);
-		tools->addSeparator();
-		tools->addAction(showBackupsAction);
 
 
     settings->addAction(optionsAction);
@@ -431,11 +405,11 @@ void BitcoinGUI::createMenuBar()
     tools->addSeparator();
     tools->addAction(showBackupsAction);
 
-
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
-        help->addAction(aboutAction);
-        help->addAction(aboutQtAction);
-        help->addAction(openRPCConsoleAction);
+    help->addAction(openRPCConsoleAction);
+    help->addSeparator();
+    help->addAction(aboutAction);
+    help->addAction(aboutQtAction);
 }
 
 void BitcoinGUI::createToolBars()
@@ -563,7 +537,7 @@ void BitcoinGUI::createTrayIcon()
     trayIconMenu->addAction(quitAction);
 #endif
 
-    notificator = new Notificator(qApp->applicationName(), trayIcon);
+    notificator = new Notificator(QApplication::applicationName(), trayIcon, this);
 }
 
 #ifndef Q_OS_MAC
@@ -697,7 +671,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     // Represent time from last generated block in human readable text
     if(secs <= 0)
     {
-    // Fully up to date. Leave text empty.
+        // Fully up to date. Leave text empty.
     }
     else if(secs < 60)
     {
@@ -1055,7 +1029,6 @@ void BitcoinGUI::lockWallet()
     walletModel->setWalletLocked(true);
 }
 
-
 void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
 {
     // activateWindow() (sometimes) helps with keyboard focus on Windows
@@ -1143,5 +1116,5 @@ void BitcoinGUI::updateStakingIcon()
             labelStakingIcon->setToolTip(tr("Not staking because you don't have mature coins"));
         else
             labelStakingIcon->setToolTip(tr("Not staking"));
-}
     }
+}

@@ -254,7 +254,6 @@ void openConfigfile()
 {
     boost::filesystem::path pathDebug = GetConfigFile();
 
-
     /* Open conf with the associated application */
     if (boost::filesystem::exists(pathDebug))
         QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(pathDebug.string())));
@@ -262,9 +261,7 @@ void openConfigfile()
 
 void openMNConfigfile()
 {
-
     boost::filesystem::path pathDebug = GetMasternodeConfigFile();
-
 
     /* Open conf with the associated application */
     if (boost::filesystem::exists(pathDebug))
@@ -273,9 +270,7 @@ void openMNConfigfile()
 
 void showBackups()
 {
-
     boost::filesystem::path pathDebug = GetDataDir(false);
-
 
     /* Open folder with default browser */
     if (boost::filesystem::exists(pathDebug))
