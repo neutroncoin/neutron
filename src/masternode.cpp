@@ -24,7 +24,7 @@ map<uint256, int> mapSeenMasternodeScanningErrors;
 // who's asked for the masternode list and the last time
 std::map<CNetAddr, int64_t> askedForMasternodeList;
 // which masternodes we've asked for
-std::map<COutPoint, int64_t> askedForMasternodeListEntry;
+std::map<COutPoint, int64_t> mWeAskedForMasternodeListEntry;
 // cache block hashes as we calculate them
 std::map<int64_t, uint256> mapCacheBlockHashes;
 
@@ -266,20 +266,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         if(fDebug) LogPrintf("dseep - Couldn't find masternode entry %s\n", vin.ToString().c_str());
 
-        std::map<COutPoint, int64_t>::iterator i = askedForMasternodeListEntry.find(vin.prevout);
-        if (i != askedForMasternodeListEntry.end()){
-            int64_t t = (*i).second;
-            if (GetTime() < t) {
-                // we've asked recently
-                return;
-            }
-        }
-
-        // ask for the dsee info once from the node that sent dseep
-        LogPrintf("dseep - Asking source node for missing entry %s\n", vin.ToString().c_str());
-        pfrom->PushMessage(NetMsgType::DSEG, vin);
-        int64_t askAgain = GetTime()+(60*60*24);
-        askedForMasternodeListEntry[vin.prevout] = askAgain;
+        mnodeman.AskForMN(pfrom, vin);
 
     } else if (strCommand == NetMsgType::DSEG) { //Get masternode list or specific entry
         CTxIn vin;
@@ -354,14 +341,19 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         if(pindexBest == NULL) return;
 
-        uint256 hash = winner.GetHash();
-        if(mapSeenMasternodeVotes.count(hash)) {
-            if(fDebug) LogPrintf("mnw - seen vote %s Height %d bestHeight %d\n", hash.ToString().c_str(), winner.nBlockHeight, pindexBest->nHeight);
+        CTxDestination address1;
+        ExtractDestination(winner.payee, address1);
+        CBitcoinAddress address2(address1);
+
+        uint256 nHash = winner.GetHash();
+
+        if(mapSeenMasternodeVotes.count(nHash)) {
+            if(fDebug) LogPrintf("mnw - seen vote %s address=%s nBlockHeight=%d nHeight=%d\n", nHash.ToString(), address2.ToString(), winner.nBlockHeight, pindexBest->nHeight);
             return;
         }
 
         if(winner.nBlockHeight < pindexBest->nHeight - 10 || winner.nBlockHeight > pindexBest->nHeight+20){
-            LogPrintf("mnw - winner out of range %s Height %d bestHeight %d\n", winner.vin.ToString().c_str(), winner.nBlockHeight, pindexBest->nHeight);
+            LogPrintf("mnw - winner out of range %s address=%s nBlockHeight=%d nHeight=%d\n", winner.vin.ToString(), address2.ToString(), winner.nBlockHeight, pindexBest->nHeight);
             return;
         }
 
@@ -371,15 +363,32 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             return;
         }
 
-        LogPrintf("mnw - winning vote  %s Height %d bestHeight %d\n", winner.vin.ToString().c_str(), winner.nBlockHeight, pindexBest->nHeight);
-
+        int nDos = 0;
         if(!masternodePayments.CheckSignature(winner)){
-            LogPrintf("mnw - invalid signature\n");
-            pfrom->Misbehaving(100);
+            if(fDebug) LogPrintf("mnw - debug - address=%s nBlockHeight=%d nHeight=%d, prevout=%s\n", address2.ToString(), winner.nBlockHeight, pindexBest->nHeight, winner.vin.prevout.ToStringShort());
+
+            if(nDos) {
+                LogPrintf("mnw - ERROR: invalid signature\n");
+                pfrom->Misbehaving(nDos);
+                // pfrom->Misbehaving(20);
+            } else {
+                // only warn about anything non-critical (i.e. nDos == 0) in debug mode
+                if(fDebug) LogPrintf("mnw - WARNING: invalid signature\n");
+            }
+
+            // Either our info or vote info could be outdated.
+            // In case our info is outdated, ask for an update,
+            mnodeman.AskForMN(pfrom, winner.vin);
+            // but there is nothing we can do if vote info itself is outdated
+            // (i.e. it was signed by a mn which changed its key),
+            // so just quit here.
             return;
         }
 
-        mapSeenMasternodeVotes.insert(make_pair(hash, winner));
+        LogPrintf("mnw - new vote - address=%s, nBlockHeight=%d, nHeight=%d, prevout=%s, nHash=%s\n",
+                    address2.ToString(), winner.nBlockHeight, pindexBest->nHeight, winner.vin.prevout.ToStringShort(), nHash.ToString());
+
+        mapSeenMasternodeVotes.insert(make_pair(nHash, winner));
 
         if(masternodePayments.AddWinningMasternode(winner)){
             masternodePayments.Relay(winner);
@@ -624,11 +633,16 @@ bool CMasternodePayments::CheckSignature(CMasternodePaymentWinner& winner)
 {
     //note: need to investigate why this is failing
     std::string strMessage = winner.vin.ToString().c_str() + boost::lexical_cast<std::string>(winner.nBlockHeight) + winner.payee.ToString();
-    std::string strPubKey = strMainPubKey ;
+    std::string strPubKey = !fTestNet ? strMainPubKey: strTestPubKey;
     CPubKey pubkey(ParseHex(strPubKey));
 
     std::string errorMessage = "";
     if(!darkSendSigner.VerifyMessage(pubkey, winner.vchSig, strMessage, errorMessage)){
+        if(!errorMessage.empty()) {
+            LogPrintf("CMasternodePayments::CheckSignature -- VerifyMessage() failed, error: %s\n", errorMessage);
+        } else {
+            LogPrintf("CMasternodePayments::CheckSignature -- VerifyMessage() failed\n");
+        }
         return false;
     }
 
@@ -836,6 +850,24 @@ bool CMasternodePayments::SetPrivKey(std::string strPrivKey)
     }
 }
 
+
+void CMasternodeMan::AskForMN(CNode* pnode, CTxIn& vin)
+{
+    std::map<COutPoint, int64_t>::iterator i = mWeAskedForMasternodeListEntry.find(vin.prevout);
+    if (i != mWeAskedForMasternodeListEntry.end()){
+        int64_t t = (*i).second;
+        if (GetTime() < t) {
+            // we've asked recently
+            return;
+        }
+    }
+
+    // ask for the mnb info once from the node that sent mnp
+    LogPrintf("CMasternodeMan::AskForMN - Asking for missing masternode entry, peer: %s vin: %s\n", pnode->addr.ToString(), vin.prevout.ToStringShort());
+    pnode->PushMessage(NetMsgType::DSEG, vin);
+    int64_t askAgain = GetTime() + MASTERNODE_DSEG_SECONDS;
+    mWeAskedForMasternodeListEntry[vin.prevout] = askAgain;
+}
 
 void CMasternodeMan::Check()
 {

@@ -307,6 +307,9 @@ private:
     mutable CCriticalSection cs;
 
 public:
+    /// Ask (source) node for mnb
+    void AskForMN(CNode* pnode, CTxIn& vin);
+
     /// Check all Masternodes
     void Check();
 
