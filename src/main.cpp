@@ -3270,7 +3270,7 @@ void static ProcessGetData(CNode* pfrom)
             break;
 
         const CInv &inv = *it;
-        LogPrint("net", "ProcessGetData -- inv = %s\n", inv.ToString());
+        LogPrintf("ProcessGetData -- inv = %s\n", inv.ToString());
         {
             boost::this_thread::interruption_point();
             it++;

@@ -259,7 +259,9 @@ public:
 
     COutPoint() { SetNull(); }
     COutPoint(uint256 hashIn, unsigned int nIn) { hash = hashIn; n = nIn; }
+
     IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
+
     void SetNull() { hash = 0; n = (unsigned int) -1; }
     bool IsNull() const { return (hash == 0 && n == (unsigned int) -1); }
 
@@ -280,7 +282,12 @@ public:
 
     std::string ToString() const
     {
-        return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0,10).c_str(), n);
+        return strprintf("COutPoint(%s, %u)", hash.ToString()/*.substr(0,10)*/, n);
+    }
+
+    std::string ToStringShort() const
+    {
+        return strprintf("%s-%u", hash.ToString().substr(0,64), n);
     }
 
     void print() const
@@ -358,7 +365,7 @@ public:
         str += "CTxIn(";
         str += prevout.ToString();
         if (prevout.IsNull())
-            str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
+            str += strprintf(", coinbase %s", HexStr(scriptSig));
         else
             str += strprintf(", scriptSig=%s", scriptSig.ToString().substr(0,24).c_str());
         if (nSequence != std::numeric_limits<unsigned int>::max())
