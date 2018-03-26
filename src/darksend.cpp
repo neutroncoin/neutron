@@ -2046,7 +2046,7 @@ bool CDarkSendSigner::VerifyMessage(CPubKey pubkey, vector<unsigned char>& vchSi
 
     pubkey2 = key.GetPubKey();
     if (fDebug && pubkey2.GetID() != pubkey.GetID())
-        LogPrintf("CDarkSendSigner::VerifyMessage -- keys don't match: %s %s", pubkey2.GetID().ToString().c_str(), pubkey.GetID().ToString().c_str());
+        LogPrintf("CDarkSendSigner::VerifyMessage -- keys don't match: %s %s\n", pubkey2.GetID().ToString().c_str(), pubkey.GetID().ToString().c_str());
 
 
 
@@ -2161,7 +2161,7 @@ void ThreadCheckDarkSendPool(void* parg)
 
             //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
-            if(nTick % 25 == 0){
+            if(nTick % 5 == 0){
                 if(nTick % 800 == 0){
                     LOCK(cs_vNodes);
                     BOOST_FOREACH (CNode* pnode, vNodes) {
@@ -2178,17 +2178,16 @@ void ThreadCheckDarkSendPool(void* parg)
                     // TODO: NTRN - should probably cycle through a few nodes at a time until all used, then reset the list...
 
                     if (pnode->HasFulfilledRequest("getspork")) continue;
-                        pnode->FulfilledRequest("getspork");
+                    pnode->FulfilledRequest("getspork");
                     pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
 
                     if(pnode->HasFulfilledRequest("mnsync")) continue;
                     pnode->FulfilledRequest("mnsync");
                     pnode->PushMessage(NetMsgType::DSEG, CTxIn()); //request full mn list
 
-                    // TODO: NTRN - need to fix this giving invalid signatures
-                    // if (pnode->HasFulfilledRequest("mnwsync")) continue;
-                        // pnode->FulfilledRequest("mnwsync");
-                    // pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
+                    if (pnode->HasFulfilledRequest("mnwsync")) continue;
+                    pnode->FulfilledRequest("mnwsync");
+                    pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
 
                     if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Synced with peer=%s\n", pnode->id);
 

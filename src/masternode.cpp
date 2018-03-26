@@ -748,7 +748,7 @@ void CMasternodePayments::CleanPaymentList()
     }
 }
 
-bool CMasternodePayments::AddBlock(int nBlockHeight)
+bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
     CMasternodePaymentWinner winner;
     {
@@ -779,7 +779,7 @@ bool CMasternodePayments::AddBlock(int nBlockHeight)
 
     //if we can't find someone to get paid, pick randomly
     if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0) {
-        LogPrintf("%s : using random mn as winner\n", __func__);
+        LogPrintf("CMasternodePayments::ProcessBlock -- Using random mn as winner\n");
         winner.score = 0;
         winner.nBlockHeight = nBlockHeight;
 
@@ -790,23 +790,44 @@ bool CMasternodePayments::AddBlock(int nBlockHeight)
         winner.payee = GetScriptForDestination(vecMasternodes[nHeightOffset].pubkey.GetID());
     }
 
+    CTxDestination address1;
+    ExtractDestination(winner.payee, address1);
+    CBitcoinAddress address2(address1);
+
+    LogPrintf("CMasternodePayments::ProcessBlock -- Winner: payee=%s, nBlockHeight=%d\n", address2.ToString(), nBlockHeight);
+
+    // LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
+    // if (Sign(winner)) {
+    //     LogPrintf("CMasternodePayments::ProcessBlock -- AddWinningMasternode\n");
+
+    //     if (AddWinningMasternode(winner)) {
+    //         LogPrintf("CMasternodePayments::ProcessBlock -- Relay Winner\n");
+    //         Relay(winner);
+    //         return true;
+    //     }
+    // }
+
+    LogPrintf("CMasternodePayments::ProcessBlock -- AddWinningMasternode\n");
     if (AddWinningMasternode(winner)) {
-        if (enabled) {
+        if (enabled) { // only if active masternode
+            LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
             if (Sign(winner))
+                LogPrintf("CMasternodePayments::ProcessBlock -- Relay Winner\n");
                 Relay(winner);
         }
         return true;
     }
+
     return false;
 }
 
-bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+bool CMasternodePayments::ProcessManyBlocks(int nBlockHeight)
 {
     if (vecMasternodes.empty())
         return false;
 
-    for (int i = nBlockHeight + 1; i < nBlockHeight + 20; i++)
-        AddBlock(i);
+    for (int i = nBlockHeight + 1; i < nBlockHeight + 10; i++)
+        ProcessBlock(i);
 
    return true;
 }

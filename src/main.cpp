@@ -1987,7 +1987,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         SyncWithWallets(tx, this, true);
 
     if (!IsInitialBlockDownload())
-        masternodePayments.AddBlock(pindex->nHeight + 1);
+        masternodePayments.ProcessBlock(pindex->nHeight + 1);
 
     return true;
 }

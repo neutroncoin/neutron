@@ -289,7 +289,7 @@ public:
     bool GetWinningMasternode(int nBlockHeight, CTxIn& vinOut);
     bool AddWinningMasternode(CMasternodePaymentWinner& winner);
     bool ProcessBlock(int nBlockHeight);
-    bool AddBlock(int nBlockHeight);
+    bool ProcessManyBlocks(int nBlockHeight);
     void Relay(CMasternodePaymentWinner& winner);
     void Sync(CNode* node);
     void CleanPaymentList();
