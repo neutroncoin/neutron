@@ -1916,23 +1916,21 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode"));
                 }
 
+                CTxDestination dest;
+                bool hasBlockPayee = ExtractDestination(blockPayee, dest);
+                CBitcoinAddress paidMN(dest);
+
                 if (!fCorrectNodePaid) {
                     CTxDestination dest;
                     bool fPrintAddress = ExtractDestination(payee, dest);
                     CBitcoinAddress addressMN(dest);
 
                     if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
-                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode:%s", fPrintAddress ? addressMN.ToString() : ""));
+                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s", hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
                     else
-                        LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED\n", fPrintAddress ? addressMN.ToString() : "");
+                        LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n", hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
                 } else {
-                    if (fDebug) {
-                        CTxDestination dest;
-                        bool fPrintAddress = ExtractDestination(blockPayee, dest);
-                        CBitcoinAddress paidMN(dest);
-
-                         LogPrintf("ConnectBlock() : Stake pays correct masternode, address = %s\n", fPrintAddress ? paidMN.ToString() : "");
-                    }
+                    if (fDebug) LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                 }
             } else {
                 LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
