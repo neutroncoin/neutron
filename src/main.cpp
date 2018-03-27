@@ -1893,6 +1893,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             int nDoS_PMTs = sporkManager.GetSporkValue(SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE);
 
             CScript payee;
+            CScript blockPayee;
             bool fMasternodePaid = false;
             bool fCorrectNodePaid = false;
             bool fValidPayment = false;
@@ -1901,6 +1902,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                 for (const CTxOut out : vtx[1].vout) {
                     if(out.nValue == nPaymentRequired)
                         fMasternodePaid = true;
+                        blockPayee = out.scriptPubKey;
                     if (out.scriptPubKey == payee)
                         fCorrectNodePaid = true;
                     if (out.nValue == nPaymentRequired && out.scriptPubKey == payee) {
@@ -1923,6 +1925,14 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode:%s", fPrintAddress ? addressMN.ToString() : ""));
                     else
                         LogPrintf("ConnectBlock() : Stake does not pay correct masternode, required address = %s - NOT ENFORCED\n", fPrintAddress ? addressMN.ToString() : "");
+                } else {
+                    if (fDebug) {
+                        CTxDestination dest;
+                        bool fPrintAddress = ExtractDestination(blockPayee, dest);
+                        CBitcoinAddress paidMN(dest);
+
+                         LogPrintf("ConnectBlock() : Stake pays correct masternode, address = %s\n", fPrintAddress ? paidMN.ToString() : "");
+                    }
                 }
             } else {
                 LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
