@@ -1900,11 +1900,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)){
                 // check coinstake tx for masternode payment
                 for (const CTxOut out : vtx[1].vout) {
-                    if(out.nValue == nPaymentRequired)
+                    if(out.nValue == nPaymentRequired) {
                         fMasternodePaid = true;
                         blockPayee = out.scriptPubKey;
-                    if (out.scriptPubKey == payee)
+                    }
+                    if (out.scriptPubKey == payee) {
                         fCorrectNodePaid = true;
+                    }
                     if (out.nValue == nPaymentRequired && out.scriptPubKey == payee) {
                         fValidPayment = true;
                         break;
