@@ -38,19 +38,23 @@ using namespace boost;
     - This would result in old clients getting confused about which spork is for what
 */
 #define SPORK_START                                           10001
-#define SPORK_END                                             10005
+#define SPORK_END                                             10007
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10001
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT                 10002
 #define SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT                10003
 #define SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE                 10004
 #define SPORK_5_ENFORCE_NEW_PROTOCOL_V200                     10005
+#define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT              10006
+#define SPORK_7_PROTOCOL_V201_ENFORCEMENT                     10007
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       4070908800 //OFF
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         4070908800 //OFF
 #define SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT_DEFAULT        4070908800 //OFF
 #define SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE_DEFAULT         0          //By default do not add to peer banscore
 #define SPORK_5_ENFORCE_NEW_PROTOCOL_V200_DEFAULT             4070908800 //OFF
+#define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT_DEFAULT      4070908800 //OFF
+#define SPORK_7_PROTOCOL_V201_ENFORCEMENT_DEFAULT             4070908800 //OFF
 
 extern std::map<uint256, CSporkMessage> mapSporks;
 extern CSporkManager sporkManager;
