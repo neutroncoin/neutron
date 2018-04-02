@@ -1935,15 +1935,16 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     if (fDebug) LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                 }
             } else {
-                LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
+                CTxDestination payeeDest;
+                bool hasPayee = ExtractDestination(payee, payeeDest);
+                CBitcoinAddress payeeAddr(payeeDest);
+                LogPrintf("ConnectBlock() : Did not find masternode payee %s for block %d\n", hasPayee ? payeeAddr.ToString() : "", pindexBest->nHeight+1);
             }
 
             if (!fValidPayment && sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
                 return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
 
             //Check developer payment
-            bool fDeveloperAddress = false;
-            bool fDeveloperPaid = false;
             bool fValidDevPmt = false;
             CScript scriptDev = GetDeveloperScript();
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
@@ -4082,14 +4083,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
 int ActiveProtocol()
 {
+    // Allowed: 60016, 60017
+    // Banned: 60015 and below
 
-    // SPORK_7 is used for 70910. Nodes < 70910 don't see it and still get their protocol version via SPORK_14 and their
-    // own ModifierUpgradeBlock()
+    if (sporkManager.IsSporkActive(SPORK_7_PROTOCOL_V201_ENFORCEMENT)) {
+        return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT; // 60017
+    }
 
-    if (sporkManager.IsSporkActive(SPORK_5_ENFORCE_NEW_PROTOCOL_V200))
-            return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
-
-    return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
+    return MIN_PEER_PROTO_VERSION_AFTER_V200_ENFORCEMENT; // 60016
 }
 
 // requires LOCK(cs_vRecvMsg)
@@ -4376,13 +4377,24 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
 CScript GetDeveloperScript()
 {
-    string strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET : DEVELOPER_ADDRESS;
+    string strAddress;
+
+    if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
+        strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
+    } else {
+        strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V1 : DEVELOPER_ADDRESS_MAINNET_V1;
+    }
+
     return GetScriptForDestination(CBitcoinAddress(strAddress).Get());
 }
 
 int64_t GetDeveloperPayment(int64_t nBlockValue)
 {
-    return nBlockValue * DEVELOPER_PAYMENT / COIN;
+    if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
+        return nBlockValue * DEVELOPER_PAYMENT_V2 / COIN;
+    }
+
+    return nBlockValue * DEVELOPER_PAYMENT_V1 / COIN;
 }
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)

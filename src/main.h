@@ -64,9 +64,12 @@ static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const int64_t MAX_MONEY = 50000000000 * COIN;
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
-static const string DEVELOPER_ADDRESS = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
-static const string DEVELOPER_ADDRESS_TESTNET = "mnZP88spijp7AxRvdr7hvJfK6HRCphcsXa";
-static const int64_t DEVELOPER_PAYMENT = 3 * CENT; //3% of reward
+static const string DEVELOPER_ADDRESS_MAINNET_V2 = "9mHXFeih5PspSKxXBVSX6qCojsy5xXbJDW";
+static const string DEVELOPER_ADDRESS_TESTNET_V2 = "mrNsqXKuw9n52z9bijLDn6DkReqRKnZPVj";
+static const string DEVELOPER_ADDRESS_MAINNET_V1 = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
+static const string DEVELOPER_ADDRESS_TESTNET_V1 = "mnZP88spijp7AxRvdr7hvJfK6HRCphcsXa";
+static const int64_t DEVELOPER_PAYMENT_V2 = 10 * CENT; // 10% of block reward
+static const int64_t DEVELOPER_PAYMENT_V1 = 3 * CENT; // 3% of block reward
 
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
