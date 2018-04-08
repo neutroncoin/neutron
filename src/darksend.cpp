@@ -2162,7 +2162,7 @@ void ThreadCheckDarkSendPool(void* parg)
             //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
             if(nTick % 5 == 0){
-                if(nTick % 800 == 0){
+                if(nTick % 8000 == 0){
                     LOCK(cs_vNodes);
                     BOOST_FOREACH (CNode* pnode, vNodes) {
                         pnode->ClearFulfilledRequest("getspork");
