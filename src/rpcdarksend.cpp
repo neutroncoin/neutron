@@ -463,9 +463,9 @@ Value masternode(const Array& params, bool fHelp)
     // masternode winners
     if (strCommand == "winners")
     {
-        masternodePayments.ProcessBlock(nBestHeight);
+        masternodePayments.ProcessManyBlocks(nBestHeight);
         Object obj;
-        for(int nHeight = pindexBest->nHeight-10; nHeight < pindexBest->nHeight+20; nHeight++)
+        for(int nHeight = pindexBest->nHeight-10; nHeight < pindexBest->nHeight+10; nHeight++)
         {
             CScript payee;
             if(masternodePayments.GetBlockPayee(nHeight, payee)){

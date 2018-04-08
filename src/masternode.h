@@ -19,9 +19,12 @@
 #include "main.h"
 #include "timedata.h"
 #include "script.h"
+#include <boost/lexical_cast.hpp>
+
 
 class CMasterNode;
 class CMasternodePayments;
+class CMasternodeMan;
 class uint256;
 
 #define MASTERNODE_NOT_PROCESSED               0 // initial state
@@ -38,8 +41,10 @@ class uint256;
 #define MASTERNODE_MIN_DSEEP_SECONDS           (30*60)
 #define MASTERNODE_MIN_DSEE_SECONDS            (5*60)
 #define MASTERNODE_PING_SECONDS                (1*60)
-#define MASTERNODE_EXPIRATION_SECONDS          (65*60)
-#define MASTERNODE_REMOVAL_SECONDS             (70*60)
+#define MASTERNODE_EXPIRATION_SECONDS          (120*60)
+#define MASTERNODE_REMOVAL_SECONDS             (130*60)
+#define MASTERNODE_CHECK_SECONDS               5
+#define MASTERNODE_DSEG_SECONDS                (3*60*60)
 
 #define MASTERNODE_BLOCK_OFFSET                50
 
@@ -50,6 +55,7 @@ class CMasternodePaymentWinner;
 extern CCriticalSection cs_masternodes;
 extern std::vector<CMasterNode> vecMasternodes;
 extern CMasternodePayments masternodePayments;
+extern CMasternodeMan mnodeman;
 extern std::vector<CTxIn> vecMasternodeAskedFor;
 extern map<uint256, CMasternodePaymentWinner> mapSeenMasternodeVotes;
 extern map<int64_t, uint256> mapCacheBlockHashes;
@@ -63,14 +69,25 @@ int CountMasternodesAboveProtocol(int protocolVersion);
 void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
 
 //
-// The Masternode Class. For managing the darksend process. It contains the input of the 25000 NTRN, signature to prove
+// The Masternode Class. For managing the Darksend process. It contains the input of the 25000 NTRN, signature to prove
 // it's the one who own that ip address and code for calculating the payment election.
 //
 class CMasterNode
 {
+private:
+    int64_t lastTimeChecked;
+
 public:
-    CService addr;
+    enum state {
+        MASTERNODE_ENABLED = 1,
+        MASTERNODE_EXPIRED = 2,
+        MASTERNODE_VIN_SPENT = 3,
+        MASTERNODE_REMOVE = 4,
+        MASTERNODE_POS_ERROR = 5
+    };
+
     CTxIn vin;
+    CService addr;
     int64_t lastTimeSeen;
     CPubKey pubkey;
     CPubKey pubkey2;
@@ -84,8 +101,7 @@ public:
     bool allowFreeTx;
     int protocolVersion;
 
-    //the dsq count from the last dsq broadcast of this node
-    int64_t nLastDsq;
+    int64_t nLastDsq; //the dsq count from the last dsq broadcast of this node
 
     CMasterNode(CService newAddr, CTxIn newVin, CPubKey newPubkey, std::vector<unsigned char> newSig, int64_t newNow, CPubKey newPubkey2, int protocolVersionIn)
     {
@@ -95,7 +111,7 @@ public:
         pubkey2 = newPubkey2;
         sig = newSig;
         now = newNow;
-        enabled = 1;
+        enabled = MASTERNODE_ENABLED;
         lastTimeSeen = 0;
         unitTest = false;
         cacheInputAge = 0;
@@ -104,6 +120,7 @@ public:
         lastDseep = 0;
         allowFreeTx = true;
         protocolVersion = protocolVersionIn;
+        lastTimeChecked = 0;
     }
 
     uint256 CalculateScore(unsigned int nBlockHeight);
@@ -112,8 +129,10 @@ public:
     {
         if(override == 0){
             lastTimeSeen = GetAdjustedTime();
+            if(fDebug) LogPrintf("UpdateLastSeen - addr=%s lastTimeSeen=%s using GetAdjustedTime\n", addr.ToString(), lastTimeSeen);
         } else {
             lastTimeSeen = override;
+            if(fDebug) LogPrintf("UpdateLastSeen - addr=%s lastTimeSeen=%s using override\n", addr.ToString(), lastTimeSeen);
         }
     }
 
@@ -140,7 +159,7 @@ public:
 
     bool IsEnabled()
     {
-        return enabled == 1;
+        return enabled == MASTERNODE_ENABLED;
     }
 
     int GetMasternodeInputAge()
@@ -154,6 +173,19 @@ public:
 
         return cacheInputAge+(pindexBest->nHeight-cacheInputAgeBlock);
     }
+
+    std::string Status(){
+        std::string strStatus = "ACTIVE";
+
+        if(enabled == CMasterNode::MASTERNODE_ENABLED) strStatus   = "ENABLED";
+        if(enabled == CMasterNode::MASTERNODE_EXPIRED) strStatus   = "EXPIRED";
+        if(enabled == CMasterNode::MASTERNODE_VIN_SPENT) strStatus = "VIN_SPENT";
+        if(enabled == CMasterNode::MASTERNODE_REMOVE) strStatus    = "REMOVE";
+        if(enabled == CMasterNode::MASTERNODE_POS_ERROR) strStatus = "POS_ERROR";
+
+        return strStatus;
+    }
+
 };
 
 
@@ -182,6 +214,14 @@ public:
         payee = CScript();
     }
 
+    CMasternodePaymentWinner(CTxIn vinIn)
+    {
+        nBlockHeight = 0;
+        score = 0;
+        vin = vinIn;
+        payee = CScript();
+    }
+
     uint256 GetHash(){
         uint256 n2 = Hash(BEGIN(nBlockHeight), END(nBlockHeight));
         uint256 n3 = vin.prevout.hash > n2 ? (vin.prevout.hash - n2) : (n2 - vin.prevout.hash);
@@ -193,13 +233,24 @@ public:
 
     template <typename Stream, typename Operation>
     inline void SerializationOp(Stream& s, Operation ser_action, int nType, int nVersion){
-	unsigned int nSerSize = 0;
+    unsigned int nSerSize = 0;
         READWRITE(nBlockHeight);
         READWRITE(payee);
         READWRITE(vin);
         READWRITE(score);
         READWRITE(vchSig);
      }
+
+    std::string ToString()
+    {
+        std::string ret = "";
+        ret += vin.ToString();
+        ret += ", " + boost::lexical_cast<std::string>(nBlockHeight);
+        ret += ", " + payee.ToString();
+        ret += ", " + boost::lexical_cast<std::string>((int)vchSig.size());
+        return ret;
+    }
+
 };
 
 //
@@ -238,7 +289,7 @@ public:
     bool GetWinningMasternode(int nBlockHeight, CTxIn& vinOut);
     bool AddWinningMasternode(CMasternodePaymentWinner& winner);
     bool ProcessBlock(int nBlockHeight);
-    bool AddBlock(int nBlockHeight);
+    bool ProcessManyBlocks(int nBlockHeight);
     void Relay(CMasternodePaymentWinner& winner);
     void Sync(CNode* node);
     void CleanPaymentList();
@@ -248,6 +299,31 @@ public:
     bool GetBlockPayee(int nBlockHeight, CScript& payee);
 };
 
+
+class CMasternodeMan
+{
+private:
+    // critical section to protect the inner data structures
+    mutable CCriticalSection cs;
+
+public:
+    /// Ask (source) node for mnb
+    void AskForMN(CNode* pnode, CTxIn& vin);
+
+    /// Check all Masternodes
+    void Check();
+
+    /// Check all Masternodes and remove inactive
+    void CheckAndRemove();
+
+    /// Clear Masternode vector
+    void Clear();
+
+    int CountEnabled(int protocolVersion = -1);
+
+    /// Find an entry
+    CMasterNode* Find(const CTxIn& vin);
+};
 
 
 #endif

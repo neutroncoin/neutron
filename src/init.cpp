@@ -135,6 +135,8 @@ void HandleSIGHUP(int)
 #if !defined(QT_GUI)
 bool AppInit(int argc, char* argv[])
 {
+    boost::thread_group threadGroup;
+
     bool fRet = false;
     try
     {
@@ -177,7 +179,7 @@ bool AppInit(int argc, char* argv[])
             exit(ret);
         }
 
-        fRet = AppInit2();
+        fRet = AppInit2(threadGroup);
     }
     catch (std::exception& e) {
         PrintException(&e, "AppInit()");
@@ -340,7 +342,7 @@ std::string HelpMessage()
 /** Initialize bitcoin.
  *  @pre Parameters should be parsed and config file should be read.
  */
-bool AppInit2()
+bool AppInit2(boost::thread_group& threadGroup)
 {
     // ********************************************************* Step 1: setup
 #ifdef _MSC_VER
@@ -649,7 +651,7 @@ bool AppInit2()
     }
 
     // see Step 2: parameter interactions for more information about these
-    fNoListen = !GetBoolArg("-listen", true);
+    fListen = GetBoolArg("-listen", DEFAULT_LISTEN);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
 #ifdef USE_UPNP
@@ -657,7 +659,7 @@ bool AppInit2()
 #endif
 
     bool fBound = false;
-    if (!fNoListen)
+    if (fListen)
     {
         std::string strError;
         if (mapArgs.count("-bind")) {
@@ -726,7 +728,6 @@ bool AppInit2()
     }
 
     uiInterface.InitMessage(_("Loading block index..."));
-    LogPrintf("Loading block index...\n");
     nStart = GetTimeMillis();
     if (!LoadBlockIndex())
         return InitError(_("Error loading blkindex.dat"));
@@ -784,7 +785,7 @@ bool AppInit2()
     // ********************************************************* Step 8: load wallet
 
     uiInterface.InitMessage(_("Loading wallet..."));
-    LogPrintf("Loading wallet...\n");
+
     nStart = GetTimeMillis();
     bool fFirstRun = true;
     pwalletMain = new CWallet(strWalletFileName);
@@ -891,22 +892,7 @@ bool AppInit2()
         }
     }
 
-    // ********************************************************* Step 10: load peers
-
-    uiInterface.InitMessage(_("Loading addresses..."));
-    LogPrintf("Loading addresses...\n");
-    nStart = GetTimeMillis();
-
-    {
-        CAddrDB adb;
-        if (!adb.Read(addrman))
-            LogPrintf("Invalid or missing peers.dat; recreating\n");
-    }
-
-    LogPrintf("Loaded %i addresses from peers.dat  %dms\n",
-           addrman.size(), GetTimeMillis() - nStart);
-
-    // ********************************************************* Step 11: start node
+    // ********************************************************* Step 10: start node
 
     if (!CheckDiskSpace())
         return false;
@@ -1015,6 +1001,7 @@ bool AppInit2()
 
     if (!NewThread(StartNode, NULL))
         InitError(_("Error: could not start node"));
+    // StartNode(threadGroup);
 
     if (fServer)
         NewThread(ThreadRPCServer, NULL);
@@ -1022,7 +1009,6 @@ bool AppInit2()
     // ********************************************************* Step 12: finished
 
     uiInterface.InitMessage(_("Done loading"));
-    LogPrintf("Done loading\n");
 
     if (!strErrors.str().empty())
         return InitError(strErrors.str());

@@ -2046,7 +2046,7 @@ bool CDarkSendSigner::VerifyMessage(CPubKey pubkey, vector<unsigned char>& vchSi
 
     pubkey2 = key.GetPubKey();
     if (fDebug && pubkey2.GetID() != pubkey.GetID())
-        LogPrintf("CDarkSendSigner::VerifyMessage -- keys don't match: %s %s", pubkey2.GetID().ToString().c_str(), pubkey.GetID().ToString().c_str());
+        LogPrintf("CDarkSendSigner::VerifyMessage -- keys don't match: %s %s\n", pubkey2.GetID().ToString().c_str(), pubkey.GetID().ToString().c_str());
 
 
 
@@ -2122,102 +2122,101 @@ void ThreadCheckDarkSendPool(void* parg)
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
 
+    static bool fOneThread;
+    if(fOneThread) return;
+    fOneThread = true;
+
     // Make this thread recognisable as the wallet flushing thread
     RenameThread("neutron-darksend");
 
-    unsigned int c = 0;
-    std::string errorMessage;
+    unsigned int nTick = 0;
 
     while (true)
     {
-        c++;
-
         MilliSleep(5000);
-        //LogPrintf("ThreadCheckDarkSendPool::check timeout\n");
-        darkSendPool.CheckTimeout();
 
-        if(c % 60 == 0){
-            LOCK(cs_main);
-            /*
-                cs_main is required for doing masternode.Check because something
-                is modifying the coins view without a mempool lock. It causes
-                segfaults from this code without the cs_main lock.
-            */
+        if (!IsInitialBlockDownload())
+        {
+            nTick++;
+
             {
+                if(nTick % 60 == 0){
+                    // // LOCK2(cs_main, cs_masternodes);
 
-                LOCK(cs_masternodes);
-                vector<CMasterNode>::iterator it = vecMasternodes.begin();
-                //check them separately
-                while(it != vecMasternodes.end()){
-                    (*it).Check();
-                    ++it;
+                    LOCK(cs_main);
+
+                    //     cs_main is required for doing CMasterNode.Check because something
+                    //     is modifying the coins view without a mempool lock. It causes
+                    //     segfaults from this code without the cs_main lock.
+
+
+                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool: Check timeout\n");
+
+                    mnodeman.CheckAndRemove();
+                    masternodePayments.CleanPaymentList();
                 }
+            }
 
-                //remove inactive
-                it = vecMasternodes.begin();
-                while(it != vecMasternodes.end()){
-                    if((*it).enabled == 4 || (*it).enabled == 3){
-                        LogPrintf("Removing inactive masternode %s\n", (*it).addr.ToString().c_str());
-                        it = vecMasternodes.erase(it);
-                    } else {
-                        ++it;
+            // if (fDebug) LogPrintf("ThreadCheckDarkSendPool::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
+
+            //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
+            // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
+            if(nTick % 5 == 0){
+                if(nTick % 8000 == 0){
+                    LOCK(cs_vNodes);
+                    BOOST_FOREACH (CNode* pnode, vNodes) {
+                        pnode->ClearFulfilledRequest("getspork");
+                        pnode->ClearFulfilledRequest("mnsync");
+                        pnode->ClearFulfilledRequest("mnwsync");
                     }
                 }
 
-            }
+                if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Asking peers for Spork and Masternode lists\n");
 
-            masternodePayments.CleanPaymentList();
-        }
-
-        //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
-        if(c % (5*5) == 0 && RequestedMasterNodeList < 3){
-            bool fIsInitialDownload = IsInitialBlockDownload();
-            if(!fIsInitialDownload) {
                 LOCK(cs_vNodes);
                 BOOST_FOREACH(CNode* pnode, vNodes){
-                    if (pnode->nVersion >= darkSendPool.MIN_PEER_PROTO_VERSION) {
+                    // TODO: NTRN - should probably cycle through a few nodes at a time until all used, then reset the list...
 
-                        //keep track of who we've asked for the list
-                        if(pnode->HasFulfilledRequest("mnsync")) continue;
-                        pnode->FulfilledRequest("mnsync");
+                    if (pnode->HasFulfilledRequest("getspork")) continue;
+                    pnode->FulfilledRequest("getspork");
+                    pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
 
-                        LogPrintf("Successfully synced, asking for Masternode list and payment list\n");
+                    if(pnode->HasFulfilledRequest("mnsync")) continue;
+                    pnode->FulfilledRequest("mnsync");
+                    pnode->PushMessage(NetMsgType::DSEG, CTxIn()); //request full mn list
 
-                        pnode->PushMessage("dseg", CTxIn()); //request full mn list
-                        pnode->PushMessage("mnget"); //sync payees
-                        pnode->PushMessage("getsporks"); //get current network sporks
-                        RequestedMasterNodeList++;
-                    }
+                    if (pnode->HasFulfilledRequest("mnwsync")) continue;
+                    pnode->FulfilledRequest("mnwsync");
+                    pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
+
+                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Synced with peer=%s\n", pnode->id);
+
+                    RequestedMasterNodeList++;
                 }
             }
-        }
 
-        if(c % MASTERNODE_PING_SECONDS == 0){
-            activeMasternode.ManageStatus();
-        }
-
-        if(c % (60*5) == 0){
-            //if we've used 1/5 of the masternode list, then clear the list.
-            if((int)vecMasternodesUsed.size() > (int)vecMasternodes.size() / 5)
-                vecMasternodesUsed.clear();
-        }
-
-        //auto denom every 2.5 minutes (liquidity provides try less often)
-        if(c % (60*5)*(nLiquidityProvider+1) == 0){
-            if(nLiquidityProvider!=0){
-                int nRand = rand() % (101+nLiquidityProvider);
-                //about 1/100 chance of starting over after 4 rounds.
-                if(nRand == 50+nLiquidityProvider && pwalletMain->GetAverageAnonymizedRounds() > 8){
-                    darkSendPool.SendRandomPaymentToSelf();
-                    int nLeftToAnon = ((pwalletMain->GetBalance() - pwalletMain->GetAnonymizedBalance())/COIN)-3;
-                    if(nLeftToAnon > 999) nLeftToAnon = 999;
-                    nAnonymizeNeutronAmount = (rand() % nLeftToAnon)+3;
-                } else {
-                    darkSendPool.DoAutomaticDenominating();
-                }
-            } else {
-                darkSendPool.DoAutomaticDenominating();
+            if(nTick % MASTERNODE_PING_SECONDS == 0){
+                activeMasternode.ManageStatus();
             }
+
+            // TODO: NTRN - disabled for now
+            // darkSendPool.CheckTimeout();
+            // darkSendPool.CheckForCompleteQueue();
+
+            // TODO: NTRN - disabled for now
+            // if(nTick % (60*5) == 0){
+            //     int nMnCountEnabled = mnodeman.CountEnabled(ActiveProtocol());
+
+            //     // If we've used 90% of the Masternode list then drop the oldest first ~30%
+            //     int nThreshold_high = nMnCountEnabled * 0.9;
+            //     int nThreshold_low = nThreshold_high * 0.7;
+            //     LogPrintf("ThreadCheckDarkSendPool::Checking vecMasternodesUsed: size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+
+            //     if((int)vecMasternodesUsed.size() > nThreshold_high) {
+            //         vecMasternodesUsed.erase(vecMasternodesUsed.begin(), vecMasternodesUsed.begin() + vecMasternodesUsed.size() - nThreshold_low);
+            //         LogPrintf("ThreadCheckDarkSendPool::Cleaning vecMasternodesUsed: new size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+            //     }
+            // }
         }
     }
 }

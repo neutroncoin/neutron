@@ -15,6 +15,7 @@
 
 #include "strlcpy.h"
 #include <boost/algorithm/string/case_conv.hpp> // for to_lower()
+#include <boost/algorithm/string/predicate.hpp> // for startswith() and endswith()
 
 using namespace std;
 
@@ -90,18 +91,25 @@ bool static LookupIntern(const char *pszName, std::vector<CNetAddr>& vIP, unsign
 
 bool LookupHost(const char *pszName, std::vector<CNetAddr>& vIP, unsigned int nMaxSolutions, bool fAllowLookup)
 {
-    if (pszName[0] == 0)
+    std::string strHost(pszName);
+    if (strHost.empty())
         return false;
-    char psz[256];
-    char *pszHost = psz;
-    strlcpy(psz, pszName, sizeof(psz));
-    if (psz[0] == '[' && psz[strlen(psz)-1] == ']')
+    if (boost::algorithm::starts_with(strHost, "[") && boost::algorithm::ends_with(strHost, "]"))
     {
-        pszHost = psz+1;
-        psz[strlen(psz)-1] = 0;
+        strHost = strHost.substr(1, strHost.size() - 2);
     }
 
-    return LookupIntern(pszHost, vIP, nMaxSolutions, fAllowLookup);
+    return LookupIntern(strHost.c_str(), vIP, nMaxSolutions, fAllowLookup);
+}
+
+bool LookupHost(const char *pszName, CNetAddr& addr, bool fAllowLookup)
+{
+    std::vector<CNetAddr> vIP;
+    LookupHost(pszName, vIP, 1, fAllowLookup);
+    if(vIP.empty())
+        return false;
+    addr = vIP.front();
+    return true;
 }
 
 bool Lookup(const char *pszName, std::vector<CService>& vAddr, int portDefault, bool fAllowLookup, unsigned int nMaxSolutions)
@@ -135,50 +143,6 @@ bool Lookup(const char *pszName, CService& addr, int portDefault, bool fAllowLoo
 bool LookupNumeric(const char *pszName, CService& addr, int portDefault)
 {
     return Lookup(pszName, addr, portDefault, false);
-}
-
-bool static Socks4(const CService &addrDest, SOCKET& hSocket)
-{
-    LogPrintf("SOCKS4 connecting %s\n", addrDest.ToString().c_str());
-    if (!addrDest.IsIPv4())
-    {
-        closesocket(hSocket);
-        return error("Proxy destination is not IPv4");
-    }
-    char pszSocks4IP[] = "\4\1\0\0\0\0\0\0user";
-    struct sockaddr_in addr;
-    socklen_t len = sizeof(addr);
-    if (!addrDest.GetSockAddr((struct sockaddr*)&addr, &len) || addr.sin_family != AF_INET)
-    {
-        closesocket(hSocket);
-        return error("Cannot get proxy destination address");
-    }
-    memcpy(pszSocks4IP + 2, &addr.sin_port, 2);
-    memcpy(pszSocks4IP + 4, &addr.sin_addr, 4);
-    char* pszSocks4 = pszSocks4IP;
-    int nSize = sizeof(pszSocks4IP);
-
-    int ret = send(hSocket, pszSocks4, nSize, MSG_NOSIGNAL);
-    if (ret != nSize)
-    {
-        closesocket(hSocket);
-        return error("Error sending to proxy");
-    }
-    char pchRet[8];
-    if (recv(hSocket, pchRet, 8, 0) != 8)
-    {
-        closesocket(hSocket);
-        return error("Error reading proxy response");
-    }
-    if (pchRet[1] != 0x5a)
-    {
-        closesocket(hSocket);
-        if (pchRet[1] != 0x5b)
-            LogPrintf("ERROR: Proxy returned error %d\n", pchRet[1]);
-        return false;
-    }
-    LogPrintf("SOCKS4 connected %s\n", addrDest.ToString().c_str());
-    return true;
 }
 
 bool static Socks5(string strDest, int port, SOCKET& hSocket)
@@ -443,71 +407,65 @@ bool IsProxy(const CNetAddr &addr) {
     return false;
 }
 
-bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout)
+bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout, bool* outProxyConnectionFailed)
 {
     proxyType proxy;
-
-    // no proxy needed
+    if (outProxyConnectionFailed)
+        *outProxyConnectionFailed = false;
+    // no proxy needed (none set for target network)
     if (!GetProxy(addrDest.GetNetwork(), proxy))
         return ConnectSocketDirectly(addrDest, hSocketRet, nTimeout);
 
     SOCKET hSocket = INVALID_SOCKET;
 
     // first connect to proxy server
-    if (!ConnectSocketDirectly(proxy.first, hSocket, nTimeout))
-        return false;
-
-    // do socks negotiation
-    switch (proxy.second) {
-    case 4:
-        if (!Socks4(addrDest, hSocket))
-            return false;
-        break;
-    case 5:
-        if (!Socks5(addrDest.ToStringIP(), addrDest.GetPort(), hSocket))
-            return false;
-        break;
-    default:
-        closesocket(hSocket);
+    if (!ConnectSocketDirectly(proxy.first, hSocket, nTimeout)) {
+        if (outProxyConnectionFailed)
+            *outProxyConnectionFailed = true;
         return false;
     }
+    // do socks negotiation
+    if (!Socks5(addrDest.ToStringIP(), addrDest.GetPort(), hSocket))
+        return false;
 
     hSocketRet = hSocket;
     return true;
 }
 
-bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault, int nTimeout)
+bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char* pszDest, int portDefault, int nTimeout, bool* outProxyConnectionFailed)
 {
     string strDest;
     int port = portDefault;
+
+    if (outProxyConnectionFailed)
+        *outProxyConnectionFailed = false;
+
     SplitHostPort(string(pszDest), port, strDest);
 
     SOCKET hSocket = INVALID_SOCKET;
 
-    proxyType nameproxy;
-    GetNameProxy(nameproxy);
+    proxyType nameProxy;
+    GetNameProxy(nameProxy);
 
-    CService addrResolved(CNetAddr(strDest, fNameLookup && !nameproxy.second), port);
+    CService addrResolved(CNetAddr(strDest, fNameLookup && !HaveNameProxy()), port);
     if (addrResolved.IsValid()) {
         addr = addrResolved;
         return ConnectSocket(addr, hSocketRet, nTimeout);
     }
-    addr = CService("0.0.0.0:0");
-    if (!nameproxy.second)
-        return false;
-    if (!ConnectSocketDirectly(nameproxy.first, hSocket, nTimeout))
-        return false;
 
-    switch(nameproxy.second) {
-        default:
-        case 4:
-            closesocket(hSocket);
-            return false;
-        case 5:
-            if (!Socks5(strDest, port, hSocket))
-                return false;
-            break;
+    addr = CService("0.0.0.0:0");
+
+    if (!HaveNameProxy())
+        return false;
+    // first connect to name proxy server
+    if (!ConnectSocketDirectly(nameProxy.first, hSocket, nTimeout)) {
+        if (outProxyConnectionFailed)
+            *outProxyConnectionFailed = true;
+        return false;
     }
+    // do socks negotiation
+    if (!Socks5(strDest, (unsigned short)port, hSocket))
+        return false;
 
     hSocketRet = hSocket;
     return true;

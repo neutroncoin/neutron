@@ -19,6 +19,7 @@ class RPCConsole;
 class MasternodeManager;
 class LoggerPage;
 QT_BEGIN_NAMESPACE
+class QAction;
 class QLabel;
 class QLineEdit;
 class QTableView;
@@ -96,9 +97,14 @@ private:
     QAction *unlockWalletAction;
     QAction *lockWalletAction;
     QAction *aboutQtAction;
-    QAction *openRPCConsoleAction;
     QAction *masternodeManagerAction;
     QAction *openLoggerAction;
+    QAction *openInfoAction;
+    QAction *openRPCConsoleAction;
+    QAction *openConfEditorAction;
+    QAction *openMNConfEditorAction;
+    QAction *showBackupsAction;
+    QAction *openAction;
 
     QSystemTrayIcon *trayIcon;
     Notificator *notificator;
@@ -167,6 +173,21 @@ private slots:
     void optionsClicked();
     /** Show about dialog */
     void aboutClicked();
+
+	/** Show debug window */
+    void showDebugWindow();
+
+    /** Show debug window and set focus to the appropriate tab */
+    void showInfo();
+    void showConsole();
+
+    /** Open external (default) editor with neutron.conf */
+    void showConfEditor();
+    /** Open external (default) editor with masternode.conf */
+    void showMNConfEditor();
+    /** Show folder with wallet backups in default file browser */
+    void showBackups();
+
 #ifndef Q_OS_MAC
     /** Handle tray icon clicked */
     void trayIconActivated(QSystemTrayIcon::ActivationReason reason);

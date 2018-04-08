@@ -101,8 +101,8 @@ bool fServer = false;
 bool fCommandLine = false;
 string strMiscWarning;
 bool fTestNet = false;
-bool fNoListen = false;
-bool fLogTimestamps = false;
+bool fLogTimestamps = DEFAULT_LOGTIMESTAMPS;
+bool fLogIPs = DEFAULT_LOGIPS;
 CMedianFilter<int64_t> vTimeOffsets(200,0);
 volatile bool fReopenDebugLog = false;
 
@@ -413,13 +413,13 @@ bool WildcardMatch(const string& str, const string& mask)
 
 
 
-static std::string FormatException(std::exception* pex, const char* pszThread)
+static std::string FormatException(const std::exception* pex, const char* pszThread)
 {
 #ifdef WIN32
     char pszModule[MAX_PATH] = "";
     GetModuleFileNameA(NULL, pszModule, sizeof(pszModule));
 #else
-    const char* pszModule = "Neutron";
+    const char* pszModule = "dash";
 #endif
     if (pex)
         return strprintf(
@@ -451,12 +451,11 @@ void LogStackTrace() {
     }
 }
 
-void PrintExceptionContinue(std::exception* pex, const char* pszThread)
+void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
 {
     std::string message = FormatException(pex, pszThread);
-    LogPrintf("\n\n************************\n%s\n", message.c_str());
+    LogPrintf("\n\n************************\n%s\n", message);
     fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
-    strMiscWarning = message;
 }
 
 boost::filesystem::path GetDefaultDataDir()

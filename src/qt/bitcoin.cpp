@@ -10,6 +10,7 @@
 #include "init.h"
 #include "networkstyle.h"
 #include "optionsmodel.h"
+#include "splashscreen.h"
 #include "ui_interface.h"
 #include "walletmodel.h"
 
@@ -20,6 +21,7 @@
 #include <QTranslator>
 #include <QSplashScreen>
 #include <QLibraryInfo>
+#include <QThread>
 
 #if defined(BITCOIN_NEED_QT_PLUGINS) && !defined(_BITCOIN_QT_PLUGINS_INCLUDED)
 #define _BITCOIN_QT_PLUGINS_INCLUDED
@@ -80,15 +82,6 @@ static void ThreadSafeHandleURI(const std::string& strURI)
                                Q_ARG(QString, QString::fromStdString(strURI)));
 }
 
-static void InitMessage(const std::string &message)
-{
-    if(splashref)
-    {
-        splashref->showMessage(QString::fromStdString(message), Qt::AlignBottom|Qt::AlignHCenter, QColor(232,186,163));
-        QApplication::instance()->processEvents();
-    }
-}
-
 static void QueueShutdown()
 {
     QMetaObject::invokeMethod(QCoreApplication::instance(), "quit", Qt::QueuedConnection);
@@ -102,6 +95,70 @@ static std::string Translate(const char* psz)
     return QCoreApplication::translate("bitcoin-core", psz).toStdString();
 }
 
+/** Set up translations */
+static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTranslator, QTranslator& translatorBase, QTranslator& translator)
+{
+    // Remove old translators
+    QApplication::removeTranslator(&qtTranslatorBase);
+    QApplication::removeTranslator(&qtTranslator);
+    QApplication::removeTranslator(&translatorBase);
+    QApplication::removeTranslator(&translator);
+
+    // Get desired locale (e.g. "de_DE") from command line or use system locale
+    QString lang_territory = QString::fromStdString(GetArg("-lang", QLocale::system().name().toStdString()));
+
+    // Convert to "de" only by truncating "_DE"
+    QString lang = lang_territory;
+    lang.truncate(lang_territory.lastIndexOf('_'));
+
+    // Load language files for configured locale:
+    // - First load the translator for the base language, without territory
+    // - Then load the more specific locale translator
+
+    // Load e.g. qt_de.qm
+    if (qtTranslatorBase.load("qt_" + lang, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
+        QApplication::installTranslator(&qtTranslatorBase);
+
+    // Load e.g. qt_de_DE.qm
+    if (qtTranslator.load("qt_" + lang_territory, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
+        QApplication::installTranslator(&qtTranslator);
+
+    // Load e.g. bitcoin_de.qm (shortcut "de" needs to be defined in bitcoin.qrc)
+    if (translatorBase.load(lang, ":/translations/"))
+        QApplication::installTranslator(&translatorBase);
+
+    // Load e.g. bitcoin_de_DE.qm (shortcut "de_DE" needs to be defined in bitcoin.qrc)
+    if (translator.load(lang_territory, ":/translations/"))
+        QApplication::installTranslator(&translator);
+}
+
+
+class BitcoinCore: public QObject
+{
+    Q_OBJECT
+public:
+    explicit BitcoinCore();
+
+// public slots:
+//     void initialize();
+//     void shutdown();
+
+// signals:
+//     void initializeResult(int retval);
+//     void shutdownResult(int retval);
+//     void runawayException(const QString &message);
+
+private:
+    boost::thread_group threadGroup;
+
+    /// Pass fatal exception message to UI thread
+    void handleRunawayException(std::exception *e);
+};
+
+BitcoinCore::BitcoinCore() : QObject()
+{
+}
+
 /* Handle runaway exceptions. Shows a message box with the problem and quits the program.
  */
 static void handleRunawayException(std::exception *e)
@@ -111,75 +168,86 @@ static void handleRunawayException(std::exception *e)
     exit(1);
 }
 
-
 /** Main Neutron application object */
 class BitcoinApplication : public QApplication
 {
     Q_OBJECT
+
 public:
     explicit BitcoinApplication(int& argc, char** argv);
     ~BitcoinApplication();
 
-#ifdef ENABLE_WALLET
-    /// Create payment server
-    void createPaymentServer();
-#endif
-    /// Create options model
-    void createOptionsModel();
-    /// Create main window
-    void createWindow(const NetworkStyle* networkStyle);
     /// Create splash screen
-    void createSplashScreen(const NetworkStyle* networkStyle);
-
-    /// Request core initialization
-    void requestInitialize();
-    /// Request core shutdown
-    void requestShutdown();
-
-    /// Get process return value
-    int getReturnValue() { return returnValue; }
+    void createSplashScreen();
 
     /// Get window identifier of QMainWindow (BitcoinGUI)
     WId getMainWinId() const;
 
-public slots:
-    void initializeResult(int retval);
-    void shutdownResult(int retval);
-    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
-    void handleRunawayException(const QString& message);
-
 signals:
-    void requestedInitialize();
-    void requestedRestart(QStringList args);
-    void requestedShutdown();
     void stopThread();
     void splashFinished(QWidget* window);
 
 private:
-    QThread* coreThread;
-    OptionsModel* optionsModel;
-    ClientModel* clientModel;
-    BitcoinGUI* window;
-    QTimer* pollShutdownTimer;
-#ifdef ENABLE_WALLET
-    PaymentServer* paymentServer;
-    WalletModel* walletModel;
-#endif
-    int returnValue;
+    QThread *coreThread;
 
     void startThread();
 };
 
-void createSplashScreen()
+#include "bitcoin.moc"
+
+BitcoinApplication::BitcoinApplication(int &argc, char **argv) : QApplication(argc, argv)
 {
-    QSplashScreen* splash = new QSplashScreen(QPixmap(":/images/splash"), 0);
+    LogPrintf("Starting application\n");
+    setQuitOnLastWindowClosed(false);
+    startThread();
+}
+
+BitcoinApplication::~BitcoinApplication()
+{
+    LogPrintf("Stopping application\n");
+}
+
+void BitcoinApplication::createSplashScreen()
+{
+    SplashScreen *splash = new SplashScreen(QPixmap(":/images/splash"), 0);
+    // We don't hold a direct pointer to the splash screen after creation, so use
+    // Qt::WA_DeleteOnClose to make sure that the window will be deleted eventually.
+    splash->setAttribute(Qt::WA_DeleteOnClose);
     splash->show();
+    connect(this, SIGNAL(splashFinished(QWidget*)), splash, SLOT(slotFinish(QWidget*)));
+
+    // TODO: eventually remove this pointer to the splash screen
+    splashref = splash;
+}
+
+void BitcoinApplication::startThread()
+{
+    // coreThread = new QThread(this);
+
+    // /*  communication to and from thread */
+    // connect(this, SIGNAL(stopThread()), coreThread, SLOT(quit()));
+
+    // coreThread->start();
+}
+
+void createSplashScreenStandalone()
+{
+    SplashScreen *splash = new SplashScreen(QPixmap(":/images/splash"), 0);
+    // We don't hold a direct pointer to the splash screen after creation, so use
+    // Qt::WA_DeleteOnClose to make sure that the window will be deleted eventually.
+    splash->setAttribute(Qt::WA_DeleteOnClose);
+    splash->show();
+    // connect(this, SIGNAL(splashFinished(QWidget*)), splash, SLOT(slotFinish(QWidget*)));
+
+    // TODO: eventually remove this pointer to the splash screen
     splashref = splash;
 }
 
 #ifndef BITCOIN_QT_TEST
 int main(int argc, char *argv[])
 {
+    boost::thread_group threadGroup;
+
     SetupEnvironment();
 
     /// 1. Parse command-line options. These take precedence over anything else.
@@ -196,7 +264,10 @@ int main(int argc, char *argv[])
 #endif
 
     Q_INIT_RESOURCE(bitcoin);
+
     QApplication app(argc, argv);
+    // TODO: probably need to fix OptionsModel before activating this
+    // BitcoinApplication app(argc, argv);
 
     // Install global event filter that makes sure that long tooltips can be word-wrapped
     app.installEventFilter(new GUIUtil::ToolTipToRichTextFilter(TOOLTIP_WRAP_THRESHOLD, &app));
@@ -204,21 +275,11 @@ int main(int argc, char *argv[])
     // Command-line options take precedence:
     ParseParameters(argc, argv);
 
-    // ... then bitcoin.conf:
-    if (!boost::filesystem::is_directory(GetDataDir(false)))
-    {
-        // This message can not be translated, as translation is not initialized yet
-        // (which not yet possible because lang=XX can be overridden in bitcoin.conf in the data directory)
-        QMessageBox::critical(0, "Neutron",
-                              QString("Error: Specified data directory \"%1\" does not exist.").arg(QString::fromStdString(mapArgs["-datadir"])));
-        return 1;
-    }
-    ReadConfigFile(mapArgs, mapMultiArgs);
-
-    // Application identification (must be set before OptionsModel is initialized,
-    // as it is used to locate QSettings)
+    /// 3. Application identification
+    // must be set before OptionsModel is initialized or translations are loaded,
+    // as it is used to locate QSettings
     app.setOrganizationName("Neutron");
-    //XXX app.setOrganizationDomain("");
+    app.setOrganizationDomain("neutroncoin.com");
     if(GetBoolArg("-testnet")) // Separate UI settings for testnet
         app.setApplicationName("Neutron-Qt-testnet");
     else
@@ -227,39 +288,10 @@ int main(int argc, char *argv[])
     // ... then GUI settings:
     OptionsModel optionsModel;
 
-    // Get desired locale (e.g. "de_DE") from command line or use system locale
-    QString lang_territory = QString::fromStdString(GetArg("-lang", QLocale::system().name().toStdString()));
-    QString lang = lang_territory;
-    // Convert to "de" only by truncating "_DE"
-    lang.truncate(lang_territory.lastIndexOf('_'));
-
+    /// 4. Initialization of translations, so that intro dialog is in user's language
+    // Now that QSettings are accessible, initialize translations
     QTranslator qtTranslatorBase, qtTranslator, translatorBase, translator;
-    // Load language files for configured locale:
-    // - First load the translator for the base language, without territory
-    // - Then load the more specific locale translator
-
-    // Load e.g. qt_de.qm
-    if (qtTranslatorBase.load("qt_" + lang, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
-        app.installTranslator(&qtTranslatorBase);
-
-    // Load e.g. qt_de_DE.qm
-    if (qtTranslator.load("qt_" + lang_territory, QLibraryInfo::location(QLibraryInfo::TranslationsPath)))
-        app.installTranslator(&qtTranslator);
-
-    // Load e.g. bitcoin_de.qm (shortcut "de" needs to be defined in bitcoin.qrc)
-    if (translatorBase.load(lang, ":/translations/"))
-        app.installTranslator(&translatorBase);
-
-    // Load e.g. bitcoin_de_DE.qm (shortcut "de_DE" needs to be defined in bitcoin.qrc)
-    if (translator.load(lang_territory, ":/translations/"))
-        app.installTranslator(&translator);
-
-    // Subscribe to global signals from core
-    uiInterface.ThreadSafeMessageBox.connect(ThreadSafeMessageBox);
-    uiInterface.ThreadSafeAskFee.connect(ThreadSafeAskFee);
-    uiInterface.ThreadSafeHandleURI.connect(ThreadSafeHandleURI);
-    uiInterface.InitMessage.connect(InitMessage);
-    uiInterface.QueueShutdown.connect(QueueShutdown);
+    initTranslations(qtTranslatorBase, qtTranslator, translatorBase, translator);
     uiInterface.Translate.connect(Translate);
 
     // Show help message immediately after parsing command-line options (for "-lang") and setting locale,
@@ -271,8 +303,40 @@ int main(int argc, char *argv[])
         return 1;
     }
 
+    // TODO: NTRN - do we want to implement this?
+    // /// 5. Now that settings and translations are available, ask user for data directory
+    // // User language is set up: pick a data directory
+    // Intro::pickDataDirectory();
+
+    /// 6. Determine availability of data directory and parse neutron.conf
+    /// - Do not call GetDataDir(true) before this step finishes
+    if (!boost::filesystem::is_directory(GetDataDir(false)))
+    {
+        // This message can not be translated, as translation is not initialized yet
+        // (which not yet possible because lang=XX can be overridden in bitcoin.conf in the data directory)
+        QMessageBox::critical(0, "Neutron",
+                              QString("Error: Specified data directory \"%1\" does not exist.").arg(QString::fromStdString(mapArgs["-datadir"])));
+        return 1;
+    }
+    try {
+        ReadConfigFile(mapArgs, mapMultiArgs);
+    } catch (std::exception& e) {
+        QMessageBox::critical(0, "Neutron",
+            QObject::tr("Error: Cannot parse configuration file: %1. Only use key=value syntax.").arg(e.what()));
+        return 0;
+    }
+
+    // Subscribe to global signals from core
+    uiInterface.ThreadSafeMessageBox.connect(ThreadSafeMessageBox);
+    uiInterface.ThreadSafeAskFee.connect(ThreadSafeAskFee);
+    uiInterface.ThreadSafeHandleURI.connect(ThreadSafeHandleURI);
+    uiInterface.QueueShutdown.connect(QueueShutdown);
+    uiInterface.Translate.connect(Translate);
+
     if (GetBoolArg("-splash", true) && !GetBoolArg("-min")) {
-        createSplashScreen();
+        createSplashScreenStandalone();
+        // TODO: probably need to fix OptionsModel before activating this
+        // app.createSplashScreen();
     }
 
     app.processEvents();
@@ -287,7 +351,7 @@ int main(int argc, char *argv[])
 
         BitcoinGUI window;
         guiref = &window;
-        if(AppInit2())
+        if(AppInit2(threadGroup))
         {
             {
                 // Put this in a block, so that the Model objects are cleaned up before

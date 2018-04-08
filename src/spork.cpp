@@ -20,7 +20,7 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
 
-    if (strCommand == "spork")
+    if (strCommand == NetMsgType::SPORK)
     {
         //LogPrintf("ProcessSpork::spork\n");
         CDataStream vMsg(vRecv);
@@ -29,19 +29,23 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
 
         if(pindexBest == NULL) return;
 
+        // Ignore spork messages about unknown/deleted sporks
+        std::string strSpork = sporkManager.GetSporkNameByID(spork.nSporkID);
+        if (strSpork == "Unknown") return;
+
         uint256 hash = spork.GetHash();
-        if(mapSporks.count(hash) && mapSporksActive.count(spork.nSporkID)) {
+        if(mapSporksActive.count(spork.nSporkID)) {
             if(mapSporksActive[spork.nSporkID].nTimeSigned >= spork.nTimeSigned){
-                if(fDebug) LogPrintf("spork - seen %s block %d \n", hash.ToString().c_str(), pindexBest->nHeight);
+                if(fDebug) LogPrintf("spork - seen %s block %d \n", hash.ToString(), pindexBest->nHeight);
                 return;
             } else {
-                if(fDebug) LogPrintf("spork - got updated spork %s block %d \n", hash.ToString().c_str(), pindexBest->nHeight);
+                if(fDebug) LogPrintf("spork - got updated spork %s block %d \n", hash.ToString(), pindexBest->nHeight);
             }
         }
 
-        // LogPrintf("spork - new %s ID %d Time %d bestHeight %d\n", hash.ToString().c_str(), spork.nSporkID, spork.nValue, pindexBest->nHeight);
+        // LogPrintf("spork - new %s ID %d Time %d bestHeight %d\n", hash.ToString(), spork.nSporkID, spork.nValue, pindexBest->nHeight);
 
-        if(!spork.CheckSignature()){
+        if(!spork.CheckSignature()) {
             LogPrintf("spork - invalid signature\n");
             pfrom->Misbehaving(100);
             return;
@@ -54,15 +58,14 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
         //does a task if needed
         ExecuteSpork(spork.nSporkID, spork.nValue);
 
-    } else if (strCommand == "getsporks") {
+    } else if (strCommand == NetMsgType::GETSPORKS) {
         std::map<int, CSporkMessage>::iterator it = mapSporksActive.begin();
 
         while(it != mapSporksActive.end()) {
-            pfrom->PushMessage("spork", it->second);
+            pfrom->PushMessage(NetMsgType::SPORK, it->second);
             it++;
         }
     }
-
 }
 
 void CSporkManager::ExecuteSpork(int nSporkID, int nValue)
@@ -102,8 +105,10 @@ bool CSporkManager::IsSporkActive(int nSporkID)
             case SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT:     r = SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT_DEFAULT; break;
             case SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE:      r = SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE_DEFAULT; break;
             case SPORK_5_ENFORCE_NEW_PROTOCOL_V200:          r = SPORK_5_ENFORCE_NEW_PROTOCOL_V200_DEFAULT; break;
+            case SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT:   r = SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT_DEFAULT; break;
+            case SPORK_7_PROTOCOL_V201_ENFORCEMENT:          r = SPORK_7_PROTOCOL_V201_ENFORCEMENT_DEFAULT; break;
             default:
-                LogPrintf("IsSporkActive -- Unknown Spork ID %d\n", nSporkID);
+                LogPrintf("CSporkManager::IsSporkActive -- Unknown Spork ID %d\n", nSporkID);
                 r = 4070908800ULL; // 2099-1-1 i.e. off by default
                 break;
         }
@@ -115,7 +120,7 @@ bool CSporkManager::IsSporkActive(int nSporkID)
 // grab the value of the spork on the network, or the default
 int64_t CSporkManager::GetSporkValue(int nSporkID)
 {
-    int64_t r = 0;
+    int64_t r = -1;
 
     if(mapSporksActive.count(nSporkID)){
         r = mapSporksActive[nSporkID].nValue;
@@ -125,8 +130,10 @@ int64_t CSporkManager::GetSporkValue(int nSporkID)
         if(nSporkID == SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT) r = SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT_DEFAULT;
         if(nSporkID == SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE) r = SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE_DEFAULT;
         if(nSporkID == SPORK_5_ENFORCE_NEW_PROTOCOL_V200) r = SPORK_5_ENFORCE_NEW_PROTOCOL_V200_DEFAULT;
+        if(nSporkID == SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT) r = SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT_DEFAULT;
+        if(nSporkID == SPORK_7_PROTOCOL_V201_ENFORCEMENT) r = SPORK_7_PROTOCOL_V201_ENFORCEMENT_DEFAULT;
 
-        if(r == 0 && fDebug) LogPrintf("GetSpork::Unknown Spork %d\n", nSporkID);
+        if(r == -1 && fDebug) LogPrintf("GetSpork::Unknown Spork %d\n", nSporkID);
     }
 
     return r;
@@ -139,6 +146,10 @@ int CSporkManager::GetSporkIDByName(std::string strName)
     if(strName == "SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT") return SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT;
     if(strName == "SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE") return SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE;
     if(strName == "SPORK_5_ENFORCE_NEW_PROTOCOL_V200") return SPORK_5_ENFORCE_NEW_PROTOCOL_V200;
+    if(strName == "SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT") return SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT;
+    if(strName == "SPORK_7_PROTOCOL_V201_ENFORCEMENT") return SPORK_7_PROTOCOL_V201_ENFORCEMENT;
+
+    LogPrint("spork", "CSporkManager::GetSporkIDByName -- Unknown Spork name '%s'\n", strName);
 
     return -1;
 }
@@ -150,6 +161,10 @@ std::string CSporkManager::GetSporkNameByID(int id)
     if(id == SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT) return "SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT";
     if(id == SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE) return "SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE";
     if(id == SPORK_5_ENFORCE_NEW_PROTOCOL_V200) return "SPORK_5_ENFORCE_NEW_PROTOCOL_V200";
+    if(id == SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT) return "SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT";
+    if(id == SPORK_7_PROTOCOL_V201_ENFORCEMENT) return "SPORK_7_PROTOCOL_V201_ENFORCEMENT";
+
+    LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork id '%s'\n", id);
 
     return "Unknown";
 }
@@ -220,6 +235,6 @@ void CSporkMessage::Relay()
     vInv.push_back(inv);
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes){
-        pnode->PushMessage("inv", vInv);
+        pnode->PushMessage(NetMsgType::INV, vInv);
     }
 }

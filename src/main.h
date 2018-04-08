@@ -44,24 +44,13 @@ static const int64_t DARKSEND_COLLATERAL = (25000*COIN);
 static const int64_t DARKSEND_FEE = (0.0025000*COIN);
 static const int64_t DARKSEND_POOL_MAX = (250000.99*COIN);
 
-#define MASTERNODE_NOT_PROCESSED               0 // initial state
-#define MASTERNODE_IS_CAPABLE                  1
-#define MASTERNODE_NOT_CAPABLE                 2
-#define MASTERNODE_STOPPED                     3
-#define MASTERNODE_INPUT_TOO_NEW               4
-#define MASTERNODE_PORT_NOT_OPEN               6
-#define MASTERNODE_PORT_OPEN                   7
-#define MASTERNODE_SYNC_IN_PROCESS             8
-#define MASTERNODE_REMOTELY_ENABLED            9
+/** Maximum length of reject messages. */ // TODO: NTRN - move to validation.h eventually
+static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
 
-#define MASTERNODE_MIN_CONFIRMATIONS           15
-#define MASTERNODE_MIN_DSEEP_SECONDS           (30*60)
-#define MASTERNODE_MIN_DSEE_SECONDS            (5*60)
-#define MASTERNODE_PING_SECONDS                (1*60)
-#define MASTERNODE_EXPIRATION_SECONDS          (65*60)
-#define MASTERNODE_REMOVAL_SECONDS             (70*60)
-
-
+/** "reject" message codes */ // TODO: NTRN - move to consensus/validation.h eventually
+static const unsigned char REJECT_MALFORMED = 0x01;
+static const unsigned char REJECT_OBSOLETE = 0x11;
+static const unsigned char REJECT_DUPLICATE = 0x12;
 
 static const int LAST_POW_BLOCK = 4000;
 
@@ -75,9 +64,12 @@ static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const int64_t MAX_MONEY = 50000000000 * COIN;
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
-static const string DEVELOPER_ADDRESS = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
-static const string DEVELOPER_ADDRESS_TESTNET = "mnZP88spijp7AxRvdr7hvJfK6HRCphcsXa";
-static const int64_t DEVELOPER_PAYMENT = 3 * CENT; //3% of reward
+static const string DEVELOPER_ADDRESS_MAINNET_V2 = "9mHXFeih5PspSKxXBVSX6qCojsy5xXbJDW";
+static const string DEVELOPER_ADDRESS_TESTNET_V2 = "mrNsqXKuw9n52z9bijLDn6DkReqRKnZPVj";
+static const string DEVELOPER_ADDRESS_MAINNET_V1 = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
+static const string DEVELOPER_ADDRESS_TESTNET_V1 = "mnZP88spijp7AxRvdr7hvJfK6HRCphcsXa";
+static const int64_t DEVELOPER_PAYMENT_V2 = 10 * CENT; // 10% of block reward
+static const int64_t DEVELOPER_PAYMENT_V1 = 3 * CENT; // 3% of block reward
 
 inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 // Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
@@ -142,7 +134,7 @@ class CTxIndex;
 void RegisterWallet(CWallet* pwalletIn);
 void UnregisterWallet(CWallet* pwalletIn);
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false, bool fConnect = true);
-bool ProcessBlock(CNode* pfrom, CBlock* pblock);
+bool ProcessNewBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64_t nAdditionalBytes=0);
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
@@ -270,7 +262,9 @@ public:
 
     COutPoint() { SetNull(); }
     COutPoint(uint256 hashIn, unsigned int nIn) { hash = hashIn; n = nIn; }
+
     IMPLEMENT_SERIALIZE( READWRITE(FLATDATA(*this)); )
+
     void SetNull() { hash = 0; n = (unsigned int) -1; }
     bool IsNull() const { return (hash == 0 && n == (unsigned int) -1); }
 
@@ -291,7 +285,12 @@ public:
 
     std::string ToString() const
     {
-        return strprintf("COutPoint(%s, %u)", hash.ToString().substr(0,10).c_str(), n);
+        return strprintf("COutPoint(%s, %u)", hash.ToString()/*.substr(0,10)*/, n);
+    }
+
+    std::string ToStringShort() const
+    {
+        return strprintf("%s-%u", hash.ToString().substr(0,64), n);
     }
 
     void print() const
@@ -369,7 +368,7 @@ public:
         str += "CTxIn(";
         str += prevout.ToString();
         if (prevout.IsNull())
-            str += strprintf(", coinbase %s", HexStr(scriptSig).c_str());
+            str += strprintf(", coinbase %s", HexStr(scriptSig));
         else
             str += strprintf(", scriptSig=%s", scriptSig.ToString().substr(0,24).c_str());
         if (nSequence != std::numeric_limits<unsigned int>::max())

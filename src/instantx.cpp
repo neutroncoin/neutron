@@ -36,7 +36,7 @@ int nCompleteTXLocks;
 void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
-    if(!IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT)) return;
+    if(!IsSporkActive(SPORK_TBD_INSTANTX_ENABLED)) return;
 
     if (strCommand == "txlreq")
     {
@@ -70,14 +70,14 @@ void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& 
 
 
         //if (AcceptToMemoryPool(mempool, state, tx, true, &fMissingInputs))
-	CTxDB txdb("r");
+        CTxDB txdb("r");
         if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
         {
             vector<CInv> vInv;
             vInv.push_back(inv);
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes)
-                pnode->PushMessage("inv", vInv);
+                pnode->PushMessage(NetMsgType::INV, vInv);
 
             DoConsensusVote(tx, nBlockHeight);
 
@@ -165,7 +165,7 @@ void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& 
             vInv.push_back(inv);
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes)
-                pnode->PushMessage("inv", vInv);
+                pnode->PushMessage(NetMsgType::INV, vInv);
 
         }
 
@@ -188,7 +188,7 @@ bool IsIXTXValid(const CTransaction& txCollateral){
         CTransaction tx2;
         uint256 hash;
         //if(GetTransaction(i.prevout.hash, tx2, hash, true)){
-	if(GetTransaction(i.prevout.hash, tx2, hash)){
+        if(GetTransaction(i.prevout.hash, tx2, hash)){
             if(tx2.vout.size() > i.prevout.n) {
                 nValueIn += tx2.vout[i.prevout.n].nValue;
             }
@@ -302,7 +302,7 @@ void DoConsensusVote(CTransaction& tx, int64_t nBlockHeight)
     vInv.push_back(inv);
     LOCK(cs_vNodes);
     BOOST_FOREACH(CNode* pnode, vNodes){
-        pnode->PushMessage("inv", vInv);
+        pnode->PushMessage(NetMsgType::INV, vInv);
     }
 
 }

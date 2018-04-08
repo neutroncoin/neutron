@@ -130,7 +130,8 @@ extern int keysLoaded;
 extern bool fSucessfullyLoaded;
 extern std::vector<int64_t> darkSendDenominations;
 
-
+static const bool DEFAULT_LOGIPS         = true;
+static const bool DEFAULT_LOGTIMESTAMPS  = false;
 
 extern std::map<std::string, std::string> mapArgs;
 extern std::map<std::string, std::vector<std::string> > mapMultiArgs;
@@ -147,6 +148,7 @@ extern std::string strMiscWarning;
 extern bool fTestNet;
 extern bool fNoListen;
 extern bool fLogTimestamps;
+extern bool fLogIPs;
 extern volatile bool fReopenDebugLog;
 
 void SetupEnvironment();
@@ -156,47 +158,35 @@ bool LogAcceptCategory(const char* category);
 /** Send a string to the log output */
 int LogPrintStr(const std::string& str);
 
-#define LogPrintf(...) LogPrint(NULL, __VA_ARGS__)
+/** Get format string from VA_ARGS for error reporting */
+template<typename... Args> std::string FormatStringFromLogArgs(const char *fmt, const Args&... args) { return fmt; }
 
-/**
- * When we switch to C++11, this can be switched to variadic templates instead
- * of this macro-based construction (see tinyformat.h).
- */
-#define MAKE_ERROR_AND_LOG_FUNC(n)                                                              \
-    /**   Print to debug.log if -debug=category switch is given OR category is NULL. */         \
-    template <TINYFORMAT_ARGTYPES(n)>                                                           \
-    static inline int LogPrint(const char* category, const char* format, TINYFORMAT_VARARGS(n)) \
-    {                                                                                           \
-        if (!LogAcceptCategory(category)) return 0;                                             \
-        return LogPrintStr(tfm::format(format, TINYFORMAT_PASSARGS(n)));                        \
-    }                                                                                           \
-    /**   Log error and return false */                                                         \
-    template <TINYFORMAT_ARGTYPES(n)>                                                           \
-    static inline bool error(const char* format, TINYFORMAT_VARARGS(n))                         \
-    {                                                                                           \
-        LogPrintStr("ERROR: " + tfm::format(format, TINYFORMAT_PASSARGS(n)) + "\n");            \
-        return false;                                                                           \
-    }
+#define LogPrintf(...) do { \
+    std::string _log_msg_; /* Unlikely name to avoid shadowing variables */ \
+    try { \
+        _log_msg_ = tfm::format(__VA_ARGS__); \
+    } catch (std::runtime_error &e) { \
+        /* Original format string will have newline so don't add one here */ \
+        _log_msg_ = "Error \"" + std::string(e.what()) + "\" while formatting log message: " + FormatStringFromLogArgs(__VA_ARGS__); \
+    } \
+    LogPrintStr(_log_msg_); \
+} while(0)
 
-TINYFORMAT_FOREACH_ARGNUM(MAKE_ERROR_AND_LOG_FUNC)
+#define LogPrint(category, ...) do { \
+    if (LogAcceptCategory((category))) { \
+        LogPrintf(__VA_ARGS__); \
+    } \
+} while(0)
 
-/**
- * Zero-arg versions of logging and error, these are not covered by
- * TINYFORMAT_FOREACH_ARGNUM
- */
-static inline int LogPrint(const char* category, const char* format)
+template<typename... Args>
+bool error(const char* fmt, const Args&... args)
 {
-    if (!LogAcceptCategory(category)) return 0;
-    return LogPrintStr(format);
-}
-static inline bool error(const char* format)
-{
-    LogPrintStr(std::string("ERROR: ") + format + "\n");
+    LogPrintStr("ERROR: " + tfm::format(fmt, args...) + "\n");
     return false;
 }
 
 void PrintException(std::exception* pex, const char* pszThread);
-void PrintExceptionContinue(std::exception* pex, const char* pszThread);
+void PrintExceptionContinue(const std::exception *pex, const char* pszThread);
 void ParseString(const std::string& str, char c, std::vector<std::string>& v);
 void ParseParameters(int argc, const char*const argv[]);
 bool WildcardMatch(const char* psz, const char* mask);
@@ -353,5 +343,29 @@ inline uint32_t ByteReverse(uint32_t value)
     return (value<<16) | (value>>16);
 }
 
-#endif
+/**
+ * .. and a wrapper that just calls func once
+ */
+template <typename Callable>
+void TraceThread(const char* name, Callable func)
+{
+    std::string s = strprintf("neutron-%s", name);
+    RenameThread(s.c_str());
+    try {
+        LogPrintf("%s thread start\n", name);
+        func();
+        LogPrintf("%s thread exit\n", name);
+    } catch (boost::thread_interrupted) {
+        LogPrintf("%s thread interrupt\n", name);
+        throw;
+    } catch (std::exception& e) {
+        PrintExceptionContinue(&e, name);
+        throw;
+    } catch (...) {
+        PrintExceptionContinue(NULL, name);
+        throw;
+    }
+}
+
+#endif // BITCOIN_UTIL_H
 
