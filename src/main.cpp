@@ -1886,9 +1886,11 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         if (!IsInitialBlockDownload()) {
             // Check masternode payment and compare to masternode winners
 
-            CAmount nPaymentRequired = GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward);
-            LogPrintf("ConnectBlock() : *Calculated stake reward=%s for block %d\n", FormatMoney(nCalculatedStakeReward).c_str(), pindex->nHeight);
-            LogPrintf("ConnectBlock() : **Masternode payment required=%s for block %d\n", FormatMoney(nPaymentRequired).c_str(), pindex->nHeight);
+            CAmount nRequiredMnPmt = GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward);
+            int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
+            int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
+
+            LogPrintf("ConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s, Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward), FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt), FormatMoney(nRequiredDevPmt));
 
             int nDoS_PMTs = sporkManager.GetSporkValue(SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE);
 
@@ -1900,22 +1902,18 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)){
                 // check coinstake tx for masternode payment
                 for (const CTxOut out : vtx[1].vout) {
-                    if(out.nValue == nPaymentRequired) {
+                    if(out.nValue == nRequiredMnPmt) {
                         fMasternodePaid = true;
                         blockPayee = out.scriptPubKey;
                     }
                     if (out.scriptPubKey == payee) {
                         fCorrectNodePaid = true;
                     }
-                    if (out.nValue == nPaymentRequired && out.scriptPubKey == payee) {
+                    // verify correct payment addr and amount
+                    if (out.nValue == nRequiredMnPmt && out.scriptPubKey == payee) {
                         fValidPayment = true;
                         break;
                     }
-                }
-
-                if (!fMasternodePaid) {
-                    if (sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT))
-                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode"));
                 }
 
                 CTxDestination dest;
@@ -1927,30 +1925,47 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     bool fPrintAddress = ExtractDestination(payee, dest);
                     CBitcoinAddress addressMN(dest);
 
-                    if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
+                    if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s", hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
-                    else
+                    } else {
                         LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n", hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
+                    }
                 } else {
                     if (fDebug) LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                 }
+
+                if (!fMasternodePaid) {
+                    if (sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT)) {
+                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
+                    } else {
+                        if (fDebug) LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n");
+                    }
+                }
             } else {
-                CTxDestination payeeDest;
-                bool hasPayee = ExtractDestination(payee, payeeDest);
-                CBitcoinAddress payeeAddr(payeeDest);
-                LogPrintf("ConnectBlock() : Did not find masternode payee %s for block %d\n", hasPayee ? payeeAddr.ToString() : "", pindexBest->nHeight+1);
+                LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
             }
 
-            if (!fValidPayment && sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
-                return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+
+            // can only safely check this once mn list synced
+            /// TODO: NTRN - adjust mn list synced logic later
+            bool fMasternodeSynced = fTestNet ? mnodeman.CountEnabled()>=1 : mnodeman.CountEnabled()>=200;
+            if (fMasternodeSynced) {
+                if (!fValidPayment && fMasternodeSynced && sporkManager.IsSporkActive(SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT) && sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
+                        return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+                } else if (!fValidPayment) {
+                    LogPrintf("ConnectBlock() : Masternode payment missing or is not valid - NOT ENFORCED\n");
+                }
+            } else {
+                if (fDebug) LogPrintf("ConnectBlock() : Masternode list not yet synced - CountEnabled=%d\n", mnodeman.CountEnabled());
+            }
 
             //Check developer payment
             bool fValidDevPmt = false;
             CScript scriptDev = GetDeveloperScript();
-            int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
 
             // check coinstake tx for dev payment
             for (const CTxOut out : vtx[1].vout) {
+                // verify correct payment addr and amount
                 if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev)
                     fValidDevPmt = true;
             }
@@ -1960,6 +1975,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Block fails to pay correct dev payment of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
                 else
                     LogPrintf("ConnectBlock() : Block does not pay %s dev payment - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
+            } else {
+                if (fDebug) LogPrintf("ConnectBlock() : Stake pays dev payment\n");
             }
 
         } else {
