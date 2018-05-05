@@ -1131,8 +1131,6 @@ struct CDNSSeedData {
 std::vector<CDNSSeedData> vSeeds;
 
 const std::vector<CDNSSeedData>& DNSSeeds() {
-    vSeeds.push_back(CDNSSeedData("presstab", "ntrnseed.presstab.pw"));
-    vSeeds.push_back(CDNSSeedData("fuzzbawls", "ntrn.seed.fuzzbawls.pw"));
     vSeeds.push_back(CDNSSeedData("cryptotools", "ntrn.seed.cryptotools.pw"));
     return vSeeds;
 }
