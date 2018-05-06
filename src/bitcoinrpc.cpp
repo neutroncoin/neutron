@@ -240,6 +240,7 @@ static const CRPCCommand vRPCCommands[] =
     { "stop",                   &stop,                   true,       true },
 
     /* P2P networking */
+    { "addnode",                &addnode,                true,       false },
     { "getconnectioncount",     &getconnectioncount,     true,       false },
     { "getpeerinfo",            &getpeerinfo,            true,       false },
     // TODO: NTRN - Add setban, listbanned, clearbanned, disconnectnode

@@ -69,6 +69,67 @@ Value getpeerinfo(const Array& params, bool fHelp)
     return ret;
 }
 
+Value addnode(const Array& params, bool fHelp)
+{
+    string strCommand;
+    if (params.size() == 2)
+        strCommand = params[1].get_str();
+    if (fHelp || params.size() != 2 ||
+        (strCommand != "onetry" && strCommand != "add" && strCommand != "remove"))
+        throw runtime_error(
+            "addnode \"node\" \"add|remove|onetry\"\n"
+            "\nAttempts add or remove a node from the addnode list.\n"
+            "Or try a connection to a node once.\n"
+            "\nArguments:\n"
+            "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
+            "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
+            "\nExamples:\n"
+            + HelpExampleCli("addnode", "\"192.168.0.6:11994\" \"onetry\"")
+            + HelpExampleRpc("addnode", "\"192.168.0.6:11994\", \"onetry\"")
+        );
+
+    string strNode = params[0].get_str();
+
+    if (strCommand == "onetry")
+    {
+        CAddress addr;
+        ConnectNode(addr, strNode.c_str());
+        return Value::null;
+    }
+
+    CNode* connectedNode = NULL;
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+        if (strNode == pnode->addrName) {
+            connectedNode = pnode;
+        }
+    }
+
+    if (strCommand == "add")
+    {
+        if (connectedNode != NULL) {
+            throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Node already added");
+        }
+
+        CService addr = CService(strNode);
+        if(ConnectNode((CAddress)addr, NULL, true)){
+            LogPrintf("successfully connected to node\n");
+        } else {
+            LogPrintf("error connecting to node\n");
+        }
+    }
+    else if(strCommand == "remove")
+    {
+        if (connectedNode == NULL) {
+            throw JSONRPCError(RPC_CLIENT_NODE_NOT_ADDED, "Error: Node has not been added.");
+        }
+
+        connectedNode->CloseSocketDisconnect();
+    }
+
+    return Value::null;
+}
+
 // ppcoin: send alert.
 // There is a known deadlock situation with ThreadMessageHandler
 // ThreadMessageHandler: holds cs_vSend and acquiring cs_main in SendMessages()
