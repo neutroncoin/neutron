@@ -142,7 +142,10 @@ extern void EnsureWalletIsUnlocked();
 extern uint256 ParseHashV(const json_spirit::Value& v, std::string strName);
 extern uint256 ParseHashO(const json_spirit::Object& o, std::string strKey);
 extern std::vector<unsigned char> ParseHexV(const json_spirit::Value& v, std::string strName);
-extern std::vector<unsigned char> ParseHexO(const json_spirit::Object& o, std::string strKey); 
+extern std::vector<unsigned char> ParseHexO(const json_spirit::Object& o, std::string strKey);
+
+extern std::string HelpExampleCli(std::string methodname, std::string args);
+extern std::string HelpExampleRpc(std::string methodname, std::string args);
 
 extern json_spirit::Value getconnectioncount(const json_spirit::Array& params, bool fHelp); // in rpcnet.cpp
 extern json_spirit::Value getpeerinfo(const json_spirit::Array& params, bool fHelp);

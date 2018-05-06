@@ -232,84 +232,107 @@ Value stop(const Array& params, bool fHelp)
 
 
 static const CRPCCommand vRPCCommands[] =
-{ //  name                      function                 safemd  unlocked
-  //  ------------------------  -----------------------  ------  --------
-    { "help",                   &help,                   true,   true },
-    { "stop",                   &stop,                   true,   true },
-    { "getbestblockhash",       &getbestblockhash,       true,   false },
-    { "getblockcount",          &getblockcount,          true,   false },
-    { "getconnectioncount",     &getconnectioncount,     true,   false },
-    { "getpeerinfo",            &getpeerinfo,            true,   false },
-    { "getdifficulty",          &getdifficulty,          true,   false },
-    { "getinfo",                &getinfo,                true,   false },
-    { "getsubsidy",             &getsubsidy,             true,   false },
-    { "getmininginfo",          &getmininginfo,          true,   false },
-    { "getstakinginfo",         &getstakinginfo,         true,   false },
-    { "getnewaddress",          &getnewaddress,          true,   false },
-    { "getnewpubkey",           &getnewpubkey,           true,   false },
-    { "getaccountaddress",      &getaccountaddress,      true,   false },
-    { "setaccount",             &setaccount,             true,   false },
-    { "getaccount",             &getaccount,             false,  false },
-    { "getaddressesbyaccount",  &getaddressesbyaccount,  true,   false },
-    { "sendtoaddress",          &sendtoaddress,          false,  false },
-    { "getreceivedbyaddress",   &getreceivedbyaddress,   false,  false },
-    { "getreceivedbyaccount",   &getreceivedbyaccount,   false,  false },
-    { "listreceivedbyaddress",  &listreceivedbyaddress,  false,  false },
-    { "listreceivedbyaccount",  &listreceivedbyaccount,  false,  false },
-    { "backupwallet",           &backupwallet,           true,   false },
-    { "keypoolrefill",          &keypoolrefill,          true,   false },
-    { "walletpassphrase",       &walletpassphrase,       true,   false },
-    { "walletpassphrasechange", &walletpassphrasechange, false,  false },
-    { "walletlock",             &walletlock,             true,   false },
-    { "encryptwallet",          &encryptwallet,          false,  false },
-    { "validateaddress",        &validateaddress,        true,   false },
-    { "validatepubkey",         &validatepubkey,         true,   false },
-    { "getbalance",             &getbalance,             false,  false },
-    { "move",                   &movecmd,                false,  false },
-    { "sendfrom",               &sendfrom,               false,  false },
-    { "sendmany",               &sendmany,               false,  false },
-    { "addmultisigaddress",     &addmultisigaddress,     false,  false },
-    { "addredeemscript",        &addredeemscript,        false,  false },
-    { "getrawmempool",          &getrawmempool,          true,   false },
-    { "getblock",               &getblock,               false,  false },
-    { "getblockbynumber",       &getblockbynumber,       false,  false },
-    { "getblockhash",           &getblockhash,           false,  false },
-    { "gettransaction",         &gettransaction,         false,  false },
-    { "listtransactions",       &listtransactions,       false,  false },
-    { "listaddressgroupings",   &listaddressgroupings,   false,  false },
-    { "signmessage",            &signmessage,            false,  false },
-    { "verifymessage",          &verifymessage,          false,  false },
-    { "getwork",                &getwork,                true,   false },
-    { "getworkex",              &getworkex,              true,   false },
-    { "listaccounts",           &listaccounts,           false,  false },
-    { "settxfee",               &settxfee,               false,  false },
-    { "getblocktemplate",       &getblocktemplate,       true,   false },
-    { "submitblock",            &submitblock,            false,  false },
-    { "listsinceblock",         &listsinceblock,         false,  false },
-    { "dumpprivkey",            &dumpprivkey,            false,  false },
-    { "dumpwallet",             &dumpwallet,             true,   false },
-    { "importwallet",           &importwallet,           false,  false },
-    { "importprivkey",          &importprivkey,          false,  false },
-    { "listunspent",            &listunspent,            false,  false },
-    { "getrawtransaction",      &getrawtransaction,      false,  false },
-    { "createrawtransaction",   &createrawtransaction,   false,  false },
-    { "decoderawtransaction",   &decoderawtransaction,   false,  false },
-    { "decodescript",           &decodescript,           false,  false },
-    { "signrawtransaction",     &signrawtransaction,     false,  false },
-    { "sendrawtransaction",     &sendrawtransaction,     false,  false },
-    { "getcheckpoint",          &getcheckpoint,          true,   false },
-    { "reservebalance",         &reservebalance,         false,  true},
-    { "checkwallet",            &checkwallet,            false,  true},
-    { "repairwallet",           &repairwallet,           false,  true},
-    { "resendtx",               &resendtx,               false,  true},
-    { "makekeypair",            &makekeypair,            false,  true},
-    { "sendalert",              &sendalert,              false,  false},
-    { "setgenerate",            &setgenerate,            true,   false },
-    { "gethashespersec",        &gethashespersec,        true,   false },
-    { "getblockversionstats",   &getblockversionstats,   true,   false },
-    /* Dark features */
-    { "spork",                  &spork,                  false,      false },
+{ //  name                      actor (function)         okSafeMode  unlocked
+  //  ------------------------  -----------------------  ----------  --------
+    /* Overall control/query calls */
+    { "getinfo",                &getinfo,                true,       false },
+    { "help",                   &help,                   true,       true },
+    { "stop",                   &stop,                   true,       true },
+
+    /* P2P networking */
+    { "getconnectioncount",     &getconnectioncount,     true,       false },
+    { "getpeerinfo",            &getpeerinfo,            true,       false },
+    // TODO: NTRN - Add setban, listbanned, clearbanned, disconnectnode
+
+    /* Block chain and UTXO */
+    { "getbestblockhash",       &getbestblockhash,       true,       false },
+    { "getblockcount",          &getblockcount,          true,       false },
+    { "getblock",               &getblock,               false,      false },
+    { "getblockhash",           &getblockhash,           false,      false },
+    { "getdifficulty",          &getdifficulty,          true,       false },
+    { "getrawmempool",          &getrawmempool,          true,       false },
+
+    /* Mining */
+    { "getblocktemplate",       &getblocktemplate,       true,       false },
+    { "getmininginfo",          &getmininginfo,          true,       false },
+    { "getstakinginfo",         &getstakinginfo,         true,       false },
+    { "submitblock",            &submitblock,            false,      false },
+    { "reservebalance",         &reservebalance,         false,      true },
+
+    /* Coin generation */
+    { "setgenerate",            &setgenerate,            true,       false },
+
+    /* Raw transactions */
+    { "createrawtransaction",   &createrawtransaction,   false,      false },
+    { "decoderawtransaction",   &decoderawtransaction,   false,      false },
+    { "decodescript",           &decodescript,           false,      false },
+    { "getrawtransaction",      &getrawtransaction,      false,      false },
+    { "sendrawtransaction",     &sendrawtransaction,     false,      false },
+    { "signrawtransaction",     &signrawtransaction,     false,      false },
+
+    /* Address index */
+    // none yet
+
+    /* Utility functions */
+    { "validateaddress",        &validateaddress,        true,       false },
+    { "verifymessage",          &verifymessage,          false,      false },
+
+    /* Neutron features */
     { "masternode",             &masternode,             false,      true },
+    { "spork",                  &spork,                  false,      false },
+    // TODO: NTRN - Add masternodelist
+
+    /* Wallet */
+    { "addmultisigaddress",     &addmultisigaddress,     false,      false },
+    { "backupwallet",           &backupwallet,           true,       false },
+    { "dumpprivkey",            &dumpprivkey,            false,      false },
+    { "dumpwallet",             &dumpwallet,             true,       false },
+    { "encryptwallet",          &encryptwallet,          false,      false },
+    { "getaccountaddress",      &getaccountaddress,      true,       false },
+    { "getaccount",             &getaccount,             false,      false },
+    { "getaddressesbyaccount",  &getaddressesbyaccount,  true,       false },
+    { "getbalance",             &getbalance,             false,      false },
+    { "getnewaddress",          &getnewaddress,          true,       false },
+    { "getreceivedbyaccount",   &getreceivedbyaccount,   false,      false },
+    { "getreceivedbyaddress",   &getreceivedbyaddress,   false,      false },
+    { "gettransaction",         &gettransaction,         false,      false },
+    { "importprivkey",          &importprivkey,          false,      false },
+    { "importwallet",           &importwallet,           false,      false },
+    { "keypoolrefill",          &keypoolrefill,          true,       false },
+    { "listaccounts",           &listaccounts,           false,      false },
+    { "listaddressgroupings",   &listaddressgroupings,   false,      false },
+    { "listreceivedbyaccount",  &listreceivedbyaccount,  false,      false },
+    { "listreceivedbyaddress",  &listreceivedbyaddress,  false,      false },
+    { "listsinceblock",         &listsinceblock,         false,      false },
+    { "listtransactions",       &listtransactions,       false,      false },
+    { "listunspent",            &listunspent,            false,      false },
+    { "move",                   &movecmd,                false,      false },
+    { "sendfrom",               &sendfrom,               false,      false },
+    { "sendmany",               &sendmany,               false,      false },
+    { "sendtoaddress",          &sendtoaddress,          false,      false },
+    { "setaccount",             &setaccount,             true,       false },
+    { "settxfee",               &settxfee,               false,      false },
+    { "signmessage",            &signmessage,            false,      false },
+    { "walletlock",             &walletlock,             true,       false },
+    { "walletpassphrasechange", &walletpassphrasechange, false,      false },
+    { "walletpassphrase",       &walletpassphrase,       true,       false },
+
+    // TODO: NTRN - still need to categorize
+    { "addredeemscript",        &addredeemscript,        false,      false },
+    { "checkwallet",            &checkwallet,            false,      true },
+    { "getblockbynumber",       &getblockbynumber,       false,      false },
+    { "getblockversionstats",   &getblockversionstats,   true,       false },
+    { "getcheckpoint",          &getcheckpoint,          true,       false },
+    { "gethashespersec",        &gethashespersec,        true,       false },
+    { "getnewpubkey",           &getnewpubkey,           true,       false },
+    { "getsubsidy",             &getsubsidy,             true,       false },
+    { "getwork",                &getwork,                true,       false },
+    { "getworkex",              &getworkex,              true,       false },
+    { "makekeypair",            &makekeypair,            false,      true },
+    { "repairwallet",           &repairwallet,           false,      true },
+    { "resendtx",               &resendtx,               false,      true },
+    { "sendalert",              &sendalert,              false,      false },
+    { "validatepubkey",         &validatepubkey,         true,       false },
 };
 
 CRPCTable::CRPCTable()
@@ -1344,5 +1367,14 @@ int main(int argc, char *argv[])
     return 0;
 }
 #endif
+
+std::string HelpExampleCli(string methodname, string args){
+    return "> neutrond " + methodname + " " + args + "\n";
+}
+
+std::string HelpExampleRpc(string methodname, string args){
+    return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
+        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:9998/\n";
+}
 
 const CRPCTable tableRPC;
