@@ -240,10 +240,11 @@ static const CRPCCommand vRPCCommands[] =
     { "stop",                   &stop,                   true,       true },
 
     /* P2P networking */
+    // TODO: NTRN - Add setban, listbanned, clearbanned
     { "addnode",                &addnode,                true,       false },
+    { "disconnectnode",         &disconnectnode,         true,       false },
     { "getconnectioncount",     &getconnectioncount,     true,       false },
     { "getpeerinfo",            &getpeerinfo,            true,       false },
-    // TODO: NTRN - Add setban, listbanned, clearbanned, disconnectnode
 
     /* Block chain and UTXO */
     { "getbestblockhash",       &getbestblockhash,       true,       false },
@@ -279,9 +280,9 @@ static const CRPCCommand vRPCCommands[] =
     { "verifymessage",          &verifymessage,          false,      false },
 
     /* Neutron features */
+    // TODO: NTRN - Add masternodelist
     { "masternode",             &masternode,             false,      true },
     { "spork",                  &spork,                  false,      false },
-    // TODO: NTRN - Add masternodelist
 
     /* Wallet */
     { "addmultisigaddress",     &addmultisigaddress,     false,      false },
@@ -1375,7 +1376,7 @@ std::string HelpExampleCli(string methodname, string args){
 
 std::string HelpExampleRpc(string methodname, string args){
     return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
-        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:9998/\n";
+        "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:32001/\n";
 }
 
 const CRPCTable tableRPC;

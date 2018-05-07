@@ -84,8 +84,8 @@ Value addnode(const Array& params, bool fHelp)
             "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
             "2. \"command\"  (string, required) 'add' to add a node to the list, 'remove' to remove a node from the list, 'onetry' to try a connection to the node once\n"
             "\nExamples:\n"
-            + HelpExampleCli("addnode", "\"192.168.0.6:11994\" \"onetry\"")
-            + HelpExampleRpc("addnode", "\"192.168.0.6:11994\", \"onetry\"")
+            + HelpExampleCli("addnode", "\"192.168.0.6:32001\" \"onetry\"")
+            + HelpExampleRpc("addnode", "\"192.168.0.6:32001\", \"onetry\"")
         );
 
     string strNode = params[0].get_str();
@@ -126,6 +126,30 @@ Value addnode(const Array& params, bool fHelp)
 
         connectedNode->CloseSocketDisconnect();
     }
+
+    return Value::null;
+}
+
+Value disconnectnode(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+            "disconnectnode \"node\" \n"
+            "\nImmediately disconnects from the specified node.\n"
+            "\nArguments:\n"
+            "1. \"node\"     (string, required) The node (see getpeerinfo for nodes)\n"
+            "\nExamples:\n"
+            + HelpExampleCli("disconnectnode", "\"192.168.0.6:32001\"")
+            + HelpExampleRpc("disconnectnode", "\"192.168.0.6:32001\"")
+        );
+
+    // CService addr = CService(params[0].get_str());
+    // CNode* pnode = FindNode(addr);
+    CNode* pnode = FindNode(params[0].get_str());
+    if (pnode == NULL)
+        throw JSONRPCError(RPC_CLIENT_NODE_NOT_CONNECTED, "Node not found in connected nodes");
+
+    pnode->CloseSocketDisconnect();
 
     return Value::null;
 }
