@@ -182,6 +182,7 @@ HEADERS += src/activemasternode.h \
     src/json/json_spirit_utils.h \
     src/json/json_spirit_writer_template.h \
     src/json/json_spirit_writer.h \
+    src/primitives/block.h \
     src/qt/aboutdialog.h \
     src/qt/addeditadrenalinenode.h \
     src/qt/addressbookpage.h \
@@ -278,6 +279,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/activemasternode.cpp \
     src/spork.cpp \
     src/masternodeconfig.cpp \
+    src/primitives/block.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
     src/qt/addressbookpage.cpp \
