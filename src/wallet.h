@@ -10,6 +10,8 @@
 
 #include <stdlib.h>
 
+#include "primatives/block.h"
+
 #include "main.h"
 #include "key.h"
 #include "keystore.h"
