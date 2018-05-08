@@ -164,6 +164,7 @@ HEADERS += src/activemasternode.h \
     src/threadsafety.h \
     src/timedata.h \
     src/txdb.h \
+    src/txmempool.h \
     src/uint256.h \
     src/ui_interface.h \
     src/util.h \
@@ -279,6 +280,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/activemasternode.cpp \
     src/spork.cpp \
     src/masternodeconfig.cpp \
+    src/txmempool.cpp \
     src/primitives/block.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
