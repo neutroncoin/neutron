@@ -1029,6 +1029,8 @@ bool CheckProofOfWork(uint256 hash, unsigned int nBits)
 // Return maximum amount of blocks that other nodes claim to have
 int GetNumBlocksOfPeers()
 {
+    // if (fDebug) LogPrintf("GetNumBlocksOfPeers: %d | %d\n", cPeerBlockCounts.median(), Checkpoints::GetTotalBlocksEstimate());
+
     return std::max(cPeerBlockCounts.median(), Checkpoints::GetTotalBlocksEstimate());
 }
 
@@ -3674,14 +3676,19 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
 int ActiveProtocol()
 {
-    // Allowed: 60016, 60017
-    // Banned: 60015 and below
+    // Allowed: 60017
+    // Banned: 60016 and below
 
-    if (sporkManager.IsSporkActive(SPORK_7_PROTOCOL_V201_ENFORCEMENT)) {
-        return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT; // 60017
-    }
+    // if (sporkManager.IsSporkActive(SPORK_7_PROTOCOL_V201_ENFORCEMENT)) {
+    //     // v2.0.1 - 60017
+    //     return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
+    // }
 
-    return MIN_PEER_PROTO_VERSION_AFTER_V200_ENFORCEMENT; // 60016
+    // // v2.0.0 - 60016
+    // return MIN_PEER_PROTO_VERSION_AFTER_V200_ENFORCEMENT;
+
+    // v2.0.2+ - 60017
+    return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
 }
 
 // requires LOCK(cs_vRecvMsg)
@@ -3970,22 +3977,32 @@ CScript GetDeveloperScript()
 {
     string strAddress;
 
-    if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
-        strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
-    } else {
-        strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V1 : DEVELOPER_ADDRESS_MAINNET_V1;
-    }
+    // if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
+    //     // v2.0.1
+    //     strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
+    // } else {
+    //     // v2.0.0
+    //     strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V1 : DEVELOPER_ADDRESS_MAINNET_V1;
+    // }
+
+    // v2.0.2+ default
+    strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
 
     return GetScriptForDestination(CBitcoinAddress(strAddress).Get());
 }
 
 int64_t GetDeveloperPayment(int64_t nBlockValue)
 {
-    if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
-        return nBlockValue * DEVELOPER_PAYMENT_V2 / COIN;
-    }
+    // if (sporkManager.IsSporkActive(SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT)) {
+    //     // v2.0.1
+    //     return nBlockValue * DEVELOPER_PAYMENT_V2 / COIN;
+    // }
 
-    return nBlockValue * DEVELOPER_PAYMENT_V1 / COIN;
+    // // v2.0.0
+    // return nBlockValue * DEVELOPER_PAYMENT_V1 / COIN;
+
+    // v2.0.2+ default
+    return nBlockValue * DEVELOPER_PAYMENT_V2 / COIN;
 }
 
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue)
