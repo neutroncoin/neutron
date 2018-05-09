@@ -134,6 +134,7 @@ HEADERS += src/activemasternode.h \
     src/base58.h \
     src/bignum.h \
     src/bitcoinrpc.h \
+    src/chainparams.h \
     src/checkpoints.h \
     src/clientversion.h \
     src/crypter.h \
@@ -171,6 +172,7 @@ HEADERS += src/activemasternode.h \
     src/utilmoneystr.h \
     src/utilstrencodings.h \
     src/utiltime.h \
+    src/validation.h \
     src/version.h \
     src/wallet.h \
     src/walletdb.h \
@@ -252,6 +254,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
+    src/chainparams.cpp \
     src/checkpoints.cpp \
     src/addrman.cpp \
     src/db.cpp \
@@ -281,6 +284,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/spork.cpp \
     src/masternodeconfig.cpp \
     src/txmempool.cpp \
+    src/validation.cpp \
     src/primitives/block.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
