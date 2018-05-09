@@ -84,7 +84,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         if(protocolVersion < ActiveProtocol()) {
             LogPrintf("dsee - ignoring masternode %s using outdated protocol version %d\n", vin.ToString().c_str(), protocolVersion);
-            pfrom->Misbehaving(10);
+            pfrom->Misbehaving(15);
             return;
         }
 
