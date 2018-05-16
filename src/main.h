@@ -12,6 +12,8 @@
 #include "script.h"
 #include "scrypt.h"
 #include "streams.h"
+#include "txmempool.h"
+#include "validation.h"
 #include "zerocoin/Zerocoin.h"
 
 #include "util.h"
@@ -61,7 +63,6 @@ static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const unsigned int MAX_INV_SZ = 50000;
 static const int64_t MIN_TX_FEE =  1000000;
 static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
-static const int64_t MAX_MONEY = 50000000000 * COIN;
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
 static const string DEVELOPER_ADDRESS_MAINNET_V2 = "9mHXFeih5PspSKxXBVSX6qCojsy5xXbJDW";
@@ -71,9 +72,6 @@ static const string DEVELOPER_ADDRESS_TESTNET_V1 = "mnZP88spijp7AxRvdr7hvJfK6HRC
 static const int64_t DEVELOPER_PAYMENT_V2 = 10 * CENT; // 10% of block reward
 static const int64_t DEVELOPER_PAYMENT_V1 = 3 * CENT; // 3% of block reward
 
-inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
-// Threshold for nLockTime: below this value it is interpreted as block number, otherwise as UNIX timestamp.
-static const unsigned int LOCKTIME_THRESHOLD = 500000000; // Tue Nov  5 00:53:20 1985 UTC
 static const int64_t MAX_TIME_SINCE_BEST_BLOCK = 10; // how many seconds to wait before sending next PushGetBlocks()
 
 #ifdef USE_UPNP
@@ -136,8 +134,6 @@ void UnregisterWallet(CWallet* pwalletIn);
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false, bool fConnect = true);
 bool ProcessNewBlock(CNode* pfrom, CBlock* pblock);
 bool CheckDiskSpace(uint64_t nAdditionalBytes=0);
-FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
-FILE* AppendBlockFile(unsigned int& nFileRet);
 bool LoadExternalBlockFile(FILE* fileIn);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
@@ -161,7 +157,6 @@ int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight);
 unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime);
 unsigned int ComputeMinStake(unsigned int nBase, int64_t nTime, unsigned int nBlockTime);
 int GetNumBlocksOfPeers();
-bool IsInitialBlockDownload();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
 uint256 WantedByOrphan(const CBlock* pblockOrphan);
@@ -756,64 +751,6 @@ protected:
 };
 
 
-
-
-
-/** A transaction with a merkle branch linking it to the block chain. */
-class CMerkleTx : public CTransaction
-{
-private:
-    int GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const;
-public:
-    uint256 hashBlock;
-    std::vector<uint256> vMerkleBranch;
-    int nIndex;
-
-    // memory only
-    mutable bool fMerkleVerified;
-
-
-    CMerkleTx()
-    {
-        Init();
-    }
-
-    CMerkleTx(const CTransaction& txIn) : CTransaction(txIn)
-    {
-        Init();
-    }
-
-    void Init()
-    {
-        hashBlock = 0;
-        nIndex = -1;
-        fMerkleVerified = false;
-    }
-
-
-    IMPLEMENT_SERIALIZE
-    (
-        nSerSize += SerReadWrite(s, *(CTransaction*)this, nType, nVersion, ser_action);
-        nVersion = this->nVersion;
-        READWRITE(hashBlock);
-        READWRITE(vMerkleBranch);
-        READWRITE(nIndex);
-    )
-
-
-    int SetMerkleBranch(const CBlock* pblock=NULL);
-
-    // Return depth of transaction in blockchain:
-    // -1  : not in blockchain, and not in memory pool (conflicted transaction)
-    //  0  : in memory pool, waiting to be included in a block
-    // >=1 : this many blocks deep in the main chain
-    int GetDepthInMainChain(CBlockIndex* &pindexRet) const;
-    int GetDepthInMainChain() const { CBlockIndex *pindexRet; return GetDepthInMainChain(pindexRet); }
-    bool IsInMainChain() const { CBlockIndex *pindexRet; return GetDepthInMainChainINTERNAL(pindexRet) > 0; }
-    int GetBlocksToMaturity() const;
-    bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true);
-    bool AcceptToMemoryPool();
-};
 
 
 
@@ -1489,177 +1426,6 @@ public:
 
 
 
-
-
-
-
-
-/** Describes a place in the block chain to another node such that if the
- * other node doesn't have the same branch, it can find a recent common trunk.
- * The further back it is, the further before the fork it may be.
- */
-class CBlockLocator
-{
-protected:
-    std::vector<uint256> vHave;
-public:
-
-    CBlockLocator()
-    {
-    }
-
-    explicit CBlockLocator(const CBlockIndex* pindex)
-    {
-        Set(pindex);
-    }
-
-    explicit CBlockLocator(uint256 hashBlock)
-    {
-        std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-        if (mi != mapBlockIndex.end())
-            Set((*mi).second);
-    }
-
-    CBlockLocator(const std::vector<uint256>& vHaveIn)
-    {
-        vHave = vHaveIn;
-    }
-
-    IMPLEMENT_SERIALIZE
-    (
-        if (!(nType & SER_GETHASH))
-            READWRITE(nVersion);
-        READWRITE(vHave);
-    )
-
-    void SetNull()
-    {
-        vHave.clear();
-    }
-
-    bool IsNull()
-    {
-        return vHave.empty();
-    }
-
-    void Set(const CBlockIndex* pindex)
-    {
-        vHave.clear();
-        int nStep = 1;
-        while (pindex)
-        {
-            vHave.push_back(pindex->GetBlockHash());
-
-            // Exponentially larger steps back
-            for (int i = 0; pindex && i < nStep; i++)
-                pindex = pindex->pprev;
-            if (vHave.size() > 10)
-                nStep *= 2;
-        }
-        vHave.push_back((!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
-    }
-
-    int GetDistanceBack()
-    {
-        // Retrace how far back it was in the sender's branch
-        int nDistance = 0;
-        int nStep = 1;
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return nDistance;
-            }
-            nDistance += nStep;
-            if (nDistance > 10)
-                nStep *= 2;
-        }
-        return nDistance;
-    }
-
-    CBlockIndex* GetBlockIndex()
-    {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return pindex;
-            }
-        }
-        return pindexGenesisBlock;
-    }
-
-    uint256 GetBlockHash()
-    {
-        // Find the first block the caller has in the main chain
-        BOOST_FOREACH(const uint256& hash, vHave)
-        {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
-            if (mi != mapBlockIndex.end())
-            {
-                CBlockIndex* pindex = (*mi).second;
-                if (pindex->IsInMainChain())
-                    return hash;
-            }
-        }
-        return (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);
-    }
-
-    int GetHeight()
-    {
-        CBlockIndex* pindex = GetBlockIndex();
-        if (!pindex)
-            return 0;
-        return pindex->nHeight;
-    }
-};
-
-
-
-
-
-
-
-
-class CTxMemPool
-{
-public:
-    mutable CCriticalSection cs;
-    std::map<uint256, CTransaction> mapTx;
-    std::map<COutPoint, CInPoint> mapNextTx;
-
-    bool accept(CTxDB& txdb, CTransaction &tx,
-                bool fCheckInputs, bool* pfMissingInputs);
-    bool addUnchecked(const uint256& hash, CTransaction &tx);
-    bool remove(const CTransaction &tx, bool fRecursive = false);
-    bool removeConflicts(const CTransaction &tx);
-    void clear();
-    void queryHashes(std::vector<uint256>& vtxid);
-    bool lookup(uint256 hash, CTransaction& result) const;
-
-    unsigned long size()
-    {
-        LOCK(cs);
-        return mapTx.size();
-    }
-
-    bool exists(uint256 hash)
-    {
-        return (mapTx.count(hash) != 0);
-    }
-
-    CTransaction& lookup(uint256 hash)
-    {
-        return mapTx[hash];
-    }
-};
 
 extern CTxMemPool mempool;
 

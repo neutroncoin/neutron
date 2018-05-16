@@ -134,6 +134,7 @@ HEADERS += src/activemasternode.h \
     src/base58.h \
     src/bignum.h \
     src/bitcoinrpc.h \
+    src/chainparams.h \
     src/checkpoints.h \
     src/clientversion.h \
     src/crypter.h \
@@ -164,12 +165,14 @@ HEADERS += src/activemasternode.h \
     src/threadsafety.h \
     src/timedata.h \
     src/txdb.h \
+    src/txmempool.h \
     src/uint256.h \
     src/ui_interface.h \
     src/util.h \
     src/utilmoneystr.h \
     src/utilstrencodings.h \
     src/utiltime.h \
+    src/validation.h \
     src/version.h \
     src/wallet.h \
     src/walletdb.h \
@@ -182,6 +185,7 @@ HEADERS += src/activemasternode.h \
     src/json/json_spirit_utils.h \
     src/json/json_spirit_writer_template.h \
     src/json/json_spirit_writer.h \
+    src/primitives/block.h \
     src/qt/aboutdialog.h \
     src/qt/addeditadrenalinenode.h \
     src/qt/addressbookpage.h \
@@ -250,6 +254,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/miner.cpp \
     src/init.cpp \
     src/net.cpp \
+    src/chainparams.cpp \
     src/checkpoints.cpp \
     src/addrman.cpp \
     src/db.cpp \
@@ -278,6 +283,9 @@ SOURCES += src/qt/bitcoin.cpp \
     src/activemasternode.cpp \
     src/spork.cpp \
     src/masternodeconfig.cpp \
+    src/txmempool.cpp \
+    src/validation.cpp \
+    src/primitives/block.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
     src/qt/addressbookpage.cpp \

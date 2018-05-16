@@ -7,6 +7,7 @@
 #include "main.h"
 #include "utiltime.h"
 #include "bitcoinrpc.h"
+#include "wallet.h"
 
 using namespace json_spirit;
 using namespace std;

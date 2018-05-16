@@ -14,6 +14,7 @@ typedef int64_t CAmount;
 static const CAmount COIN = 100000000;
 static const CAmount CENT = 1000000;
 
-/** Note: leaving MAX_MONEY and MoneyRange() defined in main instead of here for now */
+static const int64_t MAX_MONEY = 50000000000 * COIN;
+inline bool MoneyRange(int64_t nValue) { return (nValue >= 0 && nValue <= MAX_MONEY); }
 
 #endif //  BITCOIN_AMOUNT_H

@@ -1131,8 +1131,6 @@ struct CDNSSeedData {
 std::vector<CDNSSeedData> vSeeds;
 
 const std::vector<CDNSSeedData>& DNSSeeds() {
-    vSeeds.push_back(CDNSSeedData("presstab", "ntrnseed.presstab.pw"));
-    vSeeds.push_back(CDNSSeedData("fuzzbawls", "ntrn.seed.fuzzbawls.pw"));
     vSeeds.push_back(CDNSSeedData("cryptotools", "ntrn.seed.cryptotools.pw"));
     return vSeeds;
 }
@@ -1928,6 +1926,15 @@ public:
 }
 instance_of_cnetcleanup;
 
+void RelayInv(CInv& inv)
+{
+    LOCK(cs_vNodes);
+    BOOST_FOREACH(CNode* pnode, vNodes) {
+        if (pnode->nVersion >= ActiveProtocol())
+            pnode->PushInventory(inv);
+    }
+}
+
 void RelayTransaction(const CTransaction& tx, const uint256& hash)
 {
     CDataStream ss(SER_NETWORK, PROTOCOL_VERSION);
@@ -1953,7 +1960,7 @@ void RelayTransaction(const CTransaction& tx, const uint256& hash, const CDataSt
         vRelayExpiration.push_back(std::make_pair(GetTime() + 15 * 60, inv));
     }
 
-    RelayInventory(inv);
+    RelayInv(inv);
 }
 
 void RelayDarkSendFinalTransaction(const int sessionID, const CTransaction& txNew)
