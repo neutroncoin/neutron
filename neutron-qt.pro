@@ -1,6 +1,6 @@
 TEMPLATE = app
 TARGET = Neutron-qt
-VERSION = 2.0.1
+VERSION = 2.0.2
 INCLUDEPATH += src src/json src/qt
 DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE
 CONFIG += no_include_pwd

@@ -12,14 +12,14 @@
 // These need to be macros, as clientversion.cpp's and neutron*-res.rc's voodoo requires it
 #define CLIENT_VERSION_MAJOR       2
 #define CLIENT_VERSION_MINOR       0
-#define CLIENT_VERSION_REVISION    1
+#define CLIENT_VERSION_REVISION    2
 #define CLIENT_VERSION_BUILD       0
 
 /**
  * Copyright year (2009-this)
  * Todo: update this when changing our copyright comments in the source
  */
-#define COPYRIGHT_YEAR 2017
+#define COPYRIGHT_YEAR 2018
 
 // Converts the parameter X to a string after macro replacement on X has been performed.
 // Don't merge these into one macro!
