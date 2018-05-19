@@ -22,36 +22,19 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
     setAutoFillBackground(true);
 
     // set reference point, paddings
-    int paddingLeft             = 14;
-    int paddingTop              = 26;
-    int titleVersionVSpace      = 17;
-    int titleCopyrightVSpace    = 32;
+    // int paddingLeft             = 14;
+    // int paddingTop              = 26;
+    // int titleVersionVSpace      = 17;
+    // int titleCopyrightVSpace    = 32;
 
-    float fontFactor            = 1.0;
+    // float fontFactor            = 1.0;
 
     // define text to place
     // QString titleText       = tr("Neutron Core");
     // QString versionText     = QString(tr("Version %1")).arg(QString::fromStdString(FormatFullVersion()));
     // QString copyrightTextBtc   = QChar(0xA9)+QString(" 2009-2015 ").arg(COPYRIGHT_YEAR) + QString(tr("The Bitcoin Core developers"));
 
-    QString font            = "Arial";
-
-
-    // overlay the logo bitmap on a colored background
-
-    QPixmap overlay = QPixmap(":/images/splash");
-
-    QPixmap base(overlay.width(),overlay.height());
-    base.fill(Qt::white);
-
-    QPixmap newPixmap(base.width(), base.height());
-    newPixmap.fill(Qt::transparent); // force alpha channel
-    {
-        QPainter painter(&newPixmap);
-        painter.drawPixmap(0, 0, base);
-        painter.drawPixmap(0, 0, overlay);
-    }
-
+    // QString font            = "Arial";
 
     // QPainter pixPaint(&newPixmap);
     // pixPaint.setPen(QColor(232,186,163));
@@ -78,6 +61,32 @@ SplashScreen::SplashScreen(const QPixmap &pixmap, Qt::WindowFlags f) :
     // pixPaint.drawText(paddingLeft,paddingTop+titleCopyrightVSpace,copyrightTextBtc);
 
     // pixPaint.end();
+
+
+    // overlay the logo bitmap on a colored background
+    QPixmap overlay = QPixmap(":/images/splash");
+
+    // set logo paddings
+    int logoPaddingTop          = 30;
+    int logoPaddingLeft         = 20;
+    int logoPaddingText         = 15;
+
+    int baseWidth               = overlay.width()+logoPaddingLeft*2;
+    int baseHeight              = overlay.height()+logoPaddingTop*2+logoPaddingText;
+    int pixmapWidth             = baseWidth;
+    int pixmapHeight            = baseHeight;
+
+    QPixmap base(baseWidth, baseHeight);
+    base.fill(Qt::white);
+
+    QPixmap newPixmap(pixmapWidth, pixmapHeight);
+    newPixmap.fill(Qt::transparent); // force alpha channel
+    {
+        QPainter painter(&newPixmap);
+        painter.drawPixmap(0, 0, base);
+        painter.drawPixmap(logoPaddingLeft, logoPaddingTop, overlay);
+    }
+
 
     this->setPixmap(newPixmap);
 
