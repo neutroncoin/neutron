@@ -240,17 +240,19 @@ static const CRPCCommand vRPCCommands[] =
     { "stop",                   &stop,                   true,       true },
 
     /* P2P networking */
-    // TODO: NTRN - Add setban, listbanned, clearbanned
     { "addnode",                &addnode,                true,       false },
     { "disconnectnode",         &disconnectnode,         true,       false },
     { "getconnectioncount",     &getconnectioncount,     true,       false },
     { "getpeerinfo",            &getpeerinfo,            true,       false },
+    { "setban",                 &setban,                 true,       false },
+    { "listbanned",             &listbanned,             true,       false },
+    { "clearbanned",            &clearbanned,            true,       false },
 
     /* Block chain and UTXO */
     { "getbestblockhash",       &getbestblockhash,       true,       false },
     { "getblockcount",          &getblockcount,          true,       false },
-    { "getblock",               &getblock,               false,      false },
-    { "getblockhash",           &getblockhash,           false,      false },
+    { "getblock",               &getblock,               true,       false },
+    { "getblockhash",           &getblockhash,           true,       false },
     { "getdifficulty",          &getdifficulty,          true,       false },
     { "getrawmempool",          &getrawmempool,          true,       false },
 
@@ -277,12 +279,12 @@ static const CRPCCommand vRPCCommands[] =
 
     /* Utility functions */
     { "validateaddress",        &validateaddress,        true,       false },
-    { "verifymessage",          &verifymessage,          false,      false },
+    { "verifymessage",          &verifymessage,          true,       false },
 
     /* Neutron features */
     // TODO: NTRN - Add masternodelist
-    { "masternode",             &masternode,             false,      true },
-    { "spork",                  &spork,                  false,      false },
+    { "masternode",             &masternode,             true,       true },
+    { "spork",                  &spork,                  true,       false },
 
     /* Wallet */
     { "addmultisigaddress",     &addmultisigaddress,     false,      false },

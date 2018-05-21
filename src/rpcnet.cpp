@@ -42,7 +42,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
     if (fHelp || params.size() != 0)
         throw runtime_error(
             "getpeerinfo\n"
-            "Returns data about each connected network node.");
+            "Returns data about each connected network node as a json array of objects.");
 
     vector<CNodeStats> vstats;
     CopyNodeStats(vstats);
@@ -52,11 +52,12 @@ Value getpeerinfo(const Array& params, bool fHelp)
     BOOST_FOREACH(const CNodeStats& stats, vstats) {
         Object obj;
 
+        obj.push_back(Pair("id", stats.nodeid));
         obj.push_back(Pair("addr", stats.addrName));
         obj.push_back(Pair("services", strprintf("%016x", stats.nServices)));
         obj.push_back(Pair("lastsend", (int64_t)stats.nLastSend));
         obj.push_back(Pair("lastrecv", (int64_t)stats.nLastRecv));
-        obj.push_back(Pair("conntime", (int64_t)stats.nTimeConnected));
+        obj.push_back(Pair("conntime", stats.nTimeConnected));
         obj.push_back(Pair("version", stats.nVersion));
         obj.push_back(Pair("subver", stats.strSubVer));
         obj.push_back(Pair("inbound", stats.fInbound));
@@ -150,6 +151,106 @@ Value disconnectnode(const Array& params, bool fHelp)
         throw JSONRPCError(RPC_CLIENT_NODE_NOT_CONNECTED, "Node not found in connected nodes");
 
     pnode->CloseSocketDisconnect();
+
+    return Value::null;
+}
+
+Value setban(const Array& params, bool fHelp)
+{
+    string strCommand;
+    if (params.size() >= 2)
+        strCommand = params[1].get_str();
+    if (fHelp || params.size() < 2 ||
+        (strCommand != "add" && strCommand != "remove"))
+        throw runtime_error(
+                            "setban \"ip(/netmask)\" \"add|remove\" (bantime) (absolute)\n"
+                            "\nAttempts add or remove a IP/Subnet from the banned list.\n"
+                            "\nArguments:\n"
+                            "1. \"ip(/netmask)\" (string, required) The IP/Subnet (see getpeerinfo for nodes ip) with a optional netmask (default is /32 = single ip)\n"
+                            "2. \"command\"      (string, required) 'add' to add a IP/Subnet to the list, 'remove' to remove a IP/Subnet from the list\n"
+                            "3. \"bantime\"      (numeric, optional) time in seconds how long (or until when if [absolute] is set) the ip is banned (0 or empty means using the default time of 24h which can also be overwritten by the -bantime startup argument)\n"
+                            "4. \"absolute\"     (boolean, optional) If set, the bantime must be a absolute timestamp in seconds since epoch (Jan 1 1970 GMT)\n"
+                            "\nExamples:\n"
+                            + HelpExampleCli("setban", "\"192.168.0.6\" \"add\" 86400")
+                            + HelpExampleCli("setban", "\"192.168.0.0/24\" \"add\"")
+                            + HelpExampleRpc("setban", "\"192.168.0.6\", \"add\" 86400")
+                            );
+
+    // NTRN TODO - need to finish implementing this function
+    throw runtime_error(
+            "Not implemented yet\n");
+
+
+    CSubNet subNet;
+    CNetAddr netAddr;
+    bool isSubnet = false;
+
+    if (params[0].get_str().find("/") != string::npos)
+        isSubnet = true;
+
+    if (!isSubnet)
+        netAddr = CNetAddr(params[0].get_str());
+    else
+        subNet = CSubNet(params[0].get_str());
+
+    if (! (isSubnet ? subNet.IsValid() : netAddr.IsValid()) )
+        throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Invalid IP/Subnet");
+
+    if (strCommand == "add")
+    {
+        // TODO
+    }
+    else if(strCommand == "remove")
+    {
+        // TODO
+    }
+
+
+    return Value::null;
+}
+
+Value listbanned(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+                            "listbanned\n"
+                            "\nList all banned IPs/Subnets.\n"
+                            "\nExamples:\n"
+                            + HelpExampleCli("listbanned", "")
+                            + HelpExampleRpc("listbanned", "")
+                            );
+
+    banmap_t banMap;
+    CNode::GetBanned(banMap);
+
+    Array bannedAddresses;
+    for (banmap_t::iterator it = banMap.begin(); it != banMap.end(); it++)
+    {
+        Object obj;
+
+        int64_t t = (*it).second;
+        obj.push_back(Pair("address", (*it).first.ToString()));
+        obj.push_back(Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
+
+        bannedAddresses.push_back(obj);
+    }
+
+    return bannedAddresses;
+}
+
+Value clearbanned(const Array& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+                            "clearbanned\n"
+                            "\nClear all banned IPs.\n"
+                            "\nExamples:\n"
+                            + HelpExampleCli("clearbanned", "")
+                            + HelpExampleRpc("clearbanned", "")
+                            );
+
+    CNode::ClearBanned();
+    // NTRN TODO - store banlist to disk
 
     return Value::null;
 }

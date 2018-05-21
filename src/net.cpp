@@ -442,15 +442,17 @@ void CNode::PushVersion()
 
 
 
-
-std::map<CNetAddr, int64_t> CNode::setBanned;
+banmap_t CNode::setBanned;
 CCriticalSection CNode::cs_setBanned;
 
+// NTRN TODO - create CConnman class and move this method there eventually
 void CNode::ClearBanned()
 {
+    LOCK(cs_setBanned);
     setBanned.clear();
 }
 
+// NTRN TODO - create CConnman class and move this method there eventually
 bool CNode::IsBanned(CNetAddr ip)
 {
     bool fResult = false;
@@ -465,6 +467,45 @@ bool CNode::IsBanned(CNetAddr ip)
         }
     }
     return fResult;
+}
+
+// NTRN TODO - create CConnman class and move this method there eventually
+bool CNode::Unban(const CNetAddr &addr) {
+    // NTRN TODO - not implemented yet
+    // CSubNet subNet(addr);
+    // return Unban(subNet);
+
+    {
+        LOCK(cs_setBanned);
+        if (!setBanned.erase(addr))
+            return false;
+    }
+    return true;
+}
+
+// // NTRN TODO - create CConnman class and move this method there eventually
+// bool CNode::Unban(const CSubNet &subNet)
+// {
+//     {
+//         LOCK(cs_setBanned);
+//         if (!setBanned.erase(subNet))
+//             return false;
+//     }
+//     return true;
+// }
+
+// NTRN TODO - create CConnman class and move this method there eventually
+void CNode::GetBanned(banmap_t &banMap)
+{
+    LOCK(cs_setBanned);
+    banMap = setBanned; //create a thread safe copy
+}
+
+// NTRN TODO - create CConnman class and move this method there eventually
+void CNode::SetBanned(const banmap_t &banMap)
+{
+    LOCK(cs_setBanned);
+    setBanned = banMap;
 }
 
 bool CNode::Misbehaving(int howmuch)
@@ -1507,6 +1548,7 @@ void ThreadOpenAddedConnections2(void* parg)
     }
 }
 
+// NTRN TODO - create CConnman class and move this method there eventually
 // if successful, this moves the passed grant to the constructed node
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)
 {

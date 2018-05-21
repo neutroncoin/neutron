@@ -204,6 +204,7 @@ public:
 
 
 
+typedef std::map<CNetAddr, int64_t> banmap_t;
 
 
 /** Information about a peer */
@@ -245,13 +246,12 @@ public:
     CSemaphoreGrant grantOutbound;
     int nRefCount;
     NodeId id;
-protected:
 
+protected:
     // Denial-of-service detection/prevention
     // Key is IP address, value is banned-until-time
-    static std::map<CNetAddr, int64_t> setBanned;
+    static banmap_t setBanned;
     static CCriticalSection cs_setBanned;
-
 
 public:
     int nMisbehavior;
@@ -649,7 +649,12 @@ public:
     // new code.
     static void ClearBanned(); // needed for unit testing
     static bool IsBanned(CNetAddr ip);
+    static bool Unban(const CNetAddr &ip);
+    // static bool Unban(const CSubNet &ip);
+    static void GetBanned(banmap_t &banmap);
+    static void SetBanned(const banmap_t &banmap);
     bool Misbehaving(int howmuch); // 1 == a little, 100 == a lot
+
     void copyStats(CNodeStats &stats);
 };
 
