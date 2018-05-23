@@ -14,7 +14,6 @@
 #include "streams.h"
 #include "txmempool.h"
 #include "validation.h"
-#include "zerocoin/Zerocoin.h"
 
 #include "util.h"
 #include "utilmoneystr.h"
@@ -23,6 +22,8 @@
 
 #include <iostream>
 #include <list>
+
+using namespace std;
 
 class CWallet;
 class CBlock;
@@ -85,7 +86,6 @@ static const uint256 hashGenesisBlockTestNet("0x3c81f5a39588ff6112bf55343ef61b99
 inline int64_t PastDrift(int64_t nTime)   { return nTime - 10 * 60; } // up to 10 minutes from the past
 inline int64_t FutureDrift(int64_t nTime) { return nTime + 10 * 60; } // up to 10 minutes from the future
 
-extern libzerocoin::Params* ZCParams;
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;

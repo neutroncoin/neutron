@@ -224,18 +224,7 @@ HEADERS += src/activemasternode.h \
     src/qt/transactionrecord.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
-    src/qt/walletmodel.h \
-    src/zerocoin/Accumulator.h \
-    src/zerocoin/AccumulatorProofOfKnowledge.h \
-    src/zerocoin/Coin.h \
-    src/zerocoin/CoinSpend.h \
-    src/zerocoin/Commitment.h \
-    src/zerocoin/ParamGeneration.h \
-    src/zerocoin/Params.h \
-    src/zerocoin/SerialNumberSignatureOfKnowledge.h \
-    src/zerocoin/SpendMetaData.h \
-    src/zerocoin/ZeroTest.h \
-    src/zerocoin/Zerocoin.h
+    src/qt/walletmodel.h
 
 SOURCES += src/qt/bitcoin.cpp \
     src/alert.cpp \
@@ -324,17 +313,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/qt/transactionrecord.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
-    src/qt/walletmodel.cpp \
-    src/zerocoin/Accumulator.cpp \
-    src/zerocoin/AccumulatorProofOfKnowledge.cpp \
-    src/zerocoin/Coin.cpp \
-    src/zerocoin/CoinSpend.cpp \
-    src/zerocoin/Commitment.cpp \
-    src/zerocoin/ParamGeneration.cpp \
-    src/zerocoin/Params.cpp \
-    src/zerocoin/SerialNumberSignatureOfKnowledge.cpp \
-    src/zerocoin/SpendMetaData.cpp \
-    src/zerocoin/ZeroTest.cpp
+    src/qt/walletmodel.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc
