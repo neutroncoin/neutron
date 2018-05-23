@@ -99,50 +99,51 @@ xCXXFLAGS=-O2 $(EXT_OPTIONS) -std=c++11 -pthread -Wall -Wextra -Wno-ignored-qual
 xLDFLAGS=$(LDHARDENING) $(LDFLAGS)
 
 OBJS= \
-    obj/alert.o \
-    obj/clientversion.o \
-    obj/checkpoints.o \
-    obj/netbase.o \
+    obj/activemasternode.o \
     obj/addrman.o \
+    obj/alert.o \
+    obj/bitcoinrpc.o \
+    obj/checkpoints.o \
+    obj/clientversion.o \
     obj/crypter.o \
-    obj/key.o \
+    obj/darksend.o \
     obj/db.o \
     obj/init.o \
+    obj/kernel.o \
+    obj/key.o \
     obj/keystore.o \
     obj/miner.o \
     obj/main.o \
+    obj/masternode.o \
+    obj/masternodeconfig.o \
     obj/net.o \
+    obj/netbase.o \
+    obj/noui.o \
+    obj/pbkdf2.o \
     obj/protocol.o \
-    obj/bitcoinrpc.o \
     obj/random.o \
     obj/rpcdump.o \
     obj/rpcnet.o \
     obj/rpcmining.o \
     obj/rpcwallet.o \
     obj/rpcblockchain.o \
+    obj/rpcdarksend.o \
     obj/rpcrawtransaction.o \
     obj/script.o \
+    obj/scrypt.o \
+    obj/scrypt-arm.o \
+    obj/scrypt-x86.o \
+    obj/scrypt-x86_64.o \
+    obj/spork.o \
     obj/sync.o \
     obj/timedata.o \
     obj/util.o \
     obj/utilmoneystr.o \
     obj/utilstrencodings.o \
     obj/utiltime.o \
+    obj/validation.o \
     obj/wallet.o \
-    obj/walletdb.o \
-    obj/noui.o \
-    obj/kernel.o \
-    obj/pbkdf2.o \
-    obj/scrypt.o \
-    obj/scrypt-arm.o \
-    obj/scrypt-x86.o \
-    obj/scrypt-x86_64.o \
-    obj/activemasternode.o \
-    obj/darksend.o \
-    obj/masternodeconfig.o \
-    obj/masternode.o \
-    obj/rpcdarksend.o \
-    obj/spork.o
+    obj/walletdb.o
 
 all: neutrond
 
