@@ -268,14 +268,19 @@ bool RPCConsole::eventFilter(QObject* obj, QEvent *event)
 void RPCConsole::setClientModel(ClientModel *model)
 {
     this->clientModel = model;
-    if(model)
-    {
-        // Subscribe to information, replies, messages, errors
+    if(model) {
+        // Keep up to date with client
+        setNumConnections(model->getNumConnections());
         connect(model, SIGNAL(numConnectionsChanged(int)), this, SLOT(setNumConnections(int)));
+
+        setNumBlocks(model->getNumBlocks());
         connect(model, SIGNAL(numBlocksChanged(int,int)), this, SLOT(setNumBlocks(int)));
+
         timer = new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(updateLastBlockSeen()));
         timer->start(60 * 1000); // 60 seconds
+
+        connect(model, SIGNAL(mempoolSizeChanged(long)), this, SLOT(setMempoolSize(long)));
 
         // Provide initial values
         ui->clientVersion->setText(model->formatFullVersion());
@@ -283,10 +288,7 @@ void RPCConsole::setClientModel(ClientModel *model)
         ui->buildDate->setText(model->formatBuildDate());
         ui->startupTime->setText(model->formatClientStartupTime());
 
-        setNumConnections(model->getNumConnections());
         ui->isTestNet->setChecked(model->isTestNet());
-
-        setNumBlocks(model->getNumBlocks());
     }
 }
 
@@ -381,6 +383,11 @@ void RPCConsole::setNumBlocks(int count)
 
         ui->lastBlockTime->setText(tr("%1 [%2 ago]").arg(lastBlockDate.toString(), howLongAgo));
     }
+}
+
+void RPCConsole::setMempoolSize(long numberOfTxs)
+{
+    ui->mempoolNumberTxs->setText(QString::number(numberOfTxs));
 }
 
 void RPCConsole::on_lineEdit_returnPressed()

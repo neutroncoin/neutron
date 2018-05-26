@@ -46,6 +46,8 @@ public slots:
     void setNumConnections(int count);
     /** Set number of blocks shown in the UI */
     void setNumBlocks(int count);
+    /** Set size (number of transactions) of the mempool in the UI */
+    void setMempoolSize(long numberOfTxs);
     /** Go forward or back in history */
     void browseHistory(int offset);
     /** Scroll console view to end */

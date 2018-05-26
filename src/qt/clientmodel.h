@@ -36,6 +36,9 @@ public:
     int getNumBlocks() const;
     int getNumBlocksAtStartup();
 
+    //! Return number of transactions in the mempool
+    long getMempoolSize() const;
+
     QDateTime getLastBlockDate() const;
 
     //! Return true if client connected to testnet
@@ -67,6 +70,7 @@ private:
 signals:
     void numConnectionsChanged(int count);
     void numBlocksChanged(int count, int countOfPeers);
+    void mempoolSizeChanged(long count);
 
     //! Asynchronous error notification
     void error(const QString &title, const QString &message, bool modal);

@@ -74,6 +74,11 @@ QDateTime ClientModel::getLastBlockDate() const
         return QDateTime::fromTime_t(1393221600); // Genesis block's time
 }
 
+long ClientModel::getMempoolSize() const
+{
+    return mempool.size();
+}
+
 void ClientModel::updateTimer()
 {
     // Some quantities (such as number of blocks) change so fast that we don't want to be notified for each change.
@@ -88,6 +93,8 @@ void ClientModel::updateTimer()
 
         emit numBlocksChanged(newNumBlocks, newNumBlocksOfPeers);
     }
+
+    Q_EMIT mempoolSizeChanged(getMempoolSize());
 }
 
 void ClientModel::updateNumConnections(int numConnections)
