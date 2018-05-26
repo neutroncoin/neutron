@@ -61,6 +61,9 @@ private:
     int historyPtr;
 
     void startExecutor();
+
+    /** Update UI with latest network info from model. */
+    void updateNetworkState();
 };
 
 #endif // RPCCONSOLE_H

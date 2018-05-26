@@ -32,9 +32,27 @@ ClientModel::~ClientModel()
     unsubscribeFromCoreSignals();
 }
 
-int ClientModel::getNumConnections() const
+int ClientModel::getNumConnections(unsigned int flags) const
 {
-    return vNodes.size();
+    NumConnections connections = CONNECTIONS_NONE;
+
+    if(flags == CONNECTIONS_IN)
+        connections = CONNECTIONS_IN;
+    else if (flags == CONNECTIONS_OUT)
+        connections = CONNECTIONS_OUT;
+    else if (flags == CONNECTIONS_ALL)
+        connections = CONNECTIONS_ALL;
+
+    LOCK(cs_vNodes);
+    if (connections == CONNECTIONS_ALL) // Shortcut if we want total
+        return vNodes.size();
+
+    int nNum = 0;
+    for(std::vector<CNode*>::const_iterator it = vNodes.begin(); it != vNodes.end(); ++it)
+        if (connections & ((*it)->fInbound ? CONNECTIONS_IN : CONNECTIONS_OUT))
+            nNum++;
+
+    return nNum;
 }
 
 int ClientModel::getNumBlocks() const

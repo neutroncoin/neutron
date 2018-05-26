@@ -345,9 +345,21 @@ void RPCConsole::message(int category, const QString &message, bool html)
     ui->messagesWidget->append(out);
 }
 
+void RPCConsole::updateNetworkState()
+{
+    QString connections = QString::number(clientModel->getNumConnections()) + " (";
+    connections += tr("In:") + " " + QString::number(clientModel->getNumConnections(CONNECTIONS_IN)) + " / ";
+    connections += tr("Out:") + " " + QString::number(clientModel->getNumConnections(CONNECTIONS_OUT)) + ")";
+
+    ui->numberOfConnections->setText(connections);
+}
+
 void RPCConsole::setNumConnections(int count)
 {
-    ui->numberOfConnections->setText(QString::number(count));
+    if (!clientModel)
+        return;
+
+    updateNetworkState();
 }
 
 void RPCConsole::setNumBlocks(int count)
