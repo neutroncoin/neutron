@@ -5,6 +5,10 @@
 #include "bitcoinrpc.h"
 #include "guiutil.h"
 
+#ifdef ENABLE_WALLET
+#include <db_cxx.h>
+#endif
+
 #include <QTime>
 #include <QTimer>
 #include <QThread>
@@ -202,6 +206,14 @@ RPCConsole::RPCConsole(QWidget *parent) :
     ui->messagesWidget->installEventFilter(this);
 
     connect(ui->clearButton, SIGNAL(clicked()), this, SLOT(clear()));
+
+    // set library version labels
+#ifdef ENABLE_WALLET
+    ui->berkeleyDBVersion->setText(DbEnv::version(0, 0, 0));
+#else
+    ui->label_berkeleyDBVersion->hide();
+    ui->berkeleyDBVersion->hide();
+#endif
 
     // set OpenSSL version label
     ui->openSSLVersion->setText(SSLeay_version(SSLEAY_VERSION));
