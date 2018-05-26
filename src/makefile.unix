@@ -32,12 +32,19 @@ LIBS += \
    -l ssl \
    -l crypto
 
+ifndef ENABLE_WALLET
+    override ENABLE_WALLET = 1
+endif
+ifneq (${ENABLE_WALLET}, 0)
+    DEFS += -DENABLE_WALLET
+endif
+
 ifndef USE_UPNP
-	override USE_UPNP = -
+    override USE_UPNP = -
 endif
 ifneq (${USE_UPNP}, -)
-	LIBS += -l miniupnpc
-	DEFS += -DUSE_UPNP=$(USE_UPNP)
+    LIBS += -l miniupnpc
+    DEFS += -DUSE_UPNP=$(USE_UPNP)
 endif
 
 LIBS+= \
@@ -188,5 +195,11 @@ clean:
 	-rm -f obj/*.o
 	-rm -f obj/*.P
 	-rm -f obj/build.h
+
+print-%:
+        @echo '$*=$($*)'
+        @echo '  origin = $(origin $*)'
+        @echo '  flavor = $(flavor $*)'
+        @echo '   value = $(value  $*)'
 
 FORCE:

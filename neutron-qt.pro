@@ -469,6 +469,15 @@ contains(USE_QRCODE, 1) {
     LIBS += $$join(QRENCODE_LIB_PATH,,-L,) -lqrencode
 }
 
+# use: qmake "ENABLE_WALLET=1" (enabled by default; default)
+#  or: qmake "ENABLE_WALLET=0" (disabled by default)
+contains(ENABLE_WALLET, 0) {
+    message(Building without Wallet enabled)
+} else {
+    message(Building with Wallet enabled)
+    DEFINES += ENABLE_WALLET
+}
+
 windows:DEFINES += WIN32
 windows:RC_FILE = src/qt/res/bitcoin-qt.rc
 windows:RC_DEFINES = WINDRES_PREPROC

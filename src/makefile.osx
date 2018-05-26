@@ -35,6 +35,13 @@ LIBPATHS= \
 
 USE_UPNP:=1
 
+ifndef ENABLE_WALLET
+    override ENABLE_WALLET = 1
+endif
+ifneq (${ENABLE_WALLET}, 0)
+    DEFS += -DENABLE_WALLET
+endif
+
 LIBS= -dead_strip
 
 ifdef STATIC
