@@ -273,6 +273,9 @@ void RPCConsole::setClientModel(ClientModel *model)
         // Subscribe to information, replies, messages, errors
         connect(model, SIGNAL(numConnectionsChanged(int)), this, SLOT(setNumConnections(int)));
         connect(model, SIGNAL(numBlocksChanged(int,int)), this, SLOT(setNumBlocks(int)));
+        timer = new QTimer(this);
+        connect(timer, SIGNAL(timeout()), this, SLOT(updateLastBlockSeen()));
+        timer->start(60 * 1000); // 60 seconds
 
         // Provide initial values
         ui->clientVersion->setText(model->formatFullVersion());
@@ -345,6 +348,11 @@ void RPCConsole::message(int category, const QString &message, bool html)
     ui->messagesWidget->append(out);
 }
 
+void RPCConsole::updateLastBlockSeen()
+{
+    setNumBlocks(clientModel->getNumBlocks());
+}
+
 void RPCConsole::updateNetworkState()
 {
     QString connections = QString::number(clientModel->getNumConnections()) + " (";
@@ -369,28 +377,9 @@ void RPCConsole::setNumBlocks(int count)
     {
         QDateTime lastBlockDate = clientModel->getLastBlockDate();
         int secs = lastBlockDate.secsTo(QDateTime::currentDateTime());
-        QString howLongAgo;
+        QString howLongAgo = GUIUtil::formatNiceTimeOffset(secs);
 
-        // Represent time from last generated block in human readable text
-        if(secs <= 0) {
-            // Fully up to date. Leave text empty.
-            howLongAgo = tr("just now");
-        }
-        else if(secs < 60) {
-            howLongAgo = tr("%n second(s) ago","",secs);
-        }
-        else if(secs < 60*60) {
-            howLongAgo = tr("%n minute(s) ago","",secs/60);
-        }
-        else if(secs < 24*60*60) {
-            howLongAgo = tr("%n hour(s) ago","",secs/(60*60));
-        }
-        else {
-            howLongAgo = tr("%n day(s) ago","",secs/(60*60*24));
-        }
-
-        // If there is no current number available display N/A instead of 0, which can't ever be true
-        ui->lastBlockTime->setText(tr("%1 [%2]").arg(lastBlockDate.toString(), howLongAgo));
+        ui->lastBlockTime->setText(tr("%1 [%2 ago]").arg(lastBlockDate.toString(), howLongAgo));
     }
 }
 

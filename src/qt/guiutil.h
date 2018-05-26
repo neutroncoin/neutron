@@ -124,6 +124,8 @@ namespace GUIUtil
         QString uiOptions;
     };
 
+    QString formatNiceTimeOffset(qint64 secs);
+
 } // namespace GUIUtil
 
 #endif // GUIUTIL_H
