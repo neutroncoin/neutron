@@ -44,6 +44,8 @@ public slots:
     void message(int category, const QString &message, bool html = false);
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
+    /** Set number of masternodes shown in the UI */
+    void setMasternodeCount(const QString &strMasternodes);
     /** Set number of blocks shown in the UI */
     void setNumBlocks(int count);
     /** Set size (number of transactions) of the mempool in the UI */

@@ -276,6 +276,9 @@ void RPCConsole::setClientModel(ClientModel *model)
         setNumBlocks(model->getNumBlocks());
         connect(model, SIGNAL(numBlocksChanged(int,int)), this, SLOT(setNumBlocks(int)));
 
+        setMasternodeCount(model->getMasternodeCountString());
+        connect(model, SIGNAL(strMasternodesChanged(QString)), this, SLOT(setMasternodeCount(QString)));
+
         timer = new QTimer(this);
         connect(timer, SIGNAL(timeout()), this, SLOT(updateLastBlockSeen()));
         timer->start(60 * 1000); // 60 seconds
@@ -383,6 +386,11 @@ void RPCConsole::setNumBlocks(int count)
 
         ui->lastBlockTime->setText(tr("%1 [%2 ago]").arg(lastBlockDate.toString(), howLongAgo));
     }
+}
+
+void RPCConsole::setMasternodeCount(const QString &strMasternodes)
+{
+    ui->masternodeCount->setText(strMasternodes);
 }
 
 void RPCConsole::setMempoolSize(long numberOfTxs)

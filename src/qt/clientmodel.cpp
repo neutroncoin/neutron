@@ -3,6 +3,7 @@
 #include "optionsmodel.h"
 #include "addresstablemodel.h"
 #include "transactiontablemodel.h"
+#include "masternode.h"
 
 #include "alert.h"
 #include "main.h"
@@ -20,9 +21,12 @@ ClientModel::ClientModel(OptionsModel *optionsModel, QObject *parent) :
     numBlocksAtStartup = -1;
 
     pollTimer = new QTimer(this);
-    pollTimer->setInterval(MODEL_UPDATE_DELAY);
-    pollTimer->start();
     connect(pollTimer, SIGNAL(timeout()), this, SLOT(updateTimer()));
+    pollTimer->start(MODEL_UPDATE_DELAY);
+
+    pollMnTimer = new QTimer(this);
+    connect(pollMnTimer, SIGNAL(timeout()), this, SLOT(updateMnTimer()));
+    pollMnTimer->start(MODEL_UPDATE_DELAY * 4); // no need to update as frequent as data for balances/txes/blocks
 
     subscribeToCoreSignals();
 }
@@ -53,6 +57,11 @@ int ClientModel::getNumConnections(unsigned int flags) const
             nNum++;
 
     return nNum;
+}
+
+QString ClientModel::getMasternodeCountString() const
+{
+    return tr("%1").arg(QString::number((int)mnodeman.size()));
 }
 
 int ClientModel::getNumBlocks() const
@@ -95,6 +104,18 @@ void ClientModel::updateTimer()
     }
 
     Q_EMIT mempoolSizeChanged(getMempoolSize());
+}
+
+void ClientModel::updateMnTimer()
+{
+    QString newMasternodeCountString = getMasternodeCountString();
+
+    if (cachedMasternodeCountString != newMasternodeCountString)
+    {
+        cachedMasternodeCountString = newMasternodeCountString;
+
+        Q_EMIT strMasternodesChanged(cachedMasternodeCountString);
+    }
 }
 
 void ClientModel::updateNumConnections(int numConnections)

@@ -32,7 +32,7 @@ public:
 
     //! Return number of connections, default is in- and outbound (total)
     int getNumConnections(unsigned int flags = CONNECTIONS_ALL) const;
-    // int getNumConnections() const;
+    QString getMasternodeCountString() const;
     int getNumBlocks() const;
     int getNumBlocksAtStartup();
 
@@ -57,6 +57,7 @@ public:
 
 private:
     OptionsModel *optionsModel;
+    QString cachedMasternodeCountString;
 
     int cachedNumBlocks;
     int cachedNumBlocksOfPeers;
@@ -64,11 +65,13 @@ private:
     int numBlocksAtStartup;
 
     QTimer *pollTimer;
+    QTimer *pollMnTimer;
 
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
-signals:
+Q_SIGNALS:
     void numConnectionsChanged(int count);
+    void strMasternodesChanged(const QString &strMasternodes);
     void numBlocksChanged(int count, int countOfPeers);
     void mempoolSizeChanged(long count);
 
@@ -77,6 +80,7 @@ signals:
 
 public slots:
     void updateTimer();
+    void updateMnTimer();
     void updateNumConnections(int numConnections);
     void updateAlert(const QString &hash, int status);
 };

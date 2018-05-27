@@ -38,7 +38,6 @@ public slots:
 signals:
 
 private:
-    QTimer *timer;
     Ui::MasternodeManager *ui;
     ClientModel *clientModel;
     WalletModel *walletModel;

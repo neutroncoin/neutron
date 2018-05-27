@@ -42,14 +42,6 @@ MasternodeManager::MasternodeManager(QWidget *parent) :
     ui->tableWidget_2->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     subscribeToCoreSignals();
-
-    timer = new QTimer(this);
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateMyNodeList()));
-    connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
-    timer->start(30 * 1000); // 30 seconds
-
-    updateMyNodeList();
-    updateNodeList();
 }
 
 MasternodeManager::~MasternodeManager()
@@ -210,6 +202,11 @@ void MasternodeManager::setClientModel(ClientModel *model)
     this->clientModel = model;
     if(model)
     {
+        updateMyNodeList();
+        connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateMyNodeList()));
+
+        updateNodeList();
+        connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateNodeList()));
     }
 }
 
