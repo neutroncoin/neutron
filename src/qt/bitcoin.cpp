@@ -87,6 +87,11 @@ static void QueueShutdown()
     QMetaObject::invokeMethod(QCoreApplication::instance(), "quit", Qt::QueuedConnection);
 }
 
+static void InitMessage(const std::string &message)
+{
+    LogPrintf("init message: %s\n", message);
+}
+
 /*
    Translate string to current locale using Qt.
  */
@@ -332,6 +337,7 @@ int main(int argc, char *argv[])
     uiInterface.ThreadSafeHandleURI.connect(ThreadSafeHandleURI);
     uiInterface.QueueShutdown.connect(QueueShutdown);
     uiInterface.Translate.connect(Translate);
+    uiInterface.InitMessage.connect(InitMessage);
 
     if (GetBoolArg("-splash", true) && !GetBoolArg("-min")) {
         createSplashScreenStandalone();

@@ -167,10 +167,10 @@ public slots:
     /* Current, immature or unconfirmed balance might have changed - emit 'balanceChanged' if so */
     void pollBalanceChanged();
 
-signals:
+Q_SIGNALS:
     // Signal that balance in wallet changed
     void balanceChanged(qint64 balance, qint64 stake, qint64 unconfirmedBalance, qint64 immatureBalance);
- 
+
     // Number of transactions in wallet changed
     void numTransactionsChanged(int count);
 
@@ -181,6 +181,9 @@ signals:
     // It is valid behaviour for listeners to keep the wallet locked after this signal;
     // this means that the unlocking failed or was cancelled.
     void requireUnlock();
+
+    // Show progress dialog e.g. for rescan
+    void showProgress(const QString &title, int nProgress);
 
     // Asynchronous error notification
     void error(const QString &title, const QString &message, bool modal);

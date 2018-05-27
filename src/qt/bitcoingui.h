@@ -28,6 +28,7 @@ class QModelIndex;
 class QProgressBar;
 class QStackedWidget;
 class QUrl;
+class QProgressDialog;
 QT_END_NAMESPACE
 
 /**
@@ -77,6 +78,7 @@ private:
     QLabel *labelBlocksIcon;
     QLabel *progressBarLabel;
     QProgressBar *progressBar;
+    QProgressDialog *progressDialog;
 
     QMenuBar *appMenuBar;
     QAction *overviewAction;
@@ -124,7 +126,7 @@ private:
     /** Create system tray (notification) icon */
     void createTrayIcon();
 
-public slots:
+public Q_SLOTS:
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
     /** Set number of blocks shown in the UI */
@@ -148,7 +150,10 @@ public slots:
     void askFee(qint64 nFeeRequired, bool *payFee);
     void handleURI(QString strURI);
 
-private slots:
+    /** Show progress dialog e.g. for rescan */
+    void showProgress(const QString &title, int nProgress);
+
+private Q_SLOTS:
     /** Switch to logger Page */
     void gotoLoggerPage();
     /** Switch to overview (home) page */

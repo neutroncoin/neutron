@@ -323,6 +323,9 @@ public:
 
     /// Find an entry
     CMasterNode* Find(const CTxIn& vin);
+
+    /// Return the number of (unique) Masternodes
+    int size() { return vecMasternodes.size(); }
 };
 
 
