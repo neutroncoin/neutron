@@ -67,7 +67,23 @@ void StartShutdown()
 #endif
 }
 
-void Shutdown(void* parg)
+void Interrupt(boost::thread_group& threadGroup)
+{
+    threadGroup.interrupt_all();
+}
+
+/** Preparing steps before shutting down or restarting the wallet */
+void PrepareShutdown()
+{
+    fRequestShutdown = true; // Needed when we shutdown the wallet
+    // fRestartRequested = true; // Needed when we restart the wallet
+    LogPrintf("%s: In progress...\n", __func__);
+
+    // TODO: move some of this logic to this function later
+    Shutdown();
+}
+
+void Shutdown()
 {
     static CCriticalSection cs_Shutdown;
     static bool fTaken;
@@ -148,7 +164,7 @@ bool AppInit(int argc, char* argv[])
         if (!boost::filesystem::is_directory(GetDataDir(false)))
         {
             fprintf(stderr, "Error: Specified directory does not exist\n");
-            Shutdown(NULL);
+            Shutdown();
         }
         ReadConfigFile(mapArgs, mapMultiArgs);
 
@@ -187,7 +203,7 @@ bool AppInit(int argc, char* argv[])
         PrintException(NULL, "AppInit()");
     }
     if (!fRet)
-        Shutdown(NULL);
+        Shutdown();
     return fRet;
 }
 

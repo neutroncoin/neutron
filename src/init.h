@@ -7,14 +7,22 @@
 
 #include "wallet.h"
 
+#include <string>
+
 namespace boost {
     class thread_group;
 } // namespace boost
 
 extern CWallet* pwalletMain;
+
 void StartShutdown();
-void Shutdown(void* parg);
+/** Interrupt threads */
+void Interrupt(boost::thread_group& threadGroup);
+void Shutdown();
 bool AppInit2(boost::thread_group& threadGroup);
+void PrepareShutdown();
+
+/** Help for options shared between UI and daemon (for -help) */
 std::string HelpMessage();
 
 #endif // BITCOIN_INIT_H
