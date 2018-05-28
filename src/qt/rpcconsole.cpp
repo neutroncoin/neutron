@@ -5,6 +5,11 @@
 #include "bitcoinrpc.h"
 #include "guiutil.h"
 
+#ifdef USE_UPNP
+// used to retrieve miniupnpc version
+#include <miniupnpc/miniupnpc.h>
+#endif
+
 #ifdef ENABLE_WALLET
 #include <db_cxx.h>
 #endif
@@ -18,6 +23,13 @@
 #include <QScrollBar>
 
 #include <openssl/crypto.h>
+
+
+#ifdef USE_UPNP
+    static const string MINIUPNPC_VERSION_NUM = strprintf("MiniUPnPc %s", MINIUPNPC_VERSION);
+#else
+    static const string MINIUPNPC_VERSION_NUM = strprintf("MiniUPnPc Disabled");
+#endif
 
 // TODO: make it possible to filter out categories (esp debug messages when implemented)
 // TODO: receive errors and debug messages through ClientModel
@@ -222,7 +234,7 @@ RPCConsole::RPCConsole(QWidget *parent) :
     ui->boostVersion->setText(BOOST_VERSION_NUM.c_str());
 
     // set UPNP status
-    ui->UPNPInfo->setText(tr("%1 | %2").arg(DEFAULT_UPNP).arg(fUseUPnP ? "Enabled": "Disabled"));
+    ui->UPNPInfo->setText(tr("%1 | %2").arg(MINIUPNPC_VERSION_NUM.c_str()).arg(fUseUPnP ? "Enabled": "Disabled"));
 
     startExecutor();
 
@@ -362,7 +374,7 @@ void RPCConsole::message(int category, const QString &message, bool html)
 void RPCConsole::refreshDebugInfo()
 {
     // set UPNP status
-    ui->UPNPInfo->setText(tr("%1 | %2").arg(DEFAULT_UPNP).arg(fUseUPnP ? "Enabled": "Disabled"));
+    ui->UPNPInfo->setText(tr("%1 | %2").arg(MINIUPNPC_VERSION_NUM.c_str()).arg(fUseUPnP ? "Enabled": "Disabled"));
 
     updateLastBlockSeen();
 }
