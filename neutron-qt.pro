@@ -152,6 +152,7 @@ HEADERS += src/activemasternode.h \
     src/mruset.h \
     src/net.h \
     src/netbase.h \
+    src/noui.h \
     src/pbkdf2.h \
     src/protocol.h \
     src/random.h \

@@ -6,6 +6,7 @@
 #include "walletdb.h"
 #include "bitcoinrpc.h"
 #include "net.h"
+#include "noui.h"
 #include "init.h"
 #include "util.h"
 #include "utiltime.h"
@@ -190,7 +191,6 @@ bool AppInit(int argc, char* argv[])
     return fRet;
 }
 
-extern void noui_connect();
 int main(int argc, char* argv[])
 {
     bool fRet = false;
