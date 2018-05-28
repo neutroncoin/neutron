@@ -3,32 +3,35 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "db.h"
 #include "net.h"
-#include "miner.h"
-#include "init.h"
-#include "strlcpy.h"
+
 #include "addrman.h"
-#include "ui_interface.h"
-#include "darksend.h"
+#include "clientversion.h"
+#include "db.h"
+#include "init.h"
+#include "miner.h"
+#include "strlcpy.h"
 #include "wallet.h"
-#include "utiltime.h"
+#include "ui_interface.h"
+#include "utilstrencodings.h"
+
+#include "darksend.h"
 
 #ifdef WIN32
 #include <string.h>
+#else
+#include <fcntl.h>
 #endif
 
 #ifdef USE_UPNP
-#include <miniupnpc/miniwget.h>
 #include <miniupnpc/miniupnpc.h>
+#include <miniupnpc/miniwget.h>
 #include <miniupnpc/upnpcommands.h>
 #include <miniupnpc/upnperrors.h>
 #endif
 
-using namespace std;
-using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 16;
+#include <math.h>
 
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
