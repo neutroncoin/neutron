@@ -218,6 +218,12 @@ RPCConsole::RPCConsole(QWidget *parent) :
     // set OpenSSL version label
     ui->openSSLVersion->setText(SSLeay_version(SSLEAY_VERSION));
 
+    // set Boost version label
+    ui->boostVersion->setText(BOOST_VERSION_NUM.c_str());
+
+    // set UPNP status
+    ui->UPNPInfo->setText(tr("%1 | %2").arg(DEFAULT_UPNP).arg(fUseUPnP ? "Enabled": "Disabled"));
+
     startExecutor();
 
     clear();
@@ -280,7 +286,7 @@ void RPCConsole::setClientModel(ClientModel *model)
         connect(model, SIGNAL(strMasternodesChanged(QString)), this, SLOT(setMasternodeCount(QString)));
 
         timer = new QTimer(this);
-        connect(timer, SIGNAL(timeout()), this, SLOT(updateLastBlockSeen()));
+        connect(timer, SIGNAL(timeout()), this, SLOT(refreshDebugInfo()));
         timer->start(60 * 1000); // 60 seconds
 
         connect(model, SIGNAL(mempoolSizeChanged(long)), this, SLOT(setMempoolSize(long)));
@@ -351,6 +357,14 @@ void RPCConsole::message(int category, const QString &message, bool html)
         out += GUIUtil::HtmlEscape(message, true);
     out += "</td></tr></table>";
     ui->messagesWidget->append(out);
+}
+
+void RPCConsole::refreshDebugInfo()
+{
+    // set UPNP status
+    ui->UPNPInfo->setText(tr("%1 | %2").arg(DEFAULT_UPNP).arg(fUseUPnP ? "Enabled": "Disabled"));
+
+    updateLastBlockSeen();
 }
 
 void RPCConsole::updateLastBlockSeen()

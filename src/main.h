@@ -75,6 +75,7 @@ static const int64_t DEVELOPER_PAYMENT_V1 = 3 * CENT; // 3% of block reward
 
 static const int64_t MAX_TIME_SINCE_BEST_BLOCK = 10; // how many seconds to wait before sending next PushGetBlocks()
 
+static const string BOOST_VERSION_NUM = strprintf("Boost %d.%d.%d", (BOOST_VERSION/100000), BOOST_VERSION/100%1000, BOOST_VERSION%100);
 #ifdef USE_UPNP
 static const int fHaveUPnP = true;
 #else
