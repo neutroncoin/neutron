@@ -5,14 +5,28 @@
 #include "bitcoingui.h"
 
 #include "clientmodel.h"
-#include "guiutil.h"
 #include "guiconstants.h"
-#include "init.h"
+#include "guiutil.h"
 #include "networkstyle.h"
 #include "optionsmodel.h"
 #include "splashscreen.h"
-#include "ui_interface.h"
 #include "walletmodel.h"
+
+#ifdef ENABLE_WALLET
+#include "walletmodel.h"
+#endif
+
+#include "init.h"
+#include "ui_interface.h"
+#include "util.h"
+
+#ifdef ENABLE_WALLET
+#include "wallet.h"
+#endif
+
+#include <stdint.h>
+
+#include <boost/thread.hpp>
 
 #include <QApplication>
 #include <QDebug>
@@ -22,8 +36,8 @@
 #include <QProcess>
 #include <QSettings>
 #include <QTextCodec>
-#include <QTimer>
 #include <QThread>
+#include <QTimer>
 #include <QTranslator>
 #include <QSplashScreen>
 
@@ -53,9 +67,17 @@ Q_IMPORT_PLUGIN(QCocoaIntegrationPlugin);
 #include <QTextCodec>
 #endif
 
+// Declare meta types used for QMetaObject::invokeMethod
+Q_DECLARE_METATYPE(bool*)
+Q_DECLARE_METATYPE(CAmount)
+
+static void InitMessage(const std::string &message)
+{
+    LogPrintf("init message: %s\n", message);
+}
+
 // Need a global reference for the notifications to find the GUI
 static BitcoinGUI *guiref;
-static QSplashScreen *splashref;
 
 static void ThreadSafeMessageBox(const std::string& message, const std::string& caption, int style)
 {
@@ -106,11 +128,6 @@ static void QueueShutdown()
     QMetaObject::invokeMethod(QCoreApplication::instance(), "quit", Qt::QueuedConnection);
 }
 
-static void InitMessage(const std::string &message)
-{
-    LogPrintf("init message: %s\n", message);
-}
-
 /*
    Translate string to current locale using Qt.
  */
@@ -119,8 +136,23 @@ static std::string Translate(const char* psz)
     return QCoreApplication::translate("bitcoin-core", psz).toStdString();
 }
 
+static QString GetLangTerritory()
+{
+    QSettings settings;
+    // Get desired locale (e.g. "de_DE")
+    // 1) System default language
+    QString lang_territory = QLocale::system().name();
+    // 2) Language from QSettings
+    QString lang_territory_qsettings = settings.value("language", "").toString();
+    if(!lang_territory_qsettings.isEmpty())
+        lang_territory = lang_territory_qsettings;
+    // 3) -lang command line argument
+    lang_territory = QString::fromStdString(GetArg("-lang", lang_territory.toStdString()));
+    return lang_territory;
+}
+
 /** Set up translations */
-static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTranslator, QTranslator& translatorBase, QTranslator& translator)
+static void initTranslations(QTranslator &qtTranslatorBase, QTranslator &qtTranslator, QTranslator &translatorBase, QTranslator &translator)
 {
     // Remove old translators
     QApplication::removeTranslator(&qtTranslatorBase);
@@ -128,8 +160,9 @@ static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTrans
     QApplication::removeTranslator(&translatorBase);
     QApplication::removeTranslator(&translator);
 
-    // Get desired locale (e.g. "de_DE") from command line or use system locale
-    QString lang_territory = QString::fromStdString(GetArg("-lang", QLocale::system().name().toStdString()));
+    // Get desired locale (e.g. "de_DE")
+    // 1) System default language
+    QString lang_territory = GetLangTerritory();
 
     // Convert to "de" only by truncating "_DE"
     QString lang = lang_territory;
@@ -156,7 +189,25 @@ static void initTranslations(QTranslator& qtTranslatorBase, QTranslator& qtTrans
         QApplication::installTranslator(&translator);
 }
 
+/* qDebug() message handler --> debug.log */
+#if QT_VERSION < 0x050000
+void DebugMessageHandler(QtMsgType type, const char *msg)
+{
+    const char *category = (type == QtDebugMsg) ? "qt" : NULL;
+    LogPrint(category, "GUI: %s\n", msg);
+}
+#else
+void DebugMessageHandler(QtMsgType type, const QMessageLogContext& context, const QString &msg)
+{
+    Q_UNUSED(context);
+    const char *category = (type == QtDebugMsg) ? "qt" : NULL;
+    LogPrint(category, "GUI: %s\n", msg.toStdString());
+}
+#endif
 
+/** Class encapsulating Bitcoin Core startup and shutdown.
+ * Allows running startup and shutdown in a different thread from the UI thread.
+ */
 class BitcoinCore: public QObject
 {
     Q_OBJECT
@@ -182,6 +233,61 @@ private:
     /// Pass fatal exception message to UI thread
     void handleRunawayException(const std::exception *e);
 };
+
+/** Main Neutron application object */
+class BitcoinApplication : public QApplication
+{
+    Q_OBJECT
+
+public:
+    explicit BitcoinApplication(int& argc, char** argv);
+    ~BitcoinApplication();
+
+    /// Create main window
+    void createWindow(const NetworkStyle *networkStyle);
+    /// Create splash screen
+    void createSplashScreen();
+
+    /// Request core initialization
+    void requestInitialize();
+    /// Request core shutdown
+    void requestShutdown();
+
+    /// Get process return value
+    int getReturnValue() { return returnValue; }
+
+    /// Get window identifier of QMainWindow (BitcoinGUI)
+    WId getMainWinId() const;
+
+    // TODO: eventually make private...
+    BitcoinGUI *window; // TODO: eventually make private...
+    // TODO: eventually make private...
+
+public Q_SLOTS:
+    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
+    void handleRunawayException(const QString &message);
+
+Q_SIGNALS:
+    void requestedInitialize();
+    void requestedShutdown();
+    void stopThread();
+    void splashFinished(QWidget* window);
+
+private:
+    QThread *coreThread;
+    // OptionsModel *optionsModel;
+    QTimer *pollShutdownTimer;
+    int returnValue;
+
+    void startThread();
+};
+
+#include "bitcoin.moc"
+
+BitcoinCore::BitcoinCore():
+    QObject()
+{
+}
 
 void handleRunawayException(const std::exception *e)
 {
@@ -253,61 +359,6 @@ void BitcoinCore::shutdown()
     }
 }
 
-/** Main Neutron application object */
-class BitcoinApplication : public QApplication
-{
-    Q_OBJECT
-
-public:
-    explicit BitcoinApplication(int& argc, char** argv);
-    ~BitcoinApplication();
-
-    /// Create main window
-    void createWindow(const NetworkStyle *networkStyle);
-    /// Create splash screen
-    void createSplashScreen();
-
-    /// Request core initialization
-    void requestInitialize();
-    /// Request core shutdown
-    void requestShutdown();
-
-    /// Get process return value
-    int getReturnValue() { return returnValue; }
-
-    /// Get window identifier of QMainWindow (BitcoinGUI)
-    WId getMainWinId() const;
-
-    // TODO: eventually make private...
-    BitcoinGUI *window; // TODO: eventually make private...
-    // TODO: eventually make private...
-
-public Q_SLOTS:
-    /// Handle runaway exceptions. Shows a message box with the problem and quits the program.
-    void handleRunawayException(const QString &message);
-
-Q_SIGNALS:
-    void requestedInitialize();
-    void requestedShutdown();
-    void stopThread();
-    void splashFinished(QWidget* window);
-
-private:
-    QThread *coreThread;
-    // OptionsModel *optionsModel;
-    QTimer *pollShutdownTimer;
-    int returnValue;
-
-    void startThread();
-};
-
-#include "bitcoin.moc"
-
-BitcoinCore::BitcoinCore():
-    QObject()
-{
-}
-
 BitcoinApplication::BitcoinApplication(int &argc, char **argv) :
     QApplication(argc, argv),
     window(0),
@@ -361,21 +412,28 @@ void BitcoinApplication::createSplashScreen()
     splash->setAttribute(Qt::WA_DeleteOnClose);
     splash->show();
     connect(this, SIGNAL(splashFinished(QWidget*)), splash, SLOT(slotFinish(QWidget*)));
-
-    // TODO: eventually remove this pointer to the splash screen
-    splashref = splash;
 }
 
 void BitcoinApplication::startThread()
 {
-    // coreThread = new QThread(this);
+    if(coreThread)
+        return;
+    coreThread = new QThread(this);
+    BitcoinCore *executor = new BitcoinCore();
+    executor->moveToThread(coreThread);
 
-    // /*  communication to and from thread */
-    // connect(this, SIGNAL(stopThread()), coreThread, SLOT(quit()));
+    /*  communication to and from thread */
+    // connect(executor, SIGNAL(initializeResult(int)), this, SLOT(initializeResult(int)));
+    // connect(executor, SIGNAL(shutdownResult(int)), this, SLOT(shutdownResult(int)));
+    // connect(executor, SIGNAL(runawayException(QString)), this, SLOT(handleRunawayException(QString)));
+    connect(this, SIGNAL(requestedInitialize()), executor, SLOT(initialize()));
+    // connect(this, SIGNAL(requestedShutdown()), executor, SLOT(shutdown()));
+    // connect(window, SIGNAL(requestedRestart(QStringList)), executor, SLOT(restart(QStringList)));
+    /*  make sure executor object is deleted in its own thread */
+    // connect(this, SIGNAL(stopThread()), executor, SLOT(deleteLater()));
+    connect(this, SIGNAL(stopThread()), coreThread, SLOT(quit()));
 
-    // coreThread->start();
-
-    // connect(this, SIGNAL(requestedInitialize()), executor, SLOT(initialize()));
+    coreThread->start();
 }
 
 void BitcoinApplication::requestInitialize()
@@ -387,13 +445,13 @@ void BitcoinApplication::requestInitialize()
 
 void BitcoinApplication::requestShutdown()
 {
-    // // Show a simple window indicating shutdown status
-    // // Do this first as some of the steps may take some time below,
-    // // for example the RPC console may still be executing a command.
+    // Show a simple window indicating shutdown status
+    // Do this first as some of the steps may take some time below,
+    // for example the RPC console may still be executing a command.
     // shutdownWindow.reset(ShutdownWindow::showShutdownWindow(window));
 
     qDebug() << __func__ << ": Requesting shutdown";
-    // startThread();
+    startThread();
     // window->hide();
     // window->setClientModel(0);
     pollShutdownTimer->stop();
@@ -441,8 +499,6 @@ int main(int argc, char *argv[])
 
     Q_INIT_RESOURCE(bitcoin);
 
-    // TODO: probably need to fix OptionsModel before activating this
-    // QApplication app(argc, argv);
     BitcoinApplication app(argc, argv);
 
     // Install global event filter that makes sure that long tooltips can be word-wrapped
@@ -510,7 +566,7 @@ int main(int argc, char *argv[])
     uiInterface.Translate.connect(Translate);
     uiInterface.InitMessage.connect(InitMessage);
 
-    if (GetBoolArg("-splash", true) && !GetBoolArg("-min")) {
+    if (GetBoolArg("-splash", DEFAULT_SPLASHSCREEN) && !GetBoolArg("-min", false)) {
         app.createSplashScreen();
     }
 
@@ -533,8 +589,8 @@ int main(int argc, char *argv[])
                 // Put this in a block, so that the Model objects are cleaned up before
                 // calling Shutdown().
 
-                if (splashref)
-                    splashref->finish(&window);
+                // TODO: move this to initializeResult() later
+                Q_EMIT app.splashFinished(&window);
 
                 ClientModel clientModel(&optionsModel);
                 WalletModel walletModel(pwalletMain, &optionsModel);
