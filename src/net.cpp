@@ -3,32 +3,35 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#include "db.h"
 #include "net.h"
-#include "miner.h"
-#include "init.h"
-#include "strlcpy.h"
+
 #include "addrman.h"
-#include "ui_interface.h"
-#include "darksend.h"
+#include "clientversion.h"
+#include "db.h"
+#include "init.h"
+#include "miner.h"
+#include "strlcpy.h"
 #include "wallet.h"
-#include "utiltime.h"
+#include "ui_interface.h"
+#include "utilstrencodings.h"
+
+#include "darksend.h"
 
 #ifdef WIN32
 #include <string.h>
+#else
+#include <fcntl.h>
 #endif
 
 #ifdef USE_UPNP
-#include <miniupnpc/miniwget.h>
 #include <miniupnpc/miniupnpc.h>
+#include <miniupnpc/miniwget.h>
 #include <miniupnpc/upnpcommands.h>
 #include <miniupnpc/upnperrors.h>
 #endif
 
-using namespace std;
-using namespace boost;
 
-static const int MAX_OUTBOUND_CONNECTIONS = 16;
+#include <math.h>
 
 void ThreadMessageHandler2(void* parg);
 void ThreadSocketHandler2(void* parg);
@@ -81,6 +84,7 @@ NodeId nLastNodeId = 0;
 CCriticalSection cs_nLastNodeId;
 
 static CSemaphore *semOutbound = NULL;
+boost::condition_variable messageHandlerCondition;
 
 void AddOneShot(string strDest)
 {
@@ -584,6 +588,7 @@ bool CNode::ReceiveMsgBytes(const char *pch, unsigned int nBytes)
 
         if (msg.complete()) {
             msg.nTime = GetTimeMicros();
+            messageHandlerCondition.notify_one();
         }
     }
 
@@ -1611,6 +1616,9 @@ void ThreadMessageHandler(void* parg)
 
 void ThreadMessageHandler2(void* parg)
 {
+    boost::mutex condition_mutex;
+    boost::unique_lock<boost::mutex> lock(condition_mutex);
+
     LogPrintf("ThreadMessageHandler started\n");
     SetThreadPriority(THREAD_PRIORITY_BELOW_NORMAL);
     while (!fShutdown)
@@ -1627,6 +1635,9 @@ void ThreadMessageHandler2(void* parg)
         CNode* pnodeTrickle = NULL;
         if (!vNodesCopy.empty())
             pnodeTrickle = vNodesCopy[GetRand(vNodesCopy.size())];
+
+        bool fSleep = true;
+
         BOOST_FOREACH(CNode* pnode, vNodesCopy)
         {
             if (pnode->fDisconnect)
@@ -1638,9 +1649,16 @@ void ThreadMessageHandler2(void* parg)
                 if (lockRecv)
                     if (!ProcessMessages(pnode))
                         pnode->CloseSocketDisconnect();
+
+                    if (pnode->nSendSize < SendBufferSize()) {
+                        if (!pnode->vRecvGetData.empty() || (!pnode->vRecvMsg.empty() && pnode->vRecvMsg[0].complete())) {
+                            fSleep = false;
+                        }
+                    }
             }
             if (fShutdown)
                 return;
+            boost::this_thread::interruption_point();
 
             // Send messages
             {
@@ -1650,6 +1668,7 @@ void ThreadMessageHandler2(void* parg)
             }
             if (fShutdown)
                 return;
+            boost::this_thread::interruption_point();
         }
 
         {
@@ -1658,16 +1677,19 @@ void ThreadMessageHandler2(void* parg)
                 pnode->Release();
         }
 
-        // Wait and allow messages to bunch up.
-        // Reduce vnThreadsRunning so StopNode has permission to exit while
-        // we're sleeping, but we must always check fShutdown after doing this.
-        vnThreadsRunning[THREAD_MESSAGEHANDLER]--;
-        MilliSleep(100);
-        if (fRequestShutdown)
-            StartShutdown();
-        vnThreadsRunning[THREAD_MESSAGEHANDLER]++;
-        if (fShutdown)
-            return;
+        if (fSleep)
+            messageHandlerCondition.timed_wait(lock, boost::posix_time::microsec_clock::universal_time() + boost::posix_time::milliseconds(100));
+
+        // // Wait and allow messages to bunch up.
+        // // Reduce vnThreadsRunning so StopNode has permission to exit while
+        // // we're sleeping, but we must always check fShutdown after doing this.
+        // vnThreadsRunning[THREAD_MESSAGEHANDLER]--;
+        // MilliSleep(100);
+        // if (fRequestShutdown)
+        //     StartShutdown();
+        // vnThreadsRunning[THREAD_MESSAGEHANDLER]++;
+        // if (fShutdown)
+        //     return;
     }
 }
 

@@ -39,6 +39,8 @@ class BitcoinGUI : public QMainWindow
 {
     Q_OBJECT
 public:
+    static const std::string DEFAULT_UIPLATFORM;
+
     explicit BitcoinGUI(QWidget *parent = 0);
     ~BitcoinGUI();
 
@@ -126,6 +128,11 @@ private:
     /** Create system tray (notification) icon */
     void createTrayIcon();
 
+    /** Connect core signals to GUI client */
+    void subscribeToCoreSignals();
+    /** Disconnect core signals from GUI client */
+    void unsubscribeFromCoreSignals();
+
 public Q_SLOTS:
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
@@ -137,8 +144,18 @@ public Q_SLOTS:
     */
     void setEncryptionStatus(int status);
 
+    /** Notify the user of an event from the core network or transaction handling code.
+       @param[in] title     the message box / notification title
+       @param[in] message   the displayed text
+       @param[in] style     modality and style definitions (icon and used buttons - buttons only for message boxes)
+                            @see CClientUIInterface::MessageBoxFlags
+       @param[in] ret       pointer to a bool that will be modified to whether Ok was clicked (modal only)
+    */
+    void message(const QString &title, const QString &message, unsigned int style, bool *ret = NULL);
+
     /** Notify the user of an error in the network or transaction handling code. */
     void error(const QString &title, const QString &message, bool modal);
+
     /** Asks the user whether to pay the transaction fee or to cancel the transaction.
        It is currently not possible to pass a return value to another thread through
        BlockingQueuedConnection, so an indirected pointer is used.
@@ -149,6 +166,9 @@ public Q_SLOTS:
     */
     void askFee(qint64 nFeeRequired, bool *payFee);
     void handleURI(QString strURI);
+
+    /** called by a timer to check if fRequestShutdown has been set **/
+    // void detectShutdown();
 
     /** Show progress dialog e.g. for rescan */
     void showProgress(const QString &title, int nProgress);

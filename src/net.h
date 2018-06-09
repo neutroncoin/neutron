@@ -6,27 +6,29 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
-#include <deque>
-#include <boost/array.hpp>
-#include <boost/foreach.hpp>
-#include <openssl/rand.h>
-
-#ifndef WIN32
-#include <arpa/inet.h>
-#endif
-
-#include "mruset.h"
-#include "netbase.h"
-#include "protocol.h"
 #include "addrman.h"
-#include "main.h"
 #include "key.h"
 #include "keystore.h"
+#include "netbase.h"
+#include "protocol.h"
+#include "main.h"
+#include "mruset.h"
 #include "random.h"
 #include "script.h"
 #include "streams.h"
 #include "timedata.h"
 #include "utiltime.h"
+
+#include <deque>
+
+#ifndef WIN32
+#include <arpa/inet.h>
+#endif
+
+#include <boost/array.hpp>
+#include <boost/foreach.hpp>
+#include <openssl/rand.h>
+
 
 class CTxIn;
 class CTxOut;
@@ -39,8 +41,16 @@ extern int nBestHeight;
 static const unsigned int MAX_ADDR_TO_SEND = 1000;
 /** Maximum length of incoming protocol messages (no message over 2 MiB is currently acceptable). */
 static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 2 * 1024 * 1024;
+/** Maximum number of automatic outgoing nodes */
+static const int MAX_OUTBOUND_CONNECTIONS = 16;
 /** -listen default */
 static const bool DEFAULT_LISTEN = true;
+/** -upnp default */
+#ifdef USE_UPNP
+static const bool DEFAULT_UPNP = USE_UPNP;
+#else
+static const bool DEFAULT_UPNP = false;
+#endif
 
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }

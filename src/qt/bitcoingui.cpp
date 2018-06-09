@@ -71,6 +71,16 @@ extern CWallet* pwalletMain;
 extern int64_t nLastCoinStakeSearchInterval;
 double GetPoSKernelPS();
 
+const std::string BitcoinGUI::DEFAULT_UIPLATFORM =
+#if defined(Q_OS_MAC)
+        "macosx"
+#elif defined(Q_OS_WIN)
+        "windows"
+#else
+        "other"
+#endif
+        ;
+
 BitcoinGUI::BitcoinGUI(QWidget *parent):
     QMainWindow(parent),
     clientModel(0),
@@ -196,6 +206,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     statusBar()->addWidget(progressBar);
     statusBar()->addPermanentWidget(frameBlocks);
 
+    // Subscribe to notifications from core
+    subscribeToCoreSignals();
+
     syncIconMovie = new QMovie(":/movies/update_spinner", "mng", this);
 
     // Clicking on a transaction on the overview page simply sends you to transaction history page
@@ -221,11 +234,16 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
 BitcoinGUI::~BitcoinGUI()
 {
+    // Unsubscribe from notifications from core
+    unsubscribeFromCoreSignals();
+
     if(trayIcon) // Hide tray icon, as deleting will let it linger until quit (on Ubuntu)
         trayIcon->hide();
 #ifdef Q_OS_MAC
     delete appMenuBar;
 #endif
+
+    delete rpcConsole;
 }
 
 void BitcoinGUI::createActions()
@@ -735,6 +753,65 @@ void BitcoinGUI::error(const QString &title, const QString &message, bool modal)
     }
 }
 
+void BitcoinGUI::message(const QString &title, const QString &message, unsigned int style, bool *ret)
+{
+    QString strTitle = tr("Bitcoin"); // default title
+    // Default to information icon
+    int nMBoxIcon = QMessageBox::Information;
+    int nNotifyIcon = Notificator::Information;
+
+    QString msgType;
+
+    // Prefer supplied title over style based title
+    if (!title.isEmpty()) {
+        msgType = title;
+    }
+    else {
+        switch (style) {
+        case CClientUIInterface::MSG_ERROR:
+            msgType = tr("Error");
+            break;
+        case CClientUIInterface::MSG_WARNING:
+            msgType = tr("Warning");
+            break;
+        case CClientUIInterface::MSG_INFORMATION:
+            msgType = tr("Information");
+            break;
+        default:
+            break;
+        }
+    }
+    // Append title to "Bitcoin - "
+    if (!msgType.isEmpty())
+        strTitle += " - " + msgType;
+
+    // Check for error/warning icon
+    if (style & CClientUIInterface::ICON_ERROR) {
+        nMBoxIcon = QMessageBox::Critical;
+        nNotifyIcon = Notificator::Critical;
+    }
+    else if (style & CClientUIInterface::ICON_WARNING) {
+        nMBoxIcon = QMessageBox::Warning;
+        nNotifyIcon = Notificator::Warning;
+    }
+
+    // Display message
+    if (style & CClientUIInterface::MODAL) {
+        // Check for buttons, use OK as default, if none was supplied
+        QMessageBox::StandardButton buttons;
+        if (!(buttons = (QMessageBox::StandardButton)(style & CClientUIInterface::BTN_MASK)))
+            buttons = QMessageBox::Ok;
+
+        showNormalIfMinimized();
+        QMessageBox mBox(static_cast<QMessageBox::Icon>(nMBoxIcon), strTitle, message, buttons, this);
+        int r = mBox.exec();
+        if (ret != nullptr)
+            *ret = r == QMessageBox::Ok;
+    }
+    else
+        notificator->notify(static_cast<Notificator::Class>(nNotifyIcon), strTitle, message);
+}
+
 void BitcoinGUI::changeEvent(QEvent *e)
 {
     QMainWindow::changeEvent(e);
@@ -1032,6 +1109,16 @@ void BitcoinGUI::lockWallet()
     walletModel->setWalletLocked(true);
 }
 
+// void BitcoinGUI::detectShutdown()
+// {
+//     if (ShutdownRequested())
+//     {
+//         if(rpcConsole)
+//             rpcConsole->hide();
+//         qApp->quit();
+//     }
+// }
+
 void BitcoinGUI::showProgress(const QString &title, int nProgress)
 {
     if (nProgress == 0)
@@ -1053,6 +1140,53 @@ void BitcoinGUI::showProgress(const QString &title, int nProgress)
     }
     else if (progressDialog)
         progressDialog->setValue(nProgress);
+}
+
+static void ThreadSafeMessageBox(BitcoinGUI *gui, const std::string& message, const std::string& caption, unsigned int style)
+{
+    if(gui) {
+        bool modal = (style & CClientUIInterface::MODAL);
+        // in case of modal message, use blocking connection to wait for user to click OK
+        QMetaObject::invokeMethod(gui, "error",
+                                   modal ? GUIUtil::blockingGUIThreadConnection() : Qt::QueuedConnection,
+                                   Q_ARG(QString, QString::fromStdString(caption)),
+                                   Q_ARG(QString, QString::fromStdString(message)),
+                                   Q_ARG(bool, modal));
+    }
+    else
+    {
+        printf("%s: %s\n", caption.c_str(), message.c_str());
+        fprintf(stderr, "%s: %s\n", caption.c_str(), message.c_str());
+    }
+}
+
+static bool ThreadSafeAskFee(BitcoinGUI *gui, int64_t nFeeRequired, const std::string& strCaption)
+{
+    if(!gui)
+        return false;
+    if(nFeeRequired < MIN_TX_FEE || nFeeRequired <= nTransactionFee || fDaemon)
+        return true;
+    bool payFee = false;
+
+    QMetaObject::invokeMethod(gui, "askFee", GUIUtil::blockingGUIThreadConnection(),
+                               Q_ARG(qint64, nFeeRequired),
+                               Q_ARG(bool*, &payFee));
+
+    return payFee;
+}
+
+void BitcoinGUI::subscribeToCoreSignals()
+{
+    // Connect signals to client
+    uiInterface.ThreadSafeMessageBox.connect(boost::bind(ThreadSafeMessageBox, this, _1, _2, _3));
+    uiInterface.ThreadSafeAskFee.connect(boost::bind(ThreadSafeAskFee, this, _1, _2));
+}
+
+void BitcoinGUI::unsubscribeFromCoreSignals()
+{
+    // Disconnect signals from client
+    uiInterface.ThreadSafeMessageBox.disconnect(boost::bind(ThreadSafeMessageBox, this, _1, _2, _3));
+    uiInterface.ThreadSafeAskFee.disconnect(boost::bind(ThreadSafeAskFee, this, _1, _2));
 }
 
 void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)
