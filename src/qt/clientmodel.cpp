@@ -4,6 +4,7 @@
 #include "addresstablemodel.h"
 #include "transactiontablemodel.h"
 #include "masternode.h"
+#include "txmempool.h"
 
 #include "alert.h"
 #include "main.h"

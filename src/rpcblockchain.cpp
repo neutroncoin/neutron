@@ -8,6 +8,7 @@
 #include "utiltime.h"
 #include "bitcoinrpc.h"
 #include "wallet.h"
+#include "txmempool.h"
 
 using namespace json_spirit;
 using namespace std;

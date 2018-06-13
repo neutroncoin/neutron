@@ -8,6 +8,7 @@
 
 #include "main.h"
 #include "wallet.h"
+#include "txmempool.h"
 
 extern double dHashesPerSec;
 extern int64_t nHPSTimerStart;

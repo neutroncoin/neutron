@@ -19,6 +19,7 @@
 #include "ui_interface.h"
 #include "util.h"
 #include "walletdb.h"
+#include "txmempool.h"
 
 extern bool fWalletUnlockStakingOnly;
 extern bool fConfChange;

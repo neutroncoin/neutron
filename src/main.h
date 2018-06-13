@@ -12,7 +12,7 @@
 #include "script.h"
 #include "scrypt.h"
 #include "streams.h"
-#include "txmempool.h"
+//#include "txmempool.h"
 #include "validation.h"
 
 #include "util.h"

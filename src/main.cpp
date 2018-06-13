@@ -17,7 +17,7 @@
 #include "darksend.h"
 #include "masternode.h"
 #include "spork.h"
-#include "txmempool.h"
+//#include "txmempool.h"
 
 #include <stdio.h>
 
