@@ -308,7 +308,7 @@ void BitcoinCore::shutdown()
         qDebug() << __func__ << ": Running Shutdown in thread";
         Interrupt(threadGroup);
         threadGroup.join_all();
-        Shutdown();
+        Shutdown(NULL);
         qDebug() << __func__ << ": Shutdown finished";
         Q_EMIT shutdownResult(1);
     } catch (const std::exception& e) {
@@ -644,7 +644,7 @@ int main(int argc, char *argv[])
                 app.window->setWalletModel(0);
             }
             // Shutdown the core and its threads, but don't exit Bitcoin-Qt here
-            Shutdown();
+            Shutdown(NULL);
         }
         else
         {

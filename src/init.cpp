@@ -80,10 +80,10 @@ void PrepareShutdown()
     LogPrintf("%s: In progress...\n", __func__);
 
     // TODO: move some of this logic to this function later
-    Shutdown();
+    Shutdown(NULL);
 }
 
-void Shutdown()
+void Shutdown(void* parg)
 {
     static CCriticalSection cs_Shutdown;
     static bool fTaken;
@@ -164,7 +164,7 @@ bool AppInit(int argc, char* argv[])
         if (!boost::filesystem::is_directory(GetDataDir(false)))
         {
             fprintf(stderr, "Error: Specified directory does not exist\n");
-            Shutdown();
+            Shutdown(NULL);
         }
         ReadConfigFile(mapArgs, mapMultiArgs);
 
@@ -203,7 +203,7 @@ bool AppInit(int argc, char* argv[])
         PrintException(NULL, "AppInit()");
     }
     if (!fRet)
-        Shutdown();
+        Shutdown(NULL);
     return fRet;
 }
 
