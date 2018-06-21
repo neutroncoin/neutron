@@ -197,9 +197,9 @@ clean:
 	-rm -f obj/build.h
 
 print-%:
-    @echo '$*=$($*)'
-    @echo '  origin = $(origin $*)'
-    @echo '  flavor = $(flavor $*)'
-    @echo '   value = $(value  $*)'
+	@echo '$*=$($*)'
+	@echo '  origin = $(origin $*)'
+	@echo '  flavor = $(flavor $*)'
+	@echo '   value = $(value  $*)'
 
 FORCE:
