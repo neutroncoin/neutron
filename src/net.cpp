@@ -1646,7 +1646,7 @@ void ThreadMessageHandler2(void* parg)
             // Receive messages
             {
                 TRY_LOCK(pnode->cs_vRecvMsg, lockRecv);
-                if (lockRecv)
+                if (lockRecv) {
                     if (!ProcessMessages(pnode))
                         pnode->CloseSocketDisconnect();
 
@@ -1655,6 +1655,7 @@ void ThreadMessageHandler2(void* parg)
                             fSleep = false;
                         }
                     }
+                }
             }
             if (fShutdown)
                 return;
