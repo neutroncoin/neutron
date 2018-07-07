@@ -237,7 +237,7 @@ Value masternode(const Array& params, bool fHelp)
         }
 
         Object obj;
-        BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
+        BOOST_FOREACH(CMasternode mn, vecMasternodes) {
             mn.Check();
 
             if(strCommand == "active"){

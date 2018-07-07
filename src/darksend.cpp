@@ -2099,7 +2099,7 @@ bool CDarksendQueue::Relay()
 
 bool CDarksendQueue::CheckSignature()
 {
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode& mn, vecMasternodes) {
 
         if(mn.vin == vin) {
             std::string strMessage = vin.ToString() + boost::lexical_cast<std::string>(nDenom) + boost::lexical_cast<std::string>(time) + boost::lexical_cast<std::string>(ready);
@@ -2145,7 +2145,7 @@ void ThreadCheckDarkSendPool(void* parg)
 
                     LOCK(cs_main);
 
-                    //     cs_main is required for doing CMasterNode.Check because something
+                    //     cs_main is required for doing CMasternode.Check because something
                     //     is modifying the coins view without a mempool lock. It causes
                     //     segfaults from this code without the cs_main lock.
 

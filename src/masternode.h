@@ -22,7 +22,7 @@
 #include <boost/lexical_cast.hpp>
 
 
-class CMasterNode;
+class CMasternode;
 class CMasternodePayments;
 class CMasternodeMan;
 class uint256;
@@ -53,7 +53,7 @@ using namespace std;
 class CMasternodePaymentWinner;
 
 extern CCriticalSection cs_masternodes;
-extern std::vector<CMasterNode> vecMasternodes;
+extern std::vector<CMasternode> vecMasternodes;
 extern CMasternodePayments masternodePayments;
 extern CMasternodeMan mnodeman;
 extern std::vector<CTxIn> vecMasternodeAskedFor;
@@ -72,7 +72,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 // The Masternode Class. For managing the Darksend process. It contains the input of the 25000 NTRN, signature to prove
 // it's the one who own that ip address and code for calculating the payment election.
 //
-class CMasterNode
+class CMasternode
 {
 private:
     int64_t lastTimeChecked;
@@ -103,7 +103,7 @@ public:
 
     int64_t nLastDsq; //the dsq count from the last dsq broadcast of this node
 
-    CMasterNode(CService newAddr, CTxIn newVin, CPubKey newPubkey, std::vector<unsigned char> newSig, int64_t newNow, CPubKey newPubkey2, int protocolVersionIn)
+    CMasternode(CService newAddr, CTxIn newVin, CPubKey newPubkey, std::vector<unsigned char> newSig, int64_t newNow, CPubKey newPubkey2, int protocolVersionIn)
     {
         addr = newAddr;
         vin = newVin;
@@ -177,11 +177,11 @@ public:
     std::string Status(){
         std::string strStatus = "ACTIVE";
 
-        if(enabled == CMasterNode::MASTERNODE_ENABLED) strStatus   = "ENABLED";
-        if(enabled == CMasterNode::MASTERNODE_EXPIRED) strStatus   = "EXPIRED";
-        if(enabled == CMasterNode::MASTERNODE_VIN_SPENT) strStatus = "VIN_SPENT";
-        if(enabled == CMasterNode::MASTERNODE_REMOVE) strStatus    = "REMOVE";
-        if(enabled == CMasterNode::MASTERNODE_POS_ERROR) strStatus = "POS_ERROR";
+        if(enabled == CMasternode::MASTERNODE_ENABLED) strStatus   = "ENABLED";
+        if(enabled == CMasternode::MASTERNODE_EXPIRED) strStatus   = "EXPIRED";
+        if(enabled == CMasternode::MASTERNODE_VIN_SPENT) strStatus = "VIN_SPENT";
+        if(enabled == CMasternode::MASTERNODE_REMOVE) strStatus    = "REMOVE";
+        if(enabled == CMasternode::MASTERNODE_POS_ERROR) strStatus = "POS_ERROR";
 
         return strStatus;
     }
@@ -293,7 +293,7 @@ public:
     void Relay(CMasternodePaymentWinner& winner);
     void Sync(CNode* node);
     void CleanPaymentList();
-    int LastPayment(CMasterNode& mn);
+    int LastPayment(CMasternode& mn);
 
     //slow
     bool GetBlockPayee(int nBlockHeight, CScript& payee);
@@ -322,7 +322,7 @@ public:
     int CountEnabled(int protocolVersion = -1);
 
     /// Find an entry
-    CMasterNode* Find(const CTxIn& vin);
+    CMasternode* Find(const CTxIn& vin);
 
     /// Return the number of (unique) Masternodes
     int size() { return vecMasternodes.size(); }

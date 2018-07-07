@@ -166,7 +166,7 @@ void MasternodeManager::updateNodeList()
     ui->tableWidget->clearContents();
     ui->tableWidget->setRowCount(0);
 
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes)
+    BOOST_FOREACH(CMasternode& mn, vecMasternodes)
     {
         // populate list
         // Address, Rank, Active, Active Seconds, Last Seen, Pub Key

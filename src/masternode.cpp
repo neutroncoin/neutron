@@ -14,7 +14,7 @@ CCriticalSection cs_masternodes;
 CMasternodeMan mnodeman;
 
 /** The list of active masternodes */
-std::vector<CMasterNode> vecMasternodes;
+std::vector<CMasternode> vecMasternodes;
 /** Object for who's going to get paid on which blocks */
 CMasternodePayments masternodePayments;
 // keep track of masternode votes I've seen
@@ -114,7 +114,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         }
 
         //search existing masternode list, this is where we update existing masternodes with new dsee broadcasts
-        CMasterNode* pmn = mnodeman.Find(vin);
+        CMasternode* pmn = mnodeman.Find(vin);
         if (pmn != NULL) {
             LogPrintf("dsee - Found existing masternode %s - %s - %s\n", pmn->addr.ToString().c_str(), vin.ToString().c_str(), pmn->UpdatedWithin(MASTERNODE_MIN_DSEE_SECONDS));
 
@@ -176,7 +176,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             addrman.Add(CAddress(addr), pfrom->addr, 2*60*60);
 
             // add our masternode
-            CMasterNode mn(addr, vin, pubkey, vchSig, sigTime, pubkey2, protocolVersion);
+            CMasternode mn(addr, vin, pubkey, vchSig, sigTime, pubkey2, protocolVersion);
             mn.UpdateLastSeen(lastUpdated);
             vecMasternodes.push_back(mn);
 
@@ -225,7 +225,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         }
 
         // see if we have this masternode
-        CMasterNode* pmn = mnodeman.Find(vin);
+        CMasternode* pmn = mnodeman.Find(vin);
         if (pmn != NULL) {
             if(fDebug) LogPrintf("dseep - Found corresponding mn for vin=%s addr=%s\n", vin.ToString().c_str(), pmn->addr.ToString());
 
@@ -298,7 +298,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         int count = vecMasternodes.size();
         int i = 0;
 
-        BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
+        BOOST_FOREACH(CMasternode mn, vecMasternodes) {
 
             if(mn.addr.IsRFC1918()) continue; //local network
 
@@ -418,7 +418,7 @@ int CountMasternodesAboveProtocol(int protocolVersion)
 {
     int i = 0;
     LOCK(cs_masternodes);
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode& mn, vecMasternodes) {
         if(mn.protocolVersion < protocolVersion) continue;
         i++;
     }
@@ -432,7 +432,7 @@ int GetMasternodeByVin(CTxIn& vin)
 {
     int i = 0;
     LOCK(cs_masternodes);
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode& mn, vecMasternodes) {
         if (mn.vin == vin) return i;
         i++;
     }
@@ -448,7 +448,7 @@ int GetCurrentMasterNode(int mod, int64_t nBlockHeight, int minProtocol)
     LOCK(cs_masternodes);
 
     // scan for winner
-    BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode mn, vecMasternodes) {
         mn.Check();
         if(mn.protocolVersion < minProtocol || !mn.IsEnabled()) {
             i++;
@@ -479,7 +479,7 @@ int GetMasternodeByRank(int findRank, int64_t nBlockHeight, int minProtocol)
     std::vector<pair<unsigned int, int> > vecMasternodeScores;
 
     i = 0;
-    BOOST_FOREACH(CMasterNode mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode mn, vecMasternodes) {
         mn.Check();
         if(mn.protocolVersion < minProtocol) continue;
         if(!mn.IsEnabled()) {
@@ -511,7 +511,7 @@ int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight, int minProtocol)
     LOCK(cs_masternodes);
     std::vector<pair<unsigned int, CTxIn> > vecMasternodeScores;
 
-    BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH(CMasternode& mn, vecMasternodes) {
         mn.Check();
 
         if(mn.protocolVersion < minProtocol) continue;
@@ -560,7 +560,7 @@ bool GetBlockHash(uint256& hash, int nBlockHeight)
 // the proof of work for that block. The further away they are the better, the furthest will win the election
 // and get paid this block
 //
-uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
+uint256 CMasternode::CalculateScore(unsigned int nBlockHeight)
 {
     if(pindexBest == NULL) {
         LogPrintf("%s : pindexbest is null\n", __func__);
@@ -586,7 +586,7 @@ uint256 CMasterNode::CalculateScore(unsigned int nBlockHeight)
     return r;
 }
 
-void CMasterNode::Check()
+void CMasternode::Check()
 {
     if(GetTime() - lastTimeChecked < MASTERNODE_CHECK_SECONDS) return;
     lastTimeChecked = GetTime();
@@ -755,7 +755,7 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
         LOCK(cs_masternodes);
         // scan for winner
         unsigned int score = 0;
-        for(CMasterNode mn : vecMasternodes) {
+        for(CMasternode mn : vecMasternodes) {
             mn.Check();
 
             if(!mn.IsEnabled()) {
@@ -894,7 +894,7 @@ void CMasternodeMan::Check()
 {
     LOCK(cs_masternodes);
 
-    BOOST_FOREACH (CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH (CMasternode& mn, vecMasternodes) {
         mn.Check();
     }
 }
@@ -906,9 +906,9 @@ void CMasternodeMan::CheckAndRemove()
     LOCK(cs_masternodes);
 
     //remove inactive and outdated
-    vector<CMasterNode>::iterator it = vecMasternodes.begin();
+    vector<CMasternode>::iterator it = vecMasternodes.begin();
     while (it != vecMasternodes.end()) {
-        if((*it).enabled == CMasterNode::MASTERNODE_REMOVE || (*it).enabled == CMasterNode::MASTERNODE_VIN_SPENT){
+        if((*it).enabled == CMasternode::MASTERNODE_REMOVE || (*it).enabled == CMasternode::MASTERNODE_VIN_SPENT){
             LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
             it = vecMasternodes.erase(it);
         } else {
@@ -930,7 +930,7 @@ int CMasternodeMan::CountEnabled(int protocolVersion)
     int i = 0;
     protocolVersion = protocolVersion == -1 ? ActiveProtocol() : protocolVersion;
 
-    BOOST_FOREACH (CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH (CMasternode& mn, vecMasternodes) {
         mn.Check();
         if (mn.protocolVersion < protocolVersion || !mn.IsEnabled()) continue;
         i++;
@@ -939,11 +939,11 @@ int CMasternodeMan::CountEnabled(int protocolVersion)
     return i;
 }
 
-CMasterNode* CMasternodeMan::Find(const CTxIn& vin)
+CMasternode* CMasternodeMan::Find(const CTxIn& vin)
 {
     LOCK(cs_masternodes);
 
-    BOOST_FOREACH (CMasterNode& mn, vecMasternodes) {
+    BOOST_FOREACH (CMasternode& mn, vecMasternodes) {
         if (mn.vin.prevout == vin.prevout)
             return &mn;
     }

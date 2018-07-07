@@ -3393,7 +3393,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             //these allow masternodes to publish a limited amount of free transactions
             vRecv >> tx >> vin >> vchSig >> sigTime;
 
-            BOOST_FOREACH(CMasterNode& mn, vecMasternodes) {
+            BOOST_FOREACH(CMasternode& mn, vecMasternodes) {
                 if(mn.vin == vin) {
                     if(!mn.allowFreeTx){
                         //multiple peers can send us a valid masternode transaction
