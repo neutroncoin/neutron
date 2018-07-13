@@ -41,6 +41,7 @@ LIBS= \
 DEFS=-D_MT -DWIN32 -D_WINDOWS -DBOOST_THREAD_USE_LIB -DBOOST_SPIRIT_THREADSAFE
 DEBUGFLAGS=-g
 CFLAGS=-O3 -msse2 -w -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter $(DEBUGFLAGS) $(DEFS) $(INCLUDEPATHS)
+CFLAGS+=-std=c++11 -Wno-unused-local-typedefs
 LDFLAGS=-Wl,--dynamicbase -Wl,--nxcompat -static-libgcc -static-libstdc++
 
 ifndef USE_UPNP
@@ -65,44 +66,52 @@ LIBS += -l mingwthrd -l kernel32 -l user32 -l gdi32 -l comdlg32 -l winspool -l w
 HEADERS = $(wildcard *.h)
 
 OBJS= \
-    obj/alert.o \
-    obj/version.o \
-    obj/checkpoints.o \
-    obj/netbase.o \
+    obj/activemasternode.o \
     obj/addrman.o \
+    obj/alert.o \
+    obj/bitcoinrpc.o \
+    obj/checkpoints.o \
+    obj/clientversion.o \
     obj/crypter.o \
-    obj/key.o \
+    obj/darksend.o \
     obj/db.o \
     obj/init.o \
+    obj/kernel.o \
+    obj/key.o \
     obj/keystore.o \
-    obj/main.o \
     obj/miner.o \
+    obj/main.o \
+    obj/masternode.o \
+    obj/masternodeconfig.o \
     obj/net.o \
+    obj/netbase.o \
+    obj/noui.o \
+    obj/pbkdf2.o \
     obj/protocol.o \
-    obj/bitcoinrpc.o \
+    obj/random.o \
     obj/rpcdump.o \
     obj/rpcnet.o \
     obj/rpcmining.o \
     obj/rpcwallet.o \
     obj/rpcblockchain.o \
+    obj/rpcdarksend.o \
     obj/rpcrawtransaction.o \
     obj/script.o \
-    obj/sync.o \
-    obj/util.o \
-    obj/wallet.o \
-    obj/walletdb.o \
-    obj/noui.o \
-    obj/kernel.o \
-    obj/pbkdf2.o \
-    obj/masternode.o \
-    obj/darksend.o \
-    obj/rpcdarksend.o \
-    obj/activemasternode.o \
-    obj/spork.o \
-    obj/masternodeconfig.o \
     obj/scrypt.o \
+    obj/scrypt-arm.o \
     obj/scrypt-x86.o \
-    obj/scrypt-x86_64.o
+    obj/scrypt-x86_64.o \
+    obj/spork.o \
+    obj/sync.o \
+    obj/timedata.o \
+    obj/txmempool.o \
+    obj/util.o \
+    obj/utilmoneystr.o \
+    obj/utilstrencodings.o \
+    obj/utiltime.o \
+    obj/validation.o \
+    obj/wallet.o \
+    obj/walletdb.o
 
 all: neutrond.exe
 
@@ -131,6 +140,9 @@ obj/scrypt-x86.o: scrypt-x86.S
 
 obj/scrypt-x86_64.o: scrypt-x86_64.S
 	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
+
+obj/scrypt-arm.o: scrypt-arm.S
+    $(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 clean:
 	-rm -f obj/*.o
