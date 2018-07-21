@@ -22,7 +22,7 @@ map<uint256, CMasternodePaymentWinner> mapSeenMasternodeVotes;
 // keep track of the scanning errors I've seen
 map<uint256, int> mapSeenMasternodeScanningErrors;
 // who's asked for the masternode list and the last time
-std::map<CNetAddr, int64_t> askedForMasternodeList;
+std::map<CNetAddr, int64_t> mAskedUsForMasternodeList;
 // which masternodes we've asked for
 std::map<COutPoint, int64_t> mWeAskedForMasternodeListEntry;
 // cache block hashes as we calculate them
@@ -278,19 +278,19 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             //local network
             //Note tor peers show up as local proxied addrs //if(!pfrom->addr.IsRFC1918())//&& !Params().MineBlocksOnDemand())
             //{
-                std::map<CNetAddr, int64_t>::iterator i = askedForMasternodeList.find(pfrom->addr);
-                if (i != askedForMasternodeList.end())
+                std::map<CNetAddr, int64_t>::iterator i = mAskedUsForMasternodeList.find(pfrom->addr);
+                if (i != mAskedUsForMasternodeList.end())
                 {
                     int64_t t = (*i).second;
                     if (GetTime() < t) {
-                        // pfrom->Misbehaving(34);
-                        // LogPrintf("dseg - peer already asked me for the list, peer=%d\n", pfrom->id);
-                        // return;
+                        LogPrintf("dseg - peer already asked me for the list, peer=%d\n", pfrom->id);
+                        pfrom->Misbehaving(34);
+                        return;
                     }
                 }
 
                 int64_t askAgain = GetTime() + MASTERNODE_DSEG_SECONDS;
-                askedForMasternodeList[pfrom->addr] = askAgain;
+                mAskedUsForMasternodeList[pfrom->addr] = askAgain;
             //}
         } //else, asking for a specific node which is ok
 
@@ -783,7 +783,7 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
         winner.score = 0;
         winner.nBlockHeight = nBlockHeight;
 
-        int nHeightOffset = nBlockHeight;
+        unsigned int nHeightOffset = nBlockHeight;
         if (nHeightOffset > vecMasternodes.size() - 1)
             nHeightOffset = (vecMasternodes.size() - 1) % nHeightOffset;
         winner.vin = vecMasternodes[nHeightOffset].vin;
@@ -901,22 +901,41 @@ void CMasternodeMan::Check()
 
 void CMasternodeMan::CheckAndRemove()
 {
-    Check();
+    LogPrintf("CMasternodeMan::CheckAndRemove\n");
 
-    LOCK(cs_masternodes);
+    {
+        LOCK(cs_masternodes);
 
-    //remove inactive and outdated
-    vector<CMasternode>::iterator it = vecMasternodes.begin();
-    while (it != vecMasternodes.end()) {
-        if((*it).enabled == CMasternode::MASTERNODE_REMOVE || (*it).enabled == CMasternode::MASTERNODE_VIN_SPENT){
-            LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
-            it = vecMasternodes.erase(it);
-        } else {
-            ++it;
+        Check();
+
+        //remove inactive and outdated
+        vector<CMasternode>::iterator it = vecMasternodes.begin();
+        while (it != vecMasternodes.end()) {
+            if((*it).enabled == CMasternode::MASTERNODE_REMOVE || (*it).enabled == CMasternode::MASTERNODE_VIN_SPENT){
+                LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
+                it = vecMasternodes.erase(it);
+            } else {
+                ++it;
+            }
         }
     }
 
     // TODO: NTRN - do more checks here
+
+    {
+        // no need for cm_main below
+        LOCK(cs);
+
+        // check who's asked for the Masternode list
+        auto it1 = mAskedUsForMasternodeList.begin();
+        while(it1 != mAskedUsForMasternodeList.end()){
+            if((*it1).second < GetTime()) {
+                mAskedUsForMasternodeList.erase(it1++);
+            } else {
+                ++it1;
+            }
+        }
+    }
 }
 
 void CMasternodeMan::Clear()
