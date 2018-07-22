@@ -102,31 +102,31 @@ double GetPoSKernelPS()
 Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPrintTransactionDetail)
 {
     Object result;
-    result.push_back(Pair("hash", block.GetHash().GetHex()));
+    result.push_back(json_spirit::Pair("hash", block.GetHash().GetHex()));
     CMerkleTx txGen(block.vtx[0]);
     txGen.SetMerkleBranch(&block);
-    result.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain()));
-    result.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
-    result.push_back(Pair("height", blockindex->nHeight));
-    result.push_back(Pair("version", block.nVersion));
-    result.push_back(Pair("merkleroot", block.hashMerkleRoot.GetHex()));
-    result.push_back(Pair("mint", ValueFromAmount(blockindex->nMint)));
-    result.push_back(Pair("time", (int64_t)block.GetBlockTime()));
-    result.push_back(Pair("nonce", (uint64_t)block.nNonce));
-    result.push_back(Pair("bits", HexBits(block.nBits)));
-    result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
-    result.push_back(Pair("blocktrust", leftTrim(blockindex->GetBlockTrust().GetHex(), '0')));
-    result.push_back(Pair("chaintrust", leftTrim(blockindex->nChainTrust.GetHex(), '0')));
+    result.push_back(json_spirit::Pair("confirmations", (int)txGen.GetDepthInMainChain()));
+    result.push_back(json_spirit::Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
+    result.push_back(json_spirit::Pair("height", blockindex->nHeight));
+    result.push_back(json_spirit::Pair("version", block.nVersion));
+    result.push_back(json_spirit::Pair("merkleroot", block.hashMerkleRoot.GetHex()));
+    result.push_back(json_spirit::Pair("mint", ValueFromAmount(blockindex->nMint)));
+    result.push_back(json_spirit::Pair("time", (int64_t)block.GetBlockTime()));
+    result.push_back(json_spirit::Pair("nonce", (uint64_t)block.nNonce));
+    result.push_back(json_spirit::Pair("bits", HexBits(block.nBits)));
+    result.push_back(json_spirit::Pair("difficulty", GetDifficulty(blockindex)));
+    result.push_back(json_spirit::Pair("blocktrust", leftTrim(blockindex->GetBlockTrust().GetHex(), '0')));
+    result.push_back(json_spirit::Pair("chaintrust", leftTrim(blockindex->nChainTrust.GetHex(), '0')));
     if (blockindex->pprev)
-        result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
+        result.push_back(json_spirit::Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
     if (blockindex->pnext)
-        result.push_back(Pair("nextblockhash", blockindex->pnext->GetBlockHash().GetHex()));
+        result.push_back(json_spirit::Pair("nextblockhash", blockindex->pnext->GetBlockHash().GetHex()));
 
-    result.push_back(Pair("flags", strprintf("%s%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work", blockindex->GeneratedStakeModifier()? " stake-modifier": "")));
-    result.push_back(Pair("proofhash", blockindex->hashProof.GetHex()));
-    result.push_back(Pair("entropybit", (int)blockindex->GetStakeEntropyBit()));
-    result.push_back(Pair("modifier", strprintf("%016" PRIx64, blockindex->nStakeModifier)));
-    result.push_back(Pair("modifierchecksum", strprintf("%08x", blockindex->nStakeModifierChecksum)));
+    result.push_back(json_spirit::Pair("flags", strprintf("%s%s", blockindex->IsProofOfStake()? "proof-of-stake" : "proof-of-work", blockindex->GeneratedStakeModifier()? " stake-modifier": "")));
+    result.push_back(json_spirit::Pair("proofhash", blockindex->hashProof.GetHex()));
+    result.push_back(json_spirit::Pair("entropybit", (int)blockindex->GetStakeEntropyBit()));
+    result.push_back(json_spirit::Pair("modifier", strprintf("%016" PRIx64, blockindex->nStakeModifier)));
+    result.push_back(json_spirit::Pair("modifierchecksum", strprintf("%08x", blockindex->nStakeModifierChecksum)));
     Array txinfo;
     BOOST_FOREACH (const CTransaction& tx, block.vtx)
     {
@@ -134,7 +134,7 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPri
         {
             Object entry;
 
-            entry.push_back(Pair("txid", tx.GetHash().GetHex()));
+            entry.push_back(json_spirit::Pair("txid", tx.GetHash().GetHex()));
             TxToJSON(tx, 0, entry);
 
             txinfo.push_back(entry);
@@ -143,10 +143,10 @@ Object blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPri
             txinfo.push_back(tx.GetHash().GetHex());
     }
 
-    result.push_back(Pair("tx", txinfo));
+    result.push_back(json_spirit::Pair("tx", txinfo));
 
     if (block.IsProofOfStake())
-        result.push_back(Pair("signature", HexStr(block.vchBlockSig.begin(), block.vchBlockSig.end())));
+        result.push_back(json_spirit::Pair("signature", HexStr(block.vchBlockSig.begin(), block.vchBlockSig.end())));
 
     return result;
 }
@@ -180,9 +180,9 @@ Value getdifficulty(const Array& params, bool fHelp)
             "Returns the difficulty as a multiple of the minimum difficulty.");
 
     Object obj;
-    obj.push_back(Pair("proof-of-work",        GetDifficulty()));
-    obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
-    obj.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
+    obj.push_back(json_spirit::Pair("proof-of-work",        GetDifficulty()));
+    obj.push_back(json_spirit::Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
+    obj.push_back(json_spirit::Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
     return obj;
 }
 
@@ -289,23 +289,23 @@ Value getcheckpoint(const Array& params, bool fHelp)
     Object result;
     CBlockIndex* pindexCheckpoint;
 
-    result.push_back(Pair("synccheckpoint", Checkpoints::hashSyncCheckpoint.ToString().c_str()));
+    result.push_back(json_spirit::Pair("synccheckpoint", Checkpoints::hashSyncCheckpoint.ToString().c_str()));
     pindexCheckpoint = mapBlockIndex[Checkpoints::hashSyncCheckpoint];
-    result.push_back(Pair("height", pindexCheckpoint->nHeight));
-    result.push_back(Pair("timestamp", DateTimeStrFormat(pindexCheckpoint->GetBlockTime()).c_str()));
+    result.push_back(json_spirit::Pair("height", pindexCheckpoint->nHeight));
+    result.push_back(json_spirit::Pair("timestamp", DateTimeStrFormat(pindexCheckpoint->GetBlockTime()).c_str()));
 
     // Check that the block satisfies synchronized checkpoint
     if (CheckpointsMode == Checkpoints::STRICT)
-        result.push_back(Pair("policy", "strict"));
+        result.push_back(json_spirit::Pair("policy", "strict"));
 
     if (CheckpointsMode == Checkpoints::ADVISORY)
-        result.push_back(Pair("policy", "advisory"));
+        result.push_back(json_spirit::Pair("policy", "advisory"));
 
     if (CheckpointsMode == Checkpoints::PERMISSIVE)
-        result.push_back(Pair("policy", "permissive"));
+        result.push_back(json_spirit::Pair("policy", "permissive"));
 
     if (mapArgs.count("-checkpointkey"))
-        result.push_back(Pair("checkpointmaster", true));
+        result.push_back(json_spirit::Pair("checkpointmaster", true));
 
     return result;
 }
@@ -332,12 +332,12 @@ Value getblockversionstats(const Array& params, bool fHelp) {
     }
 
     Object results;
-    results.emplace_back(Pair("total_with_version", nTotal));
+    results.emplace_back(json_spirit::Pair("total_with_version", nTotal));
 
     double dPercent = 0;
     if (nBlocks)
         dPercent = static_cast<double>(nTotal) / static_cast<double>(nBlocks) * 100;
-    results.emplace_back(Pair("percent", dPercent));
+    results.emplace_back(json_spirit::Pair("percent", dPercent));
 
     return results;
 }

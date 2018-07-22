@@ -10,6 +10,8 @@
 #include "walletdb.h"
 #include "spork.h"
 
+#include "univalue/include/univalue.h"
+
 using namespace json_spirit;
 using namespace std;
 
@@ -52,17 +54,17 @@ Value getpeerinfo(const Array& params, bool fHelp)
     BOOST_FOREACH(const CNodeStats& stats, vstats) {
         Object obj;
 
-        obj.push_back(Pair("id", stats.nodeid));
-        obj.push_back(Pair("addr", stats.addrName));
-        obj.push_back(Pair("services", strprintf("%016x", stats.nServices)));
-        obj.push_back(Pair("lastsend", (int64_t)stats.nLastSend));
-        obj.push_back(Pair("lastrecv", (int64_t)stats.nLastRecv));
-        obj.push_back(Pair("conntime", stats.nTimeConnected));
-        obj.push_back(Pair("version", stats.nVersion));
-        obj.push_back(Pair("subver", stats.strSubVer));
-        obj.push_back(Pair("inbound", stats.fInbound));
-        obj.push_back(Pair("startingheight", stats.nStartingHeight));
-        obj.push_back(Pair("banscore", stats.nMisbehavior));
+        obj.push_back(json_spirit::Pair("id", stats.nodeid));
+        obj.push_back(json_spirit::Pair("addr", stats.addrName));
+        obj.push_back(json_spirit::Pair("services", strprintf("%016x", stats.nServices)));
+        obj.push_back(json_spirit::Pair("lastsend", (int64_t)stats.nLastSend));
+        obj.push_back(json_spirit::Pair("lastrecv", (int64_t)stats.nLastRecv));
+        obj.push_back(json_spirit::Pair("conntime", stats.nTimeConnected));
+        obj.push_back(json_spirit::Pair("version", stats.nVersion));
+        obj.push_back(json_spirit::Pair("subver", stats.strSubVer));
+        obj.push_back(json_spirit::Pair("inbound", stats.fInbound));
+        obj.push_back(json_spirit::Pair("startingheight", stats.nStartingHeight));
+        obj.push_back(json_spirit::Pair("banscore", stats.nMisbehavior));
 
         ret.push_back(obj);
     }
@@ -229,8 +231,8 @@ Value listbanned(const Array& params, bool fHelp)
         Object obj;
 
         int64_t t = (*it).second;
-        obj.push_back(Pair("address", (*it).first.ToString()));
-        obj.push_back(Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
+        obj.push_back(json_spirit::Pair("address", (*it).first.ToString()));
+        obj.push_back(json_spirit::Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
 
         bannedAddresses.push_back(obj);
     }
@@ -307,14 +309,14 @@ Value sendalert(const Array& params, bool fHelp)
     }
 
     Object result;
-    result.push_back(Pair("strStatusBar", alert.strStatusBar));
-    result.push_back(Pair("nVersion", alert.nVersion));
-    result.push_back(Pair("nMinVer", alert.nMinVer));
-    result.push_back(Pair("nMaxVer", alert.nMaxVer));
-    result.push_back(Pair("nPriority", alert.nPriority));
-    result.push_back(Pair("nID", alert.nID));
+    result.push_back(json_spirit::Pair("strStatusBar", alert.strStatusBar));
+    result.push_back(json_spirit::Pair("nVersion", alert.nVersion));
+    result.push_back(json_spirit::Pair("nMinVer", alert.nMinVer));
+    result.push_back(json_spirit::Pair("nMaxVer", alert.nMaxVer));
+    result.push_back(json_spirit::Pair("nPriority", alert.nPriority));
+    result.push_back(json_spirit::Pair("nID", alert.nID));
     if (alert.nCancel > 0)
-        result.push_back(Pair("nCancel", alert.nCancel));
+        result.push_back(json_spirit::Pair("nCancel", alert.nCancel));
     return result;
 }
 
@@ -327,14 +329,14 @@ Value spork(const Array& params, bool fHelp)
         Object ret;
         for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
             if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
+                ret.push_back(json_spirit::Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
         }
         return ret;
     } else if (params.size() == 1 && params[0].get_str() == "active") {
         Object ret;
         for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
             if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
+                ret.push_back(json_spirit::Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
         }
         return ret;
     } else if (params.size() == 2) {

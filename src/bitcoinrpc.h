@@ -19,6 +19,8 @@ class CBlockIndex;
 #include "util.h"
 #include "checkpoints.h"
 
+#include "univalue/include/univalue.h"
+
 // HTTP status codes
 enum HTTPStatusCode
 {

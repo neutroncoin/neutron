@@ -47,8 +47,8 @@ static inline unsigned short GetDefaultRPCPort()
 Object JSONRPCError(int code, const string& message)
 {
     Object error;
-    error.push_back(Pair("code", code));
-    error.push_back(Pair("message", message));
+    error.push_back(json_spirit::Pair("code", code));
+    error.push_back(json_spirit::Pair("message", message));
     return error;
 }
 
@@ -539,9 +539,9 @@ bool HTTPAuthorized(map<string, string>& mapHeaders)
 string JSONRPCRequest(const string& strMethod, const Array& params, const Value& id)
 {
     Object request;
-    request.push_back(Pair("method", strMethod));
-    request.push_back(Pair("params", params));
-    request.push_back(Pair("id", id));
+    request.push_back(json_spirit::Pair("method", strMethod));
+    request.push_back(json_spirit::Pair("params", params));
+    request.push_back(json_spirit::Pair("id", id));
     return write_string(Value(request), false) + "\n";
 }
 
@@ -549,11 +549,11 @@ Object JSONRPCReplyObj(const Value& result, const Value& error, const Value& id)
 {
     Object reply;
     if (error.type() != null_type)
-        reply.push_back(Pair("result", Value::null));
+        reply.push_back(json_spirit::Pair("result", Value::null));
     else
-        reply.push_back(Pair("result", result));
-    reply.push_back(Pair("error", error));
-    reply.push_back(Pair("id", id));
+        reply.push_back(json_spirit::Pair("result", result));
+    reply.push_back(json_spirit::Pair("error", error));
+    reply.push_back(json_spirit::Pair("id", id));
     return reply;
 }
 
