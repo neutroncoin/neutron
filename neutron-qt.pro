@@ -219,6 +219,7 @@ HEADERS += src/activemasternode.h \
     src/qt/sendcoinsentry.h \
     src/qt/signverifymessagedialog.h \
     src/qt/splashscreen.h \
+    src/qt/stakereportdialog.h \
     src/qt/transactiondesc.h \
     src/qt/transactiondescdialog.h \
     src/qt/transactionfilterproxy.h \
@@ -307,6 +308,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/qt/sendcoinsdialog.cpp \
     src/qt/sendcoinsentry.cpp \
     src/qt/splashscreen.cpp \
+    src/qt/stakereportdialog.cpp \
     src/qt/signverifymessagedialog.cpp \
     src/qt/transactiondesc.cpp \
     src/qt/transactiondescdialog.cpp \
@@ -320,22 +322,23 @@ RESOURCES += \
     src/qt/bitcoin.qrc
 
 FORMS += \
-    src/qt/forms/coincontroldialog.ui \
-    src/qt/forms/sendcoinsdialog.ui \
-    src/qt/forms/addressbookpage.ui \
-    src/qt/forms/signverifymessagedialog.ui \
     src/qt/forms/aboutdialog.ui \
-    src/qt/forms/editaddressdialog.ui \
-    src/qt/forms/transactiondescdialog.ui \
-    src/qt/forms/overviewpage.ui \
-    src/qt/forms/sendcoinsentry.ui \
-    src/qt/forms/askpassphrasedialog.ui \
-    src/qt/forms/rpcconsole.ui \
-    src/qt/forms/optionsdialog.ui \
     src/qt/forms/addeditadrenalinenode.ui \
+    src/qt/forms/addressbookpage.ui \
     src/qt/forms/adrenalinenodeconfigdialog.ui \
+    src/qt/forms/askpassphrasedialog.ui \
+    src/qt/forms/coincontroldialog.ui \
+    src/qt/forms/editaddressdialog.ui \
+    src/qt/forms/loggerpage.ui \
     src/qt/forms/masternodemanager.ui \
-    src/qt/forms/loggerpage.ui
+    src/qt/forms/optionsdialog.ui \
+    src/qt/forms/overviewpage.ui \
+    src/qt/forms/rpcconsole.ui \
+    src/qt/forms/sendcoinsdialog.ui \
+    src/qt/forms/sendcoinsentry.ui \
+    src/qt/forms/signverifymessagedialog.ui \
+    src/qt/forms/stakereportdialog.ui \
+    src/qt/forms/transactiondescdialog.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h
