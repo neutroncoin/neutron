@@ -30,4 +30,9 @@ void MilliSleep(int64_t n);
 std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime);
 std::string DateTimeStrFormat(int64_t nTime);
 
+#ifdef WIN32
+#include <windows.h>
+void _win32getlocaltime(tm *ptm, int *pms);
+#endif
+
 #endif // BITCOIN_UTILTIME_H

@@ -1855,13 +1855,11 @@ vStakePeriodRange_T PrepareRangeForStakeReport()
     vStakePeriodRange_T aRange;
     StakePeriodRange_T x;
 
-    struct tm Loc_MidNight;
-    int ms = 0;
-
     int64_t n1Hour = 60*60;
     int64_t n1Day = 24 * n1Hour;
-
     int64_t nToday = GetTime();
+
+    struct tm Loc_MidNight;
 
 #ifdef WIN32
     // get local time in struct <Loc_MidNight> + millisec in m
@@ -1871,6 +1869,7 @@ vStakePeriodRange_T PrepareRangeForStakeReport()
     time_t CurTime = nToday;
     localtime_r(&CurTime, &Loc_MidNight);
 #endif
+
     Loc_MidNight.tm_hour = 0;
     Loc_MidNight.tm_min = 0;
     Loc_MidNight.tm_sec = 0;  // set midnight
