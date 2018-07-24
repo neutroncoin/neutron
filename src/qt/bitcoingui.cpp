@@ -28,6 +28,8 @@
 #include "wallet.h"
 #include "masternodemanager.h"
 #include "loggerpage.h"
+#include "stakereportdialog.h"
+
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -344,6 +346,10 @@ void BitcoinGUI::createActions()
     signMessageAction = new QAction(QIcon(":/icons/edit"), tr("Sign &message..."), this);
     verifyMessageAction = new QAction(QIcon(":/icons/transaction_0"), tr("&Verify message..."), this);
 
+    //Stakingreport
+    stakeReportAction = new QAction(QIcon(":/icons/tx_mined"), tr("Show Stake Report"), this);
+    stakeReportAction->setToolTip(tr("Open the Stake Report Box"));
+
     openInfoAction = new QAction(QIcon(":/icons/edit"), tr("&Information"), this);
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
     openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug console"), this);
@@ -374,6 +380,8 @@ void BitcoinGUI::createActions()
     connect(lockWalletAction, SIGNAL(triggered()), this, SLOT(lockWallet()));
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
+    connect(stakeReportAction, SIGNAL(triggered()), this, SLOT(stakeReportClicked()));
+
 
     // Jump directly to tabs in RPC-console
     connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
@@ -417,6 +425,8 @@ void BitcoinGUI::createMenuBar()
 
     QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
     tools->addAction(openConfEditorAction);
+    tools->addAction(stakeReportAction);
+
     // TODO: NTRN - hide this option for now
     // tools->addAction(openMNConfEditorAction);
     tools->addSeparator();
@@ -620,6 +630,14 @@ void BitcoinGUI::showMNConfEditor()
 void BitcoinGUI::showBackups()
 {
     GUIUtil::showBackups();
+}
+
+// Stake report dialog
+void BitcoinGUI::stakeReportClicked()
+{
+    static StakeReportDialog dlg;
+    dlg.setModel(walletModel);
+    dlg.show();
 }
 
 void BitcoinGUI::setNumConnections(int count)

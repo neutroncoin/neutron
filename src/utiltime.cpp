@@ -100,3 +100,21 @@ std::string DateTimeStrFormat(int64_t nTime)
 {
     return DateTimeStrFormat(strTimestampFormat.c_str(), nTime);
 }
+
+#ifdef WIN32
+void _win32getlocaltime(tm *ptm, int *pms)
+{
+    // win native api to get local time
+    SYSTEMTIME st;
+    ::GetLocalTime(&st);
+    // convert
+    ptm->tm_sec  = (int)st.wSecond;
+    ptm->tm_min  = (int)st.wMinute;
+    ptm->tm_hour = (int)st.wHour;
+    ptm->tm_mday = (int)st.wDay;
+    ptm->tm_mon  = (int)st.wMonth - 1;
+    ptm->tm_year = (int)st.wYear - 1900;
+    ptm->tm_wday = (int)st.wDayOfWeek;
+    *pms         = st.wMilliseconds;
+}
+#endif
