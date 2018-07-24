@@ -1791,10 +1791,10 @@ struct StakePeriodRange_T {
 
 typedef vector<StakePeriodRange_T> vStakePeriodRange_T;
 
-    // **em52: Get total coins staked on given period
-    // inspired from CWallet::GetStake()
-    // Parameter aRange = Vector with given limit date, and result
-    // return int =  Number of Wallet's elements analyzed
+// **em52: Get total coins staked on given period
+// inspired from CWallet::GetStake()
+// Parameter aRange = Vector with given limit date, and result
+// return int =  Number of Wallet's elements analyzed
 int GetsStakeSubTotal(vStakePeriodRange_T& aRange)
 {
     int nElement = 0;
@@ -1849,23 +1849,28 @@ int GetsStakeSubTotal(vStakePeriodRange_T& aRange)
     return nElement;
 }
 
-
-
-    // prepare range for stake report
+// prepare range for stake report
 vStakePeriodRange_T PrepareRangeForStakeReport()
 {
     vStakePeriodRange_T aRange;
     StakePeriodRange_T x;
 
     struct tm Loc_MidNight;
+    int ms = 0;
 
     int64_t n1Hour = 60*60;
     int64_t n1Day = 24 * n1Hour;
 
     int64_t nToday = GetTime();
-    time_t CurTime = nToday;
 
+#ifdef WIN32
+    // get local time in struct <Loc_MidNight> + millisec in m
+    int ms = 0;
+    _win32getlocaltime(&Loc_MidNight,&ms);
+#else
+    time_t CurTime = nToday;
     localtime_r(&CurTime, &Loc_MidNight);
+#endif
     Loc_MidNight.tm_hour = 0;
     Loc_MidNight.tm_min = 0;
     Loc_MidNight.tm_sec = 0;  // set midnight
@@ -1910,7 +1915,7 @@ vStakePeriodRange_T PrepareRangeForStakeReport()
 return aRange;
 }
 
-    // getstakereport: return SubTotal of the staked coin in last 24H, 7 days, etc.. of all owns address
+// getstakereport: return SubTotal of the staked coin in last 24H, 7 days, etc.. of all owns address
 Value getstakereport(const Array& params, bool fHelp)
 {
     if ((params.size()>0) || (fHelp))
