@@ -116,7 +116,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         //search existing masternode list, this is where we update existing masternodes with new dsee broadcasts
         CMasternode* pmn = mnodeman.Find(vin);
         if (pmn != NULL) {
-            LogPrintf("dsee - Found existing masternode %s - %s - %s\n", pmn->addr.ToString().c_str(), vin.ToString().c_str(), pmn->UpdatedWithin(MASTERNODE_MIN_DSEE_SECONDS));
+            if (fDebug) LogPrintf("dsee - Found existing masternode %s - %s - %s\n", pmn->addr.ToString().c_str(), vin.ToString().c_str(), pmn->UpdatedWithin(MASTERNODE_MIN_DSEE_SECONDS));
 
             // count == -1 when it's a new entry
             //   e.g. We don't want the entry relayed/time updated when we're syncing the list
@@ -150,7 +150,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             return;
         }
 
-        LogPrintf("dsee - Got NEW masternode entry %s\n", addr.ToString().c_str());
+        if (fDebug) LogPrintf("dsee - Got NEW masternode entry %s\n", addr.ToString().c_str());
 
 
         // make sure it's still unspent
@@ -164,7 +164,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         bool pfMissingInputs = false;
         if(AcceptableInputs(mempool, tx, false, &pfMissingInputs)){
-            LogPrintf("dsee - Accepted masternode entry %i %i\n", count, current);
+            if (fDebug) LogPrintf("dsee - Accepted masternode entry %i %i\n", count, current);
 
             if(GetInputAge(vin) < MASTERNODE_MIN_CONFIRMATIONS){
                 LogPrintf("dsee - Input must have least %d confirmations\n", MASTERNODE_MIN_CONFIRMATIONS);
