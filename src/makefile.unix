@@ -202,6 +202,8 @@ clean:
 	-rm -f obj/*.o
 	-rm -f obj/*.P
 	-rm -f obj/build.h
+    cd leveldb && $(MAKE) clean && cd ..
+    cd univalue && $(MAKE) clean && cd ..
 
 print-%:
 	@echo '$*=$($*)'
