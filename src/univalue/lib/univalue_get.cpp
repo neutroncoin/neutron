@@ -12,7 +12,7 @@
 #include <limits>
 #include <string>
 
-#include "univalue.h"
+#include "univalue/include/univalue.h"
 
 namespace
 {

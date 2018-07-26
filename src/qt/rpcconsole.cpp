@@ -168,21 +168,22 @@ void RPCExecutor::request(const QString &command)
         std::string strPrint;
         // Convert argument list to JSON objects in method-dependent way,
         // and pass it along with the method name to the dispatcher.
-        json_spirit::Value result = tableRPC.execute(
-            args[0],
-            RPCConvertValues(args[0], std::vector<std::string>(args.begin() + 1, args.end())));
+        JSONRPCRequest req;
+        req.params = RPCConvertValues(args[0], std::vector<std::string>(args.begin() + 1, args.end()));
+        req.strMethod = args[0];
+        UniValue result = tableRPC.execute(req);
 
         // Format result reply
-        if (result.type() == json_spirit::null_type)
+        if (result.isNull())
             strPrint = "";
-        else if (result.type() == json_spirit::str_type)
+        else if (result.isStr())
             strPrint = result.get_str();
         else
-            strPrint = write_string(result, true);
+            strPrint = result.write(2);
 
         emit reply(RPCConsole::CMD_REPLY, QString::fromStdString(strPrint));
     }
-    catch (json_spirit::Object& objError)
+    catch (UniValue& objError)
     {
         try // Nice formatting for standard-format error
         {
@@ -190,12 +191,12 @@ void RPCExecutor::request(const QString &command)
             std::string message = find_value(objError, "message").get_str();
             emit reply(RPCConsole::CMD_ERROR, QString::fromStdString(message) + " (code " + QString::number(code) + ")");
         }
-        catch(std::runtime_error &) // raised when converting to invalid type, i.e. missing code or message
+        catch(const std::runtime_error &) // raised when converting to invalid type, i.e. missing code or message
         {   // Show raw JSON object
-            emit reply(RPCConsole::CMD_ERROR, QString::fromStdString(write_string(json_spirit::Value(objError), false)));
+            emit reply(RPCConsole::CMD_ERROR, QString::fromStdString(objError.write()));
         }
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
         emit reply(RPCConsole::CMD_ERROR, QString("Error: ") + QString::fromStdString(e.what()));
     }

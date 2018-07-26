@@ -25,17 +25,19 @@
 #include <boost/filesystem/fstream.hpp>
 #include <boost/shared_ptr.hpp>
 #include <list>
+#include <unordered_map>
+
+#include <boost/algorithm/string/case_conv.hpp> // for to_lower()
 
 using namespace std;
 using namespace boost;
 using namespace boost::asio;
-using namespace json_spirit;
 
 void ThreadRPCServer2(void* parg);
 
 static std::string strRPCUserColonPass;
 
-const Object emptyobj;
+const json_spirit::Object emptyobj;
 
 void ThreadRPCServer3(void* parg);
 
@@ -44,55 +46,186 @@ static inline unsigned short GetDefaultRPCPort()
     return GetBoolArg("-testnet", false) ? 25715 : 32000;
 }
 
-Object JSONRPCError(int code, const string& message)
+//
+// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
+// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
+// unspecified (HTTP errors and contents of 'error').
+//
+// 1.0 spec: http://json-rpc.org/wiki/specification
+// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
+// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
+//
+
+UniValue JSONRPCRequestObj(const std::string& strMethod, const UniValue& params, const UniValue& id)
 {
-    Object error;
-    error.push_back(json_spirit::Pair("code", code));
-    error.push_back(json_spirit::Pair("message", message));
+    UniValue request(UniValue::VOBJ);
+    request.push_back(Pair("method", strMethod));
+    request.push_back(Pair("params", params));
+    request.push_back(Pair("id", id));
+    return request;
+}
+
+UniValue JSONRPCReplyObj(const UniValue& result, const UniValue& error, const UniValue& id)
+{
+    UniValue reply(UniValue::VOBJ);
+    if (!error.isNull())
+        reply.push_back(Pair("result", NullUniValue));
+    else
+        reply.push_back(Pair("result", result));
+    reply.push_back(Pair("error", error));
+    reply.push_back(Pair("id", id));
+    return reply;
+}
+
+std::string JSONRPCReply(const UniValue& result, const UniValue& error, const UniValue& id)
+{
+    UniValue reply = JSONRPCReplyObj(result, error, id);
+    return reply.write() + "\n";
+}
+
+UniValue JSONRPCError(int code, const std::string& message)
+{
+    UniValue error(UniValue::VOBJ);
+    error.push_back(Pair("code", code));
+    error.push_back(Pair("message", message));
     return error;
 }
 
-void RPCTypeCheck(const Array& params,
-                  const list<Value_type>& typesExpected,
+class JSONRequest
+{
+public:
+    json_spirit::Value id;
+    string strMethod;
+    json_spirit::Array params;
+
+    JSONRequest() { id = json_spirit::Value::null; }
+    void parse(const json_spirit::Value& valRequest);
+};
+
+void JSONRequest::parse(const json_spirit::Value& valRequest)
+{
+    // Parse request
+    if (valRequest.type() != json_spirit::obj_type)
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid Request object");
+    const json_spirit::Object& request = valRequest.get_obj();
+
+    // Parse id now so errors from here on will have the id
+    id = find_value(request, "id");
+
+    // Parse method
+    json_spirit::Value valMethod = find_value(request, "method");
+    if (valMethod.type() == json_spirit::null_type)
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Missing method");
+    if (valMethod.type() != json_spirit::str_type)
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Method must be a string");
+    strMethod = valMethod.get_str();
+    if (strMethod != "getwork" && strMethod != "getblocktemplate")
+        LogPrintf("ThreadRPCServer method=%s\n", strMethod.c_str());
+
+    // Parse params
+    json_spirit::Value valParams = find_value(request, "params");
+    if (valParams.type() == json_spirit::array_type)
+        params = valParams.get_array();
+    else if (valParams.type() == json_spirit::null_type)
+        params = json_spirit::Array();
+    else
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Params must be an array");
+}
+
+
+// void RPCTypeCheck(const UniValue& params,
+//                   const std::list<UniValue::VType>& typesExpected,
+//                   bool fAllowNull)
+// {
+//     unsigned int i = 0;
+//     BOOST_FOREACH(UniValue::Value_type t, typesExpected)
+//     {
+//         if (params.size() <= i)
+//             break;
+
+//         const UniValue& v = params[i];
+//         if (!(fAllowNull && v.isNull())) {
+//             string err = strprintf("Expected type %s, got %s", uvTypeName(t), uvTypeName(v.type()));
+//             throw JSONRPCError(RPC_TYPE_ERROR, err);
+//         }
+//         i++;
+//     }
+// }
+
+// void RPCTypeCheck(const UniValue& o,
+//                   const map<string, UniValue::VType>& typesExpected,
+//                   bool fAllowNull)
+// {
+//     BOOST_FOREACH(const PAIRTYPE(string, UniValue::VType)& t, typesExpected)
+//     {
+//         const UniValue& v = find_value(o, t.first);
+//         if (!fAllowNull && v.isNull())
+//             throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing %s", t.first.c_str()));
+
+//         if (!((v.type() == t.second) || (fAllowNull && (v.isNull()))))
+//         {
+//             string err = strprintf("Expected type %s for %s, got %s", uvTypeName(t.second), t.first.c_str(), uvTypeName(v.type()));
+//             throw JSONRPCError(RPC_TYPE_ERROR, err);
+//         }
+//     }
+// }
+
+void RPCTypeCheck(const UniValue& params,
+                  const std::list<UniValue::VType>& typesExpected,
                   bool fAllowNull)
 {
     unsigned int i = 0;
-    BOOST_FOREACH(Value_type t, typesExpected)
+    BOOST_FOREACH(UniValue::VType t, typesExpected)
     {
         if (params.size() <= i)
             break;
 
-        const Value& v = params[i];
-        if (!((v.type() == t) || (fAllowNull && (v.type() == null_type))))
-        {
-            string err = strprintf("Expected type %s, got %s",
-                                   Value_type_name[t], Value_type_name[v.type()]);
-            throw JSONRPCError(RPC_TYPE_ERROR, err);
+        const UniValue& v = params[i];
+        if (!(fAllowNull && v.isNull())) {
+            RPCTypeCheckArgument(v, t);
         }
         i++;
     }
 }
 
-void RPCTypeCheck(const Object& o,
-                  const map<string, Value_type>& typesExpected,
-                  bool fAllowNull)
+void RPCTypeCheckArgument(const UniValue& value, UniValue::VType typeExpected)
 {
-    BOOST_FOREACH(const PAIRTYPE(string, Value_type)& t, typesExpected)
-    {
-        const Value& v = find_value(o, t.first);
-        if (!fAllowNull && v.type() == null_type)
-            throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing %s", t.first.c_str()));
+    if (value.type() != typeExpected) {
+        throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Expected type %s, got %s", uvTypeName(typeExpected), uvTypeName(value.type())));
+    }
+}
 
-        if (!((v.type() == t.second) || (fAllowNull && (v.type() == null_type))))
-        {
-            string err = strprintf("Expected type %s for %s, got %s",
-                                   Value_type_name[t.second], t.first.c_str(), Value_type_name[v.type()]);
+void RPCTypeCheckObj(const UniValue& o,
+    const std::map<std::string, UniValueType>& typesExpected,
+    bool fAllowNull,
+    bool fStrict)
+{
+    for (const auto& t : typesExpected) {
+        const UniValue& v = find_value(o, t.first);
+        if (!fAllowNull && v.isNull())
+            throw JSONRPCError(RPC_TYPE_ERROR, strprintf("Missing %s", t.first));
+
+        if (!(t.second.typeAny || v.type() == t.second.type || (fAllowNull && v.isNull()))) {
+            std::string err = strprintf("Expected type %s for %s, got %s",
+                uvTypeName(t.second.type), t.first, uvTypeName(v.type()));
             throw JSONRPCError(RPC_TYPE_ERROR, err);
+        }
+    }
+
+    if (fStrict)
+    {
+        BOOST_FOREACH(const std::string& k, o.getKeys())
+        {
+            if (typesExpected.count(k) == 0)
+            {
+                std::string err = strprintf("Unexpected key %s", k);
+                throw JSONRPCError(RPC_TYPE_ERROR, err);
+            }
         }
     }
 }
 
-int64_t AmountFromValue(const Value& value)
+int64_t AmountFromValue(const UniValue& value)
 {
     double dAmount = value.get_real();
     if (dAmount <= 0.0 || dAmount > MAX_MONEY)
@@ -103,7 +236,7 @@ int64_t AmountFromValue(const Value& value)
     return nAmount;
 }
 
-Value ValueFromAmount(int64_t amount)
+UniValue ValueFromAmount(int64_t amount)
 {
     return (double)amount / (double)COIN;
 }
@@ -123,10 +256,10 @@ std::string HexBits(unsigned int nBits)
 // Utilities: convert hex-encoded Values
 // (throws error if not hex).
 //
-uint256 ParseHashV(const Value& v, string strName)
+uint256 ParseHashV(const UniValue& v, string strName)
 {
     string strHex;
-    if (v.type() == str_type)
+    if (v.isStr())
         strHex = v.get_str();
     if (!IsHex(strHex)) // Note: IsHex("") is false
         throw JSONRPCError(RPC_INVALID_PARAMETER, strName+" must be hexadecimal string (not '"+strHex+"')");
@@ -135,22 +268,22 @@ uint256 ParseHashV(const Value& v, string strName)
     return result;
 }
 
-uint256 ParseHashO(const Object& o, string strKey)
+uint256 ParseHashO(const UniValue& o, string strKey)
 {
     return ParseHashV(find_value(o, strKey), strKey);
 }
 
-vector<unsigned char> ParseHexV(const Value& v, string strName)
+vector<unsigned char> ParseHexV(const UniValue& v, string strName)
 {
     string strHex;
-    if (v.type() == str_type)
+    if (v.isStr())
         strHex = v.get_str();
     if (!IsHex(strHex))
         throw JSONRPCError(RPC_INVALID_PARAMETER, strName+" must be hexadecimal string (not '"+strHex+"')");
     return ParseHex(strHex);
 }
 
-vector<unsigned char> ParseHexO(const Object& o, string strKey)
+vector<unsigned char> ParseHexO(const UniValue& o, string strKey)
 {
     return ParseHexV(find_value(o, strKey), strKey);
 }
@@ -175,7 +308,7 @@ string CRPCTable::help(string strCommand) const
             continue;
         try
         {
-            Array params;
+            UniValue params;
             rpcfn_type pfn = pcmd->actor;
             if (setDone.insert(pfn).second)
                 (*pfn)(params, true);
@@ -196,7 +329,7 @@ string CRPCTable::help(string strCommand) const
     return strRet;
 }
 
-Value help(const Array& params, bool fHelp)
+UniValue help(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
         throw runtime_error(
@@ -211,7 +344,7 @@ Value help(const Array& params, bool fHelp)
 }
 
 
-Value stop(const Array& params, bool fHelp)
+UniValue stop(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
         throw runtime_error(
@@ -527,51 +660,14 @@ bool HTTPAuthorized(map<string, string>& mapHeaders)
     return TimingResistantEqual(strUserPass, strRPCUserColonPass);
 }
 
-//
-// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
-// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
-// unspecified (HTTP errors and contents of 'error').
-//
-// 1.0 spec: http://json-rpc.org/wiki/specification
-// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
-//
-
-string JSONRPCRequest(const string& strMethod, const Array& params, const Value& id)
-{
-    Object request;
-    request.push_back(json_spirit::Pair("method", strMethod));
-    request.push_back(json_spirit::Pair("params", params));
-    request.push_back(json_spirit::Pair("id", id));
-    return write_string(Value(request), false) + "\n";
-}
-
-Object JSONRPCReplyObj(const Value& result, const Value& error, const Value& id)
-{
-    Object reply;
-    if (error.type() != null_type)
-        reply.push_back(json_spirit::Pair("result", Value::null));
-    else
-        reply.push_back(json_spirit::Pair("result", result));
-    reply.push_back(json_spirit::Pair("error", error));
-    reply.push_back(json_spirit::Pair("id", id));
-    return reply;
-}
-
-string JSONRPCReply(const Value& result, const Value& error, const Value& id)
-{
-    Object reply = JSONRPCReplyObj(result, error, id);
-    return write_string(Value(reply), false) + "\n";
-}
-
-void ErrorReply(std::ostream& stream, const Object& objError, const Value& id)
+void JSONErrorReply(std::ostream& stream, const UniValue& objError, const UniValue& id)
 {
     // Send error reply from json-rpc error object
     int nStatus = HTTP_INTERNAL_SERVER_ERROR;
     int code = find_value(objError, "code").get_int();
     if (code == RPC_INVALID_REQUEST) nStatus = HTTP_BAD_REQUEST;
     else if (code == RPC_METHOD_NOT_FOUND) nStatus = HTTP_NOT_FOUND;
-    string strReply = JSONRPCReply(Value::null, objError, id);
+    string strReply = JSONRPCReply(NullUniValue, objError, id);
     stream << HTTPReply(nStatus, strReply, false) << std::flush;
 }
 
@@ -926,81 +1022,112 @@ void ThreadRPCServer2(void* parg)
     StopRequests();
 }
 
-class JSONRequest
-{
-public:
-    Value id;
-    string strMethod;
-    Array params;
-
-    JSONRequest() { id = Value::null; }
-    void parse(const Value& valRequest);
-};
-
-void JSONRequest::parse(const Value& valRequest)
+void JSONRPCRequest::parse(const UniValue& valRequest)
 {
     // Parse request
-    if (valRequest.type() != obj_type)
+    if (!valRequest.isObject())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid Request object");
-    const Object& request = valRequest.get_obj();
+    const UniValue& request = valRequest.get_obj();
 
     // Parse id now so errors from here on will have the id
     id = find_value(request, "id");
 
     // Parse method
-    Value valMethod = find_value(request, "method");
-    if (valMethod.type() == null_type)
+    UniValue valMethod = find_value(request, "method");
+    if (valMethod.isNull())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Missing method");
-    if (valMethod.type() != str_type)
+    if (!valMethod.isStr())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Method must be a string");
     strMethod = valMethod.get_str();
-    if (strMethod != "getwork" && strMethod != "getblocktemplate")
-        LogPrintf("ThreadRPCServer method=%s\n", strMethod.c_str());
+    if (strMethod != "getblocktemplate")
+        LogPrint("rpc", "ThreadRPCServer method=%s\n", SanitizeString(strMethod));
 
     // Parse params
-    Value valParams = find_value(request, "params");
-    if (valParams.type() == array_type)
-        params = valParams.get_array();
-    else if (valParams.type() == null_type)
-        params = Array();
+    UniValue valParams = find_value(request, "params");
+    if (valParams.isArray() || valParams.isObject())
+        params = valParams;
+    else if (valParams.isNull())
+        params = UniValue(UniValue::VARR);
     else
-        throw JSONRPCError(RPC_INVALID_REQUEST, "Params must be an array");
+        throw JSONRPCError(RPC_INVALID_REQUEST, "Params must be an array or object");
 }
 
-static Object JSONRPCExecOne(const Value& req)
+static UniValue JSONRPCExecOne(const UniValue& req)
 {
-    Object rpc_result;
+    UniValue rpc_result(UniValue::VOBJ);
 
-    JSONRequest jreq;
+    JSONRPCRequest jreq;
     try {
         jreq.parse(req);
 
-        Value result = tableRPC.execute(jreq.strMethod, jreq.params);
-        rpc_result = JSONRPCReplyObj(result, Value::null, jreq.id);
+        UniValue result = tableRPC.execute(jreq);
+        rpc_result = JSONRPCReplyObj(result, NullUniValue, jreq.id);
     }
-    catch (Object& objError)
+    catch (const UniValue& objError)
     {
-        rpc_result = JSONRPCReplyObj(Value::null, objError, jreq.id);
+        rpc_result = JSONRPCReplyObj(NullUniValue, objError, jreq.id);
     }
-    catch (std::exception& e)
+    catch (const std::exception& e)
     {
-        rpc_result = JSONRPCReplyObj(Value::null,
+        rpc_result = JSONRPCReplyObj(NullUniValue,
                                      JSONRPCError(RPC_PARSE_ERROR, e.what()), jreq.id);
     }
 
     return rpc_result;
 }
 
-static string JSONRPCExecBatch(const Array& vReq)
+std::string JSONRPCExecBatch(const UniValue& vReq)
 {
-    Array ret;
+    UniValue ret(UniValue::VARR);
     for (unsigned int reqIdx = 0; reqIdx < vReq.size(); reqIdx++)
         ret.push_back(JSONRPCExecOne(vReq[reqIdx]));
 
-    return write_string(Value(ret), false) + "\n";
+    return ret.write() + "\n";
 }
 
 static CCriticalSection cs_THREAD_RPCHANDLER;
+
+/**
+ * Process named arguments into a vector of positional arguments, based on the
+ * passed-in specification for the RPC call's arguments.
+ */
+static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, const std::vector<std::string>& argNames)
+{
+    JSONRPCRequest out = in;
+    out.params = UniValue(UniValue::VARR);
+    // Build a map of parameters, and remove ones that have been processed, so that we can throw a focused error if
+    // there is an unknown one.
+    const std::vector<std::string>& keys = in.params.getKeys();
+    const std::vector<UniValue>& values = in.params.getValues();
+    std::unordered_map<std::string, const UniValue*> argsIn;
+    for (size_t i=0; i<keys.size(); ++i) {
+        argsIn[keys[i]] = &values[i];
+    }
+    // Process expected parameters.
+    int hole = 0;
+    for (const std::string &argName: argNames) {
+        auto fr = argsIn.find(argName);
+        if (fr != argsIn.end()) {
+            for (int i = 0; i < hole; ++i) {
+                // Fill hole between specified parameters with JSON nulls,
+                // but not at the end (for backwards compatibility with calls
+                // that act based on number of specified parameters).
+                out.params.push_back(UniValue());
+            }
+            hole = 0;
+            out.params.push_back(*fr->second);
+            argsIn.erase(fr);
+        } else {
+            hole += 1;
+        }
+    }
+    // If there are still arguments in the argsIn map, this is an error.
+    if (!argsIn.empty()) {
+        throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown named parameter " + argsIn.begin()->first);
+    }
+    // Return request with named arguments transformed to positional arguments
+    return out;
+}
 
 void ThreadRPCServer3(void* parg)
 {
@@ -1052,41 +1179,41 @@ void ThreadRPCServer3(void* parg)
         if (mapHeaders["connection"] == "close")
             fRun = false;
 
-        JSONRequest jreq;
+        JSONRPCRequest jreq;
         try
         {
             // Parse request
-            Value valRequest;
-            if (!read_string(strRequest, valRequest))
-                throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
+            UniValue valRequest;
+            // if (!json_spirit::read_string(strRequest, valRequest))
+            //     throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
 
             string strReply;
 
             // singleton request
-            if (valRequest.type() == obj_type) {
+            if (valRequest.isObject()) {
                 jreq.parse(valRequest);
 
-                Value result = tableRPC.execute(jreq.strMethod, jreq.params);
+                UniValue result = tableRPC.execute(jreq);
 
                 // Send reply
-                strReply = JSONRPCReply(result, Value::null, jreq.id);
+                strReply = JSONRPCReply(result, NullUniValue, jreq.id);
 
             // array of requests
-            } else if (valRequest.type() == array_type)
+            } else if (valRequest.isArray())
                 strReply = JSONRPCExecBatch(valRequest.get_array());
             else
                 throw JSONRPCError(RPC_PARSE_ERROR, "Top-level object parse error");
 
             conn->stream() << HTTPReply(HTTP_OK, strReply, fRun) << std::flush;
         }
-        catch (Object& objError)
+        catch (const UniValue& objError)
         {
-            ErrorReply(conn->stream(), objError, jreq.id);
+            JSONErrorReply(conn->stream(), objError, jreq.id);
             break;
         }
-        catch (std::exception& e)
+        catch (const std::exception& e)
         {
-            ErrorReply(conn->stream(), JSONRPCError(RPC_PARSE_ERROR, e.what()), jreq.id);
+            JSONErrorReply(conn->stream(), JSONRPCError(RPC_PARSE_ERROR, e.what()), jreq.id);
             break;
         }
     }
@@ -1098,10 +1225,11 @@ void ThreadRPCServer3(void* parg)
     }
 }
 
-json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_spirit::Array &params) const
+UniValue CRPCTable::execute(const JSONRPCRequest &request) const
+// UniValue CRPCTable::execute(const std::string &method, const UniValue &params) const
 {
     // Find method
-    const CRPCCommand *pcmd = tableRPC[strMethod];
+    const CRPCCommand *pcmd = tableRPC[request.strMethod];
     if (!pcmd)
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Method not found");
 
@@ -1114,16 +1242,24 @@ json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_s
     try
     {
         // Execute
-        Value result;
-        {
-            if (pcmd->unlocked)
-                result = pcmd->actor(params, false);
-            else {
-                LOCK2(cs_main, pwalletMain->cs_wallet);
-                result = pcmd->actor(params, false);
-            }
+        if (pcmd->unlocked)
+            return pcmd->actor(request.params, false);
+
+            // if (request.params.isObject()) {
+            //     return pcmd->actor(transformNamedArguments(request, pcmd->argNames).params, false);
+            // } else {
+            //     return pcmd->actor(request.params, false);
+            // }
+        else {
+            LOCK2(cs_main, pwalletMain->cs_wallet);
+            return pcmd->actor(request.params, false);
+
+            // if (request.params.isObject()) {
+            //     return pcmd->actor(transformNamedArguments(request, pcmd->argNames).params, false);
+            // } else {
+            //     return pcmd->actor(request.params, false);
+            // }
         }
-        return result;
     }
     catch (std::exception& e)
     {
@@ -1132,7 +1268,57 @@ json_spirit::Value CRPCTable::execute(const std::string &strMethod, const json_s
 }
 
 
-Object CallRPC(const string& strMethod, const Array& params)
+//
+// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
+// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
+// unspecified (HTTP errors and contents of 'error').
+//
+// 1.0 spec: http://json-rpc.org/wiki/specification
+// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
+// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
+//
+
+string OLD_JSONRPCRequest(const string& strMethod, const json_spirit::Array& params, const json_spirit::Value& id)
+{
+    json_spirit::Object request;
+    request.push_back(json_spirit::Pair("method", strMethod));
+    request.push_back(json_spirit::Pair("params", params));
+    request.push_back(json_spirit::Pair("id", id));
+    return write_string(json_spirit::Value(request), false) + "\n";
+}
+
+json_spirit::Object OLD_JSONRPCReplyObj(const json_spirit::Value& result, const json_spirit::Value& error, const json_spirit::Value& id)
+{
+    json_spirit::Object reply;
+    if (error.type() != json_spirit::null_type)
+        reply.push_back(json_spirit::Pair("result", json_spirit::Value::null));
+    else
+        reply.push_back(json_spirit::Pair("result", result));
+    reply.push_back(json_spirit::Pair("error", error));
+    reply.push_back(json_spirit::Pair("id", id));
+    return reply;
+}
+
+string OLD_JSONRPCReply(const json_spirit::Value& result, const json_spirit::Value& error, const json_spirit::Value& id)
+{
+    json_spirit::Object reply = OLD_JSONRPCReplyObj(result, error, id);
+    return write_string(json_spirit::Value(reply), false) + "\n";
+}
+
+void OLD_ErrorReply(std::ostream& stream, const json_spirit::Object& objError, const json_spirit::Value& id)
+{
+    // Send error reply from json-rpc error object
+    int nStatus = HTTP_INTERNAL_SERVER_ERROR;
+    int code = find_value(objError, "code").get_int();
+    if (code == RPC_INVALID_REQUEST) nStatus = HTTP_BAD_REQUEST;
+    else if (code == RPC_METHOD_NOT_FOUND) nStatus = HTTP_NOT_FOUND;
+    string strReply = OLD_JSONRPCReply(json_spirit::Value::null, objError, id);
+    stream << HTTPReply(nStatus, strReply, false) << std::flush;
+}
+
+
+
+UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 {
     if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
         throw runtime_error(strprintf(
@@ -1157,8 +1343,8 @@ Object CallRPC(const string& strMethod, const Array& params)
     mapRequestHeaders["Authorization"] = string("Basic ") + strUserPass64;
 
     // Send request
-    string strRequest = JSONRPCRequest(strMethod, params, 1);
-    string strPost = HTTPPost(strRequest, mapRequestHeaders);
+    std::string strRequest = JSONRPCRequestObj(strMethod, params, 1).write() + "\n";
+    std::string strPost = HTTPPost(strRequest, mapRequestHeaders);
     stream << strPost << std::flush;
 
     // Receive reply
@@ -1173,10 +1359,10 @@ Object CallRPC(const string& strMethod, const Array& params)
         throw runtime_error("no response from server");
 
     // Parse reply
-    Value valReply;
-    if (!read_string(strReply, valReply))
+    UniValue valReply(UniValue::VSTR);
+    if (!valReply.read(strReply))
         throw runtime_error("couldn't parse reply from server");
-    const Object& reply = valReply.get_obj();
+    const UniValue& reply = valReply.get_obj();
     if (reply.empty())
         throw runtime_error("expected reply to have result, error and id properties");
 
@@ -1185,98 +1371,295 @@ Object CallRPC(const string& strMethod, const Array& params)
 
 
 
-
-template<typename T>
-void ConvertTo(Value& value, bool fAllowNull=false)
+class CRPCConvertParam
 {
-    if (fAllowNull && value.type() == null_type)
-        return;
-    if (value.type() == str_type)
-    {
-        // reinterpret string as unquoted json value
-        Value value2;
-        string strJSON = value.get_str();
-        if (!read_string(strJSON, value2))
-            throw runtime_error(string("Error parsing JSON:")+strJSON);
-        ConvertTo<T>(value2, fAllowNull);
-        value = value2;
+public:
+    std::string methodName; //!< method whose params want conversion
+    int paramIdx;           //!< 0-based idx of param to convert
+    std::string paramName;  //!< parameter name
+};
+/**
+ * Specifiy a (method, idx, name) here if the argument is a non-string RPC
+ * argument and needs to be converted from JSON.
+ *
+ * @note Parameter indexes start from 0.
+ */
+static const CRPCConvertParam vRPCConvertParams[] =
+{
+    { "sendtoaddress", 1, "amount" },
+    { "settxfee", 0, "amount" },
+    { "getreceivedbyaddress", 1, "minconf" },
+    { "getreceivedbyaccount", 1, "minconf" },
+
+//     //
+//     // Special case non-string parameter types
+//     //
+//     if (strMethod == "stop"                   && n > 0) ConvertTo<bool>(params[0]);
+//     if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
+//     if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
+//     if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
+//     if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
+//     if (strMethod == "getbalance"             && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "getblock"               && n > 1) ConvertTo<bool>(params[1]);
+//     if (strMethod == "getblockbynumber"       && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "getblockbynumber"       && n > 1) ConvertTo<bool>(params[1]);
+//     if (strMethod == "getblockhash"           && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
+//     if (strMethod == "move"                   && n > 3) ConvertTo<int64_t>(params[3]);
+//     if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
+//     if (strMethod == "sendfrom"               && n > 3) ConvertTo<int64_t>(params[3]);
+//     if (strMethod == "listtransactions"       && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "listtransactions"       && n > 2) ConvertTo<int64_t>(params[2]);
+//     if (strMethod == "listaccounts"           && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "walletpassphrase"       && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "walletpassphrase"       && n > 2) ConvertTo<bool>(params[2]);
+//     if (strMethod == "getblocktemplate"       && n > 0) ConvertTo<json_spirit::Object>(params[0]);
+//     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<int64_t>(params[1]);
+
+//     if (strMethod == "sendalert"              && n > 2) ConvertTo<int64_t>(params[2]);
+//     if (strMethod == "sendalert"              && n > 3) ConvertTo<int64_t>(params[3]);
+//     if (strMethod == "sendalert"              && n > 4) ConvertTo<int64_t>(params[4]);
+//     if (strMethod == "sendalert"              && n > 5) ConvertTo<int64_t>(params[5]);
+//     if (strMethod == "sendalert"              && n > 6) ConvertTo<int64_t>(params[6]);
+
+//     if (strMethod == "sendmany"               && n > 1) ConvertTo<json_spirit::Object>(params[1]);
+//     if (strMethod == "sendmany"               && n > 2) ConvertTo<int64_t>(params[2]);
+//     if (strMethod == "reservebalance"         && n > 0) ConvertTo<bool>(params[0]);
+//     if (strMethod == "reservebalance"         && n > 1) ConvertTo<double>(params[1]);
+//     if (strMethod == "addmultisigaddress"     && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "addmultisigaddress"     && n > 1) ConvertTo<json_spirit::Array>(params[1]);
+//     if (strMethod == "listunspent"            && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "listunspent"            && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "listunspent"            && n > 2) ConvertTo<json_spirit::Array>(params[2]);
+//     if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<json_spirit::Array>(params[0]);
+//     if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<json_spirit::Object>(params[1]);
+//     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<json_spirit::Array>(params[1], true);
+//     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<json_spirit::Array>(params[2], true);
+//     if (strMethod == "keypoolrefill"          && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
+//     if (strMethod == "setgenerate"            && n > 1) ConvertTo<int64_t>(params[1]);
+//     if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[0]);
+//     if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[1]);
+
+//     return params;
+// }
+
+
+    { "listaddressbalances", 0, "minamount" },
+    { "listreceivedbyaddress", 0, "minconf" },
+    { "listreceivedbyaddress", 1, "addlockconf" },
+    { "listreceivedbyaddress", 2, "include_empty" },
+    { "listreceivedbyaddress", 3, "include_watchonly" },
+    { "listreceivedbyaccount", 0, "minconf" },
+    { "listreceivedbyaccount", 1, "addlockconf" },
+    { "listreceivedbyaccount", 2, "include_empty" },
+    { "listreceivedbyaccount", 3, "include_watchonly" },
+    { "getbalance", 1, "minconf" },
+    { "getbalance", 2, "addlockconf" },
+    { "getbalance", 3, "include_watchonly" },
+    { "getchaintips", 0, "count" },
+    { "getchaintips", 1, "branchlen" },
+    { "getblockhash", 0, "height" },
+    { "getsuperblockbudget", 0, "index" },
+    { "waitforblockheight", 0, "height" },
+    { "waitforblockheight", 1, "timeout" },
+    { "waitforblock", 1, "timeout" },
+    { "waitfornewblock", 0, "timeout" },
+    { "move", 2, "amount" },
+    { "move", 3, "minconf" },
+    { "sendfrom", 2, "amount" },
+    { "sendfrom", 3, "minconf" },
+    { "sendfrom", 4, "addlockconf" },
+    { "listtransactions", 1, "count" },
+    { "listtransactions", 2, "skip" },
+    { "listtransactions", 3, "include_watchonly" },
+    { "listaccounts", 0, "minconf" },
+    { "listaccounts", 1, "addlockconf" },
+    { "listaccounts", 2, "include_watchonly" },
+    { "walletpassphrase", 1, "timeout" },
+    { "walletpassphrase", 2, "mixingonly" },
+    { "getblocktemplate", 0, "template_request" },
+    { "listsinceblock", 1, "target_confirmations" },
+    { "listsinceblock", 2, "include_watchonly" },
+    { "sendmany", 1, "amounts" },
+    { "sendmany", 2, "minconf" },
+    { "sendmany", 3, "addlockconf" },
+    { "sendmany", 5, "subtractfeefromamount" },
+    { "sendmany", 6, "use_is" },
+    { "sendmany", 7, "use_ps" },
+    { "addmultisigaddress", 0, "nrequired" },
+    { "addmultisigaddress", 1, "keys" },
+    { "createmultisig", 0, "nrequired" },
+    { "createmultisig", 1, "keys" },
+    { "listunspent", 0, "minconf" },
+    { "listunspent", 1, "maxconf" },
+    { "listunspent", 2, "addresses" },
+    { "listunspent", 3, "include_unsafe" },
+    { "getblock", 1, "verbose" },
+    { "getblockheader", 1, "verbose" },
+    { "getblockheaders", 1, "count" },
+    { "getblockheaders", 2, "verbose" },
+    { "gettransaction", 1, "include_watchonly" },
+    { "getrawtransaction", 1, "verbose" },
+    { "createrawtransaction", 0, "inputs" },
+    { "createrawtransaction", 1, "outputs" },
+    { "createrawtransaction", 2, "locktime" },
+    { "signrawtransaction", 1, "prevtxs" },
+    { "signrawtransaction", 2, "privkeys" },
+    { "sendrawtransaction", 1, "allowhighfees" },
+    { "sendrawtransaction", 2, "instantsend" },
+    { "sendrawtransaction", 3, "bypasslimits" },
+    { "fundrawtransaction", 1, "options" },
+    { "gettxout", 1, "n" },
+    { "gettxout", 2, "include_mempool" },
+    { "gettxoutproof", 0, "txids" },
+    { "lockunspent", 0, "unlock" },
+    { "lockunspent", 1, "transactions" },
+    { "importprivkey", 2, "rescan" },
+    { "importelectrumwallet", 1, "index" },
+    { "importaddress", 2, "rescan" },
+    { "importaddress", 3, "p2sh" },
+    { "importpubkey", 2, "rescan" },
+    { "importmulti", 0, "requests" },
+    { "importmulti", 1, "options" },
+    { "verifychain", 0, "checklevel" },
+    { "verifychain", 1, "nblocks" },
+    { "pruneblockchain", 0, "height" },
+    { "keypoolrefill", 0, "newsize" },
+    { "getrawmempool", 0, "verbose" },
+    { "estimatefee", 0, "nblocks" },
+    { "estimatepriority", 0, "nblocks" },
+    { "estimatesmartfee", 0, "nblocks" },
+    { "estimatesmartpriority", 0, "nblocks" },
+    { "prioritisetransaction", 1, "priority_delta" },
+    { "prioritisetransaction", 2, "fee_delta" },
+    { "setban", 2, "bantime" },
+    { "setban", 3, "absolute" },
+    { "setbip69enabled", 0, "enabled" },
+    { "setnetworkactive", 0, "state" },
+    { "getmempoolancestors", 1, "verbose" },
+    { "getmempooldescendants", 1, "verbose" },
+    { "spork", 1, "value" },
+    { "voteraw", 1, "tx_index" },
+    { "voteraw", 5, "time" },
+    { "getblockhashes", 0, "high"},
+    { "getblockhashes", 1, "low" },
+    { "getspentinfo", 0, "json" },
+    { "getaddresstxids", 0, "addresses" },
+    { "getaddressbalance", 0, "addresses" },
+    { "getaddressdeltas", 0, "addresses" },
+    { "getaddressutxos", 0, "addresses" },
+    { "getaddressmempool", 0, "addresses" },
+    // Echo with conversion (For testing only)
+    { "echojson", 0, "arg0" },
+    { "echojson", 1, "arg1" },
+    { "echojson", 2, "arg2" },
+    { "echojson", 3, "arg3" },
+    { "echojson", 4, "arg4" },
+    { "echojson", 5, "arg5" },
+    { "echojson", 6, "arg6" },
+    { "echojson", 7, "arg7" },
+    { "echojson", 8, "arg8" },
+    { "echojson", 9, "arg9" },
+};
+
+class CRPCConvertTable
+{
+private:
+    std::set<std::pair<std::string, int>> members;
+    std::set<std::pair<std::string, std::string>> membersByName;
+
+public:
+    CRPCConvertTable();
+
+    bool convert(const std::string& method, int idx) {
+        return (members.count(std::make_pair(method, idx)) > 0);
     }
-    else
-    {
-        value = value.get_value<T>();
+    bool convert(const std::string& method, const std::string& name) {
+        return (membersByName.count(std::make_pair(method, name)) > 0);
+    }
+};
+
+CRPCConvertTable::CRPCConvertTable()
+{
+    const unsigned int n_elem =
+        (sizeof(vRPCConvertParams) / sizeof(vRPCConvertParams[0]));
+
+    for (unsigned int i = 0; i < n_elem; i++) {
+        members.insert(std::make_pair(vRPCConvertParams[i].methodName,
+                                      vRPCConvertParams[i].paramIdx));
+        membersByName.insert(std::make_pair(vRPCConvertParams[i].methodName,
+                                            vRPCConvertParams[i].paramName));
     }
 }
 
-// Convert strings to command-specific RPC representation
-Array RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
+static CRPCConvertTable rpcCvtTable;
+
+/** Non-RFC4627 JSON parser, accepts internal values (such as numbers, true, false, null)
+ * as well as objects and arrays.
+ */
+UniValue ParseNonRFCJSONValue(const std::string& strVal)
 {
-    Array params;
-    BOOST_FOREACH(const std::string &param, strParams)
-        params.push_back(param);
+    UniValue jVal;
+    if (!jVal.read(std::string("[")+strVal+std::string("]")) ||
+        !jVal.isArray() || jVal.size()!=1)
+        throw std::runtime_error(std::string("Error parsing JSON:")+strVal);
+    return jVal[0];
+}
 
-    int n = params.size();
+UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams)
+{
+    UniValue params(UniValue::VARR);
 
-    //
-    // Special case non-string parameter types
-    //
-    if (strMethod == "stop"                   && n > 0) ConvertTo<bool>(params[0]);
-    if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
-    if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
-    if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
-    if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
-    if (strMethod == "getbalance"             && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "getblock"               && n > 1) ConvertTo<bool>(params[1]);
-    if (strMethod == "getblockbynumber"       && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "getblockbynumber"       && n > 1) ConvertTo<bool>(params[1]);
-    if (strMethod == "getblockhash"           && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
-    if (strMethod == "move"                   && n > 3) ConvertTo<int64_t>(params[3]);
-    if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
-    if (strMethod == "sendfrom"               && n > 3) ConvertTo<int64_t>(params[3]);
-    if (strMethod == "listtransactions"       && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "listtransactions"       && n > 2) ConvertTo<int64_t>(params[2]);
-    if (strMethod == "listaccounts"           && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "walletpassphrase"       && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "walletpassphrase"       && n > 2) ConvertTo<bool>(params[2]);
-    if (strMethod == "getblocktemplate"       && n > 0) ConvertTo<Object>(params[0]);
-    if (strMethod == "listsinceblock"         && n > 1) ConvertTo<int64_t>(params[1]);
+    for (unsigned int idx = 0; idx < strParams.size(); idx++) {
+        const std::string& strVal = strParams[idx];
 
-    if (strMethod == "sendalert"              && n > 2) ConvertTo<int64_t>(params[2]);
-    if (strMethod == "sendalert"              && n > 3) ConvertTo<int64_t>(params[3]);
-    if (strMethod == "sendalert"              && n > 4) ConvertTo<int64_t>(params[4]);
-    if (strMethod == "sendalert"              && n > 5) ConvertTo<int64_t>(params[5]);
-    if (strMethod == "sendalert"              && n > 6) ConvertTo<int64_t>(params[6]);
-
-    if (strMethod == "sendmany"               && n > 1) ConvertTo<Object>(params[1]);
-    if (strMethod == "sendmany"               && n > 2) ConvertTo<int64_t>(params[2]);
-    if (strMethod == "reservebalance"         && n > 0) ConvertTo<bool>(params[0]);
-    if (strMethod == "reservebalance"         && n > 1) ConvertTo<double>(params[1]);
-    if (strMethod == "addmultisigaddress"     && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "addmultisigaddress"     && n > 1) ConvertTo<Array>(params[1]);
-    if (strMethod == "listunspent"            && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "listunspent"            && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "listunspent"            && n > 2) ConvertTo<Array>(params[2]);
-    if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<Array>(params[0]);
-    if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<Object>(params[1]);
-    if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<Array>(params[1], true);
-    if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<Array>(params[2], true);
-    if (strMethod == "keypoolrefill"          && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
-    if (strMethod == "setgenerate"            && n > 1) ConvertTo<int64_t>(params[1]);
-    if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[0]);
-    if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[1]);
+        if (!rpcCvtTable.convert(strMethod, idx)) {
+            // insert string value directly
+            params.push_back(strVal);
+        } else {
+            // parse string as JSON, insert bool/number/object/etc. value
+            params.push_back(ParseNonRFCJSONValue(strVal));
+        }
+    }
 
     return params;
 }
 
+UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<std::string> &strParams)
+{
+    UniValue params(UniValue::VOBJ);
+
+    for (const std::string &s: strParams) {
+        size_t pos = s.find("=");
+        if (pos == std::string::npos) {
+            throw(std::runtime_error("No '=' in named argument '"+s+"', this needs to be present for every argument (even if it is empty)"));
+        }
+
+        std::string name = s.substr(0, pos);
+        std::string value = s.substr(pos+1);
+
+        if (!rpcCvtTable.convert(strMethod, name)) {
+            // insert string value directly
+            params.pushKV(name, value);
+        } else {
+            // parse string as JSON, insert bool/number/object/etc. value
+            params.pushKV(name, ParseNonRFCJSONValue(value));
+        }
+    }
+
+    return params;
+}
+
+
 int CommandLineRPC(int argc, char *argv[])
 {
-    string strPrint;
+    std::string strPrint;
     int nRet = 0;
     try
     {
@@ -1294,31 +1677,31 @@ int CommandLineRPC(int argc, char *argv[])
 
         // Parameters default to strings
         std::vector<std::string> strParams(&argv[2], &argv[argc]);
-        Array params = RPCConvertValues(strMethod, strParams);
+        UniValue params = RPCConvertValues(strMethod, strParams);
 
         // Execute
-        Object reply = CallRPC(strMethod, params);
+        const UniValue reply = CallRPC(strMethod, params);
 
         // Parse reply
-        const Value& result = find_value(reply, "result");
-        const Value& error  = find_value(reply, "error");
+        const UniValue& result = find_value(reply, "result");
+        const UniValue& error  = find_value(reply, "error");
 
-        if (error.type() != null_type)
+        if (!error.isNull())
         {
             // Error
-            strPrint = "error: " + write_string(error, false);
+            strPrint = "error: " + error.write();
             int code = find_value(error.get_obj(), "code").get_int();
             nRet = abs(code);
         }
         else
         {
             // Result
-            if (result.type() == null_type)
+            if (result.isNull())
                 strPrint = "";
-            else if (result.type() == str_type)
+            else if (result.isStr())
                 strPrint = result.get_str();
             else
-                strPrint = write_string(result, true);
+                strPrint = result.write(2);
         }
     }
     catch (std::exception& e)

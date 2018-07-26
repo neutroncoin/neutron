@@ -12,10 +12,9 @@
 
 #include "univalue/include/univalue.h"
 
-using namespace json_spirit;
 using namespace std;
 
-Value getconnectioncount(const Array& params, bool fHelp)
+UniValue getconnectioncount(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
         throw runtime_error(
@@ -39,7 +38,7 @@ static void CopyNodeStats(std::vector<CNodeStats>& vstats)
     }
 }
 
-Value getpeerinfo(const Array& params, bool fHelp)
+UniValue getpeerinfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
         throw runtime_error(
@@ -49,22 +48,22 @@ Value getpeerinfo(const Array& params, bool fHelp)
     vector<CNodeStats> vstats;
     CopyNodeStats(vstats);
 
-    Array ret;
+    UniValue ret(UniValue::VARR);
 
     BOOST_FOREACH(const CNodeStats& stats, vstats) {
-        Object obj;
+        UniValue obj(UniValue::VOBJ);
 
-        obj.push_back(json_spirit::Pair("id", stats.nodeid));
-        obj.push_back(json_spirit::Pair("addr", stats.addrName));
-        obj.push_back(json_spirit::Pair("services", strprintf("%016x", stats.nServices)));
-        obj.push_back(json_spirit::Pair("lastsend", (int64_t)stats.nLastSend));
-        obj.push_back(json_spirit::Pair("lastrecv", (int64_t)stats.nLastRecv));
-        obj.push_back(json_spirit::Pair("conntime", stats.nTimeConnected));
-        obj.push_back(json_spirit::Pair("version", stats.nVersion));
-        obj.push_back(json_spirit::Pair("subver", stats.strSubVer));
-        obj.push_back(json_spirit::Pair("inbound", stats.fInbound));
-        obj.push_back(json_spirit::Pair("startingheight", stats.nStartingHeight));
-        obj.push_back(json_spirit::Pair("banscore", stats.nMisbehavior));
+        obj.push_back(Pair("id", stats.nodeid));
+        obj.push_back(Pair("addr", stats.addrName));
+        obj.push_back(Pair("services", strprintf("%016x", stats.nServices)));
+        obj.push_back(Pair("lastsend", (int64_t)stats.nLastSend));
+        obj.push_back(Pair("lastrecv", (int64_t)stats.nLastRecv));
+        obj.push_back(Pair("conntime", stats.nTimeConnected));
+        obj.push_back(Pair("version", stats.nVersion));
+        obj.push_back(Pair("subver", stats.strSubVer));
+        obj.push_back(Pair("inbound", stats.fInbound));
+        obj.push_back(Pair("startingheight", stats.nStartingHeight));
+        obj.push_back(Pair("banscore", stats.nMisbehavior));
 
         ret.push_back(obj);
     }
@@ -72,7 +71,7 @@ Value getpeerinfo(const Array& params, bool fHelp)
     return ret;
 }
 
-Value addnode(const Array& params, bool fHelp)
+UniValue addnode(const UniValue& params, bool fHelp)
 {
     string strCommand;
     if (params.size() == 2)
@@ -97,7 +96,7 @@ Value addnode(const Array& params, bool fHelp)
     {
         CAddress addr;
         ConnectNode(addr, strNode.c_str());
-        return Value::null;
+        return NullUniValue;
     }
 
     CNode* connectedNode = NULL;
@@ -130,10 +129,10 @@ Value addnode(const Array& params, bool fHelp)
         connectedNode->CloseSocketDisconnect();
     }
 
-    return Value::null;
+    return NullUniValue;
 }
 
-Value disconnectnode(const Array& params, bool fHelp)
+UniValue disconnectnode(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
         throw runtime_error(
@@ -154,10 +153,10 @@ Value disconnectnode(const Array& params, bool fHelp)
 
     pnode->CloseSocketDisconnect();
 
-    return Value::null;
+    return NullUniValue;
 }
 
-Value setban(const Array& params, bool fHelp)
+UniValue setban(const UniValue& params, bool fHelp)
 {
     string strCommand;
     if (params.size() >= 2)
@@ -208,10 +207,10 @@ Value setban(const Array& params, bool fHelp)
     }
 
 
-    return Value::null;
+    return NullUniValue;
 }
 
-Value listbanned(const Array& params, bool fHelp)
+UniValue listbanned(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
         throw runtime_error(
@@ -225,14 +224,14 @@ Value listbanned(const Array& params, bool fHelp)
     banmap_t banMap;
     CNode::GetBanned(banMap);
 
-    Array bannedAddresses;
+    UniValue bannedAddresses(UniValue::VARR);
     for (banmap_t::iterator it = banMap.begin(); it != banMap.end(); it++)
     {
-        Object obj;
+        UniValue obj(UniValue::VOBJ);
 
         int64_t t = (*it).second;
-        obj.push_back(json_spirit::Pair("address", (*it).first.ToString()));
-        obj.push_back(json_spirit::Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
+        obj.push_back(Pair("address", (*it).first.ToString()));
+        obj.push_back(Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
 
         bannedAddresses.push_back(obj);
     }
@@ -240,7 +239,7 @@ Value listbanned(const Array& params, bool fHelp)
     return bannedAddresses;
 }
 
-Value clearbanned(const Array& params, bool fHelp)
+UniValue clearbanned(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
         throw runtime_error(
@@ -254,14 +253,14 @@ Value clearbanned(const Array& params, bool fHelp)
     CNode::ClearBanned();
     // NTRN TODO - store banlist to disk
 
-    return Value::null;
+    return NullUniValue;
 }
 
 // ppcoin: send alert.
 // There is a known deadlock situation with ThreadMessageHandler
 // ThreadMessageHandler: holds cs_vSend and acquiring cs_main in SendMessages()
 // ThreadRPCServer: holds cs_main and acquiring cs_vSend in alert.RelayTo()/PushMessage()/BeginMessage()
-Value sendalert(const Array& params, bool fHelp)
+UniValue sendalert(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 6)
         throw runtime_error(
@@ -308,35 +307,35 @@ Value sendalert(const Array& params, bool fHelp)
             alert.RelayTo(pnode);
     }
 
-    Object result;
-    result.push_back(json_spirit::Pair("strStatusBar", alert.strStatusBar));
-    result.push_back(json_spirit::Pair("nVersion", alert.nVersion));
-    result.push_back(json_spirit::Pair("nMinVer", alert.nMinVer));
-    result.push_back(json_spirit::Pair("nMaxVer", alert.nMaxVer));
-    result.push_back(json_spirit::Pair("nPriority", alert.nPriority));
-    result.push_back(json_spirit::Pair("nID", alert.nID));
+    UniValue result(UniValue::VOBJ);
+    result.push_back(Pair("strStatusBar", alert.strStatusBar));
+    result.push_back(Pair("nVersion", alert.nVersion));
+    result.push_back(Pair("nMinVer", alert.nMinVer));
+    result.push_back(Pair("nMaxVer", alert.nMaxVer));
+    result.push_back(Pair("nPriority", alert.nPriority));
+    result.push_back(Pair("nID", alert.nID));
     if (alert.nCancel > 0)
-        result.push_back(json_spirit::Pair("nCancel", alert.nCancel));
+        result.push_back(Pair("nCancel", alert.nCancel));
     return result;
 }
 
 /*
 +    Used for updating/reading spork settings on the network
 +*/
-Value spork(const Array& params, bool fHelp)
+UniValue spork(const UniValue& params, bool fHelp)
 {
     if (params.size() == 1 && params[0].get_str() == "show") {
-        Object ret;
+        UniValue ret(UniValue::VOBJ);
         for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
             if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(json_spirit::Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
+                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.GetSporkValue(nSporkID)));
         }
         return ret;
     } else if (params.size() == 1 && params[0].get_str() == "active") {
-        Object ret;
+        UniValue ret(UniValue::VOBJ);
         for (int nSporkID = SPORK_START; nSporkID <= SPORK_END; nSporkID++) {
             if (sporkManager.GetSporkNameByID(nSporkID) != "Unknown")
-                ret.push_back(json_spirit::Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
+                ret.push_back(Pair(sporkManager.GetSporkNameByID(nSporkID), sporkManager.IsSporkActive(nSporkID)));
         }
         return ret;
     } else if (params.size() == 2) {
