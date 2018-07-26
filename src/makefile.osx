@@ -6,18 +6,16 @@
 # Mac OS X makefile for Neutron
 
 CXX=llvm-g++
-DEPSDIR=/usr/local/opt
 
-BOOST_LIB_PATH = /usr/local/Cellar/boost/1.58.0/lib
-BOOST_INCLUDE_PATH = /usr/local/Cellar/boost/1.58.0/include
-BDB_LIB_PATH = $(DEPSDIR)/berkeley-db@4/lib
-BDB_INCLUDE_PATH = $(DEPSDIR)/berkeley-db@4/include
-MINIUPNPC_LIB_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/lib
-MINIUPNPC_INCLUDE_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/include
-OPENSSL_LIB_PATH = /usr/local/Cellar/openssl/1.0.2k/lib
-OPENSSL_INCLUDE_PATH = /usr/local/Cellar/openssl/1.0.2k/include
-ZLIB_LIB_PATH = $(DEPSDIR)/zlib/lib
-ZLIB_INCLUDE_PATH = $(DEPSDIR)/zlib/include
+#DEPSDIR=/usr/local/opt
+#BOOST_LIB_PATH = /usr/local/Cellar/boost/1.58.0/lib
+#BOOST_INCLUDE_PATH = /usr/local/Cellar/boost/1.58.0/include
+#BDB_LIB_PATH = $(DEPSDIR)/berkeley-db@4/lib
+#BDB_INCLUDE_PATH = $(DEPSDIR)/berkeley-db@4/include
+#MINIUPNPC_LIB_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/lib
+#MINIUPNPC_INCLUDE_PATH = /usr/local/Cellar/miniupnpc/2.0.20170509/include
+#OPENSSL_LIB_PATH = /usr/local/Cellar/openssl/1.0.2k/lib
+#OPENSSL_INCLUDE_PATH = /usr/local/Cellar/openssl/1.0.2k/include
 
 INCLUDEPATHS= \
  -I"$(CURDIR)" \
@@ -55,8 +53,7 @@ LIBS += \
  $(BOOST_LIB_PATH)/libboost_program_options-mt.a \
  $(BOOST_LIB_PATH)/libboost_thread-mt.a \
  $(OPENSSL_LIB_PATH)/libssl.a \
- $(OPENSSL_LIB_PATH)/libcrypto.a \
- $(ZLIB_LIB_PATH)/libz.a
+ $(OPENSSL_LIB_PATH)/libcrypto.a
 else
 $(info Using dynamic linking)
 LIBS += \
@@ -154,6 +151,13 @@ leveldb/libleveldb.a:
 	@echo "Building LevelDB ..." && cd leveldb && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" libleveldb.a libmemenv.a && cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
+LIBS += -L$(CURDIR)/univalue/.libs -lunivalue
+DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
+OBJS += univalue/lib/libunivalue_la-univalue.o
+univalue/libunivalue.la:
+	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd .
+univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
+
 # auto-generated dependencies:
 -include obj/*.P
 
@@ -175,6 +179,9 @@ obj/scrypt-x86.o: scrypt-x86.S
 obj/scrypt-x86_64.o: scrypt-x86_64.S
 	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
+obj/scrypt-arm.o: scrypt-arm.S
+	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+
 neutrond: $(OBJS:obj/%=obj/%)
 	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
 
@@ -184,5 +191,6 @@ clean:
 	-rm -f obj/*.P
 	-rm -f obj/build.h
 	cd leveldb && $(MAKE) clean && cd ..
+	cd univalue && $(MAKE) clean && cd ..
 
 FORCE:
