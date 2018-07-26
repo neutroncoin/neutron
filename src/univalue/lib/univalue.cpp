@@ -8,7 +8,7 @@
 #include <sstream>
 #include <stdlib.h>
 
-#include "univalue/include/univalue.h"
+#include "univalue.h"
 
 using namespace std;
 
