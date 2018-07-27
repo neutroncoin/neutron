@@ -167,7 +167,7 @@ LIBS += -L$(CURDIR)/univalue/.libs -lunivalue
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
 OBJS += univalue/lib/libunivalue_la-univalue.o
 univalue/libunivalue.la:
-	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd .
+	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
 
 # auto-generated dependencies:

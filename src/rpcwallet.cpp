@@ -10,7 +10,7 @@
 #include "base58.h"
 #include "utiltime.h"
 
-#include "univalue/include/univalue.h"
+#include "univalue.h"
 
 using namespace std;
 

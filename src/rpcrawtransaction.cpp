@@ -13,7 +13,7 @@
 #include "net.h"
 #include "wallet.h"
 
-#include "univalue/include/univalue.h"
+#include "univalue.h"
 
 using namespace std;
 using namespace boost;

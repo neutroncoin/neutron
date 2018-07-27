@@ -19,7 +19,7 @@ class CBlockIndex;
 #include "util.h"
 #include "checkpoints.h"
 
-#include "univalue/include/univalue.h"
+#include "univalue.h"
 
 class CRPCCommand;
 

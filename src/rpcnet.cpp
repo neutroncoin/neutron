@@ -10,7 +10,7 @@
 #include "walletdb.h"
 #include "spork.h"
 
-#include "univalue/include/univalue.h"
+#include "univalue.h"
 
 using namespace std;
 
