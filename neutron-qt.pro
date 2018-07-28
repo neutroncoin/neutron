@@ -72,6 +72,7 @@ contains(BITCOIN_NEED_QT_PLUGINS, 1) {
     QTPLUGIN += qcncodecs qjpcodecs qtwcodecs qkrcodecs qtaccessiblewidgets
 }
 
+# LevelDB library
 INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
@@ -92,6 +93,25 @@ PRE_TARGETDEPS += $$PWD/src/leveldb/libleveldb.a
 QMAKE_EXTRA_TARGETS += genleveldb
 # Gross ugly hack that depends on qmake internals, unfortunately there is no other way to do it.
 QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) clean
+
+# UniValue library
+INCLUDEPATH += src/univalue/include
+LIBS += -L$$PWD/src/univalue/.libs -lunivalue
+!win32 {
+    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+    gen_univalue_lib.commands = cd $$PWD/src/univalue && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+} else {
+    # make an educated guess about what the ranlib command is called
+    isEmpty(QMAKE_RANLIB) {
+        QMAKE_RANLIB = $$replace(QMAKE_STRIP, strip, ranlib)
+    }
+    LIBS += -lshlwapi
+    gen_univalue_lib.commands = cd $$PWD/src/univalue && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+}
+gen_univalue_lib.target = $$PWD/src/univalue/lunivalue.la
+PRE_TARGETDEPS += $$PWD/src/univalue/lunivalue.la
+QMAKE_EXTRA_TARGETS += gen_univalue_lib
+QMAKE_CLEAN += cd $$PWD/src/univalue ; $(MAKE) clean
 
 # regenerate src/build.h
 !windows|contains(USE_BUILD_INFO, 1) {
@@ -228,54 +248,53 @@ HEADERS += src/activemasternode.h \
     src/qt/transactionview.h \
     src/qt/walletmodel.h
 
-SOURCES += src/qt/bitcoin.cpp \
+SOURCES += src/activemasternode.cpp \
+    src/addrman.cpp \
     src/alert.cpp \
+    src/bitcoinrpc.cpp \
+    src/chainparams.cpp \
+    src/checkpoints.cpp \
     src/clientversion.cpp \
+    src/crypter.cpp \
+    src/darksend.cpp \
+    src/db.cpp \
+    src/init.cpp \
+    src/kernel.cpp \
+    src/key.cpp \
+    src/keystore.cpp \
+    src/main.cpp \
+    src/masternode.cpp \
+    src/masternodeconfig.cpp \
+    src/miner.cpp \
+    src/net.cpp \
+    src/netbase.cpp \
+    src/noui.cpp \
+    src/protocol.cpp \
+    src/pbkdf2.cpp \
     src/random.cpp \
+    src/rpcblockchain.cpp \
+    src/rpcdarksend.cpp \
+    src/rpcdump.cpp \
+    src/rpcmining.cpp \
+    src/rpcnet.cpp \
+    src/rpcrawtransaction.cpp \
+    src/rpcwallet.cpp \
+    src/script.cpp \
+    src/scrypt.cpp \
+    src/scrypt-arm.S \
+    src/scrypt-x86.S \
+    src/scrypt-x86_64.S \
+    src/spork.cpp \
     src/sync.cpp \
+    src/timedata.cpp \
+    src/txmempool.cpp \
     src/util.cpp \
     src/utilmoneystr.cpp \
     src/utilstrencodings.cpp \
     src/utiltime.cpp \
-    src/timedata.cpp \
-    src/netbase.cpp \
-    src/key.cpp \
-    src/script.cpp \
-    src/main.cpp \
-    src/miner.cpp \
-    src/init.cpp \
-    src/net.cpp \
-    src/chainparams.cpp \
-    src/checkpoints.cpp \
-    src/addrman.cpp \
-    src/db.cpp \
-    src/bitcoinrpc.cpp \
-    src/rpcdump.cpp \
-    src/rpcnet.cpp \
-    src/rpcmining.cpp \
-    src/rpcwallet.cpp \
-    src/rpcblockchain.cpp \
-    src/rpcrawtransaction.cpp \
-    src/wallet.cpp \
-    src/keystore.cpp \
-    src/crypter.cpp \
-    src/walletdb.cpp \
-    src/protocol.cpp \
-    src/noui.cpp \
-    src/kernel.cpp \
-    src/scrypt-arm.S \
-    src/scrypt-x86.S \
-    src/scrypt-x86_64.S \
-    src/scrypt.cpp \
-    src/pbkdf2.cpp \
-    src/masternode.cpp \
-    src/darksend.cpp \
-    src/rpcdarksend.cpp \
-    src/activemasternode.cpp \
-    src/spork.cpp \
-    src/masternodeconfig.cpp \
-    src/txmempool.cpp \
     src/validation.cpp \
+    src/wallet.cpp \
+    src/walletdb.cpp \
     src/primitives/block.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
@@ -283,6 +302,7 @@ SOURCES += src/qt/bitcoin.cpp \
     src/qt/addresstablemodel.cpp \
     src/qt/adrenalinenodeconfigdialog.cpp \
     src/qt/askpassphrasedialog.cpp \
+    src/qt/bitcoin.cpp \
     src/qt/bitcoinaddressvalidator.cpp \
     src/qt/bitcoinamountfield.cpp \
     src/qt/bitcoingui.cpp \
