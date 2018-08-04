@@ -143,6 +143,7 @@ endif
 
 all: neutrond
 
+# LevelDB library
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
@@ -151,9 +152,9 @@ leveldb/libleveldb.a:
 	@echo "Building LevelDB ..." && cd leveldb && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" libleveldb.a libmemenv.a && cd ..
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
-LIBS += -L$(CURDIR)/univalue/.libs -lunivalue
+# UniValue library
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
-OBJS += univalue/lib/*.o
+OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/libunivalue_la-univalue_get.o univalue/lib/libunivalue_la-univalue_read.o univalue/lib/libunivalue_la-univalue_write.o
 univalue/libunivalue.la:
 	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
