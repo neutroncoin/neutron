@@ -96,7 +96,10 @@ QMAKE_CLEAN += $$PWD/src/leveldb/libleveldb.a; cd $$PWD/src/leveldb ; $(MAKE) cl
 
 # UniValue library
 INCLUDEPATH += src/univalue/include
-LIBS += -L$$PWD/src/univalue/.libs -lunivalue
+LIBS += -L$$PWD/src/univalue
+#LIBS += -L$$PWD/src/univalue/libunivalue.la
+HEADERS += src/univalue/include/univalue.h
+SOURCES += src/univalue/lib/univalue.cpp src/univalue/lib/univalue_get.cpp src/univalue/lib/univalue_read.cpp src/univalue/lib/univalue_write.cpp
 !win32 {
     # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
     gen_univalue_lib.commands = cd $$PWD/src/univalue && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
