@@ -1184,8 +1184,11 @@ void ThreadRPCServer3(void* parg)
         {
             // Parse request
             UniValue valRequest;
-            // if (!json_spirit::read_string(strRequest, valRequest))
-            //     throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
+            if (!valRequest.read(strRequest))
+                throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
+
+            // // Set the URI
+            // jreq.URI = req->GetURI();
 
             string strReply;
 
