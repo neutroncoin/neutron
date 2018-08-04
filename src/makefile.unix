@@ -163,9 +163,9 @@ leveldb/libleveldb.a:
 	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..;
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
-LIBS += -L$(CURDIR)/univalue/.libs -lunivalue
+LIBS += -L$(CURDIR)/univalue/libunivalue.la
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
-OBJS += univalue/lib/libunivalue_la-univalue.o
+OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/*.o
 univalue/libunivalue.la:
 	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
