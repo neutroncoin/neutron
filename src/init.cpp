@@ -944,22 +944,23 @@ bool AppInit2(boost::thread_group& threadGroup)
         }
     }
 
-    fEnableDarksend = GetBoolArg("-enabledarksend", false);
+    // fEnableDarksend = GetBoolArg("-enabledarksend", false);
+    fEnableDarksend = false;
 
-    nDarksendRounds = GetArg("-darksendrounds", 2);
-    if(nDarksendRounds > 16) nDarksendRounds = 16;
-    if(nDarksendRounds < 1) nDarksendRounds = 1;
+    // nDarksendRounds = GetArg("-darksendrounds", 2);
+    // if(nDarksendRounds > 16) nDarksendRounds = 16;
+    // if(nDarksendRounds < 1) nDarksendRounds = 1;
 
-    nLiquidityProvider = GetArg("-liquidityprovider", 0); //0-100
-    if(nLiquidityProvider != 0) {
-        darkSendPool.SetMinBlockSpacing(std::min(nLiquidityProvider,100)*15);
-        fEnableDarksend = true;
-        nDarksendRounds = 99999;
-    }
+    // nLiquidityProvider = GetArg("-liquidityprovider", 0); //0-100
+    // if(nLiquidityProvider != 0) {
+    //     darkSendPool.SetMinBlockSpacing(std::min(nLiquidityProvider,100)*15);
+    //     fEnableDarksend = true;
+    //     nDarksendRounds = 99999;
+    // }
 
-    nAnonymizeNeutronAmount = GetArg("-anonymizeNeutronamount", 0);
-    if(nAnonymizeNeutronAmount > 999999) nAnonymizeNeutronAmount = 999999;
-    if(nAnonymizeNeutronAmount < 2) nAnonymizeNeutronAmount = 2;
+    // nAnonymizeNeutronAmount = GetArg("-anonymizeNeutronamount", 0);
+    // if(nAnonymizeNeutronAmount > 999999) nAnonymizeNeutronAmount = 999999;
+    // if(nAnonymizeNeutronAmount < 2) nAnonymizeNeutronAmount = 2;
 
     //lite mode disables all Masternode and Darksend related functionality
     fLiteMode = GetBoolArg("-litemode", false);
@@ -968,8 +969,8 @@ bool AppInit2(boost::thread_group& threadGroup)
     }
 
     LogPrintf("fLiteMode %d\n", fLiteMode);
-    LogPrintf("Darksend rounds %d\n", nDarksendRounds);
-    LogPrintf("Anonymize Neutron Amount %d\n", nAnonymizeNeutronAmount);
+    // LogPrintf("Darksend rounds %d\n", nDarksendRounds);
+    // LogPrintf("Anonymize Neutron Amount %d\n", nAnonymizeNeutronAmount);
 
     /* Denominations
        A note about convertability. Within Darksend pools, each denomination
