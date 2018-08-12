@@ -126,6 +126,7 @@ namespace GUIUtil
 
     QString formatNiceTimeOffset(qint64 secs);
 
+    void SetDarkThemeQSS(QApplication& app);
 } // namespace GUIUtil
 
 #endif // GUIUTIL_H

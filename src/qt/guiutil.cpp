@@ -486,6 +486,41 @@ void HelpMessageBox::showOrPrint()
 #endif
 }
 
+void SetDarkThemeQSS(QApplication& app)
+{
+    app.setStyleSheet("QWidget        { background: rgb(41,44,48); }"
+                      "QFrame         { border: none; }"
+                      "QComboBox      { color: rgb(255,255,255); }"
+                      "QComboBox QAbstractItemView::item { color: rgb(255,255,255); }"
+                      "QPushButton    { background: rgb(68,81,98); color: rgb(222,222,222); }"
+                      "QDoubleSpinBox { background: rgb(63,67,72); color: rgb(255,255,255); border-color: rgb(194,194,194); }"
+                      "QLineEdit      { background: rgb(63,67,72); color: rgb(255,255,255); border-color: rgb(194,194,194); }"
+                      "QTextEdit      { background: rgb(63,67,72); color: rgb(255,255,255); }"
+                      "QPlainTextEdit { background: rgb(63,67,72); color: rgb(255,255,255); }"
+                      "QMenuBar       { background: rgb(41,44,48); color: rgb(110,116,126); }"
+                      "QMenu          { background: rgb(30,32,36); color: rgb(222,222,222); }"
+                      "QMenuBar::item { background-color: rgb(68,81,98); color: rgb(222,222,222);}" //MenuBar
+                      "QMenu::item:selected { background-color: #2CA095; }"
+                      "QMenuBar::item:selected { background-color: #2CA095; }"
+                      "QLabel         { color: rgb(120,127,139); }" //Main Text Color
+                      "QScrollBar     { color: rgb(255,255,255); }"
+                      "QCheckBox      { color: rgb(120,127,139); }"
+                      "QRadioButton   { color: rgb(120,127,139); }"
+                      "QTabBar::tab   { color: rgb(120,127,139); border: 1px solid rgb(78,79,83); border-bottom: none; padding: 5px; }" //debug console tab
+                      "QTabBar::tab:selected  { background: #2CA095; }" //selected debug console tab
+                      "QTabBar::tab:!selected { background: rgb(24,26,30); margin-top: 2px; }" //non-selected debug console tab
+                      "QTabWidget::pane { border: 1px solid rgb(78,79,83); }"
+                      "QToolButton    { background: rgb(30,32,36); color: rgb(116,122,134); border-style: outset; border-width: 2px; border-radius: 10px; border-color: #2CA095; font: bold 12px; min-width: 3em; padding: 1px; }"
+                      "QToolButton:checked { border-style: inset; border-left-color: #FF0000; border-radius: 10px;  border-left-style: solid; border-left-width: 6px; }" //navigation buttons
+                      "QProgressBar   { color: rgb(149,148,148); border-color: rgb(255,255,255); border-width: 1px; border-style: solid; }"
+                      "QProgressBar::chunk { background: rgb(255,255,255); }"
+                      "QTreeView::item { background: rgb(41,44,48); color: rgb(212,213,213); }"
+                      "QTreeView::item:selected { background-color: rgb(59,124,220); }"
+                      "QTableView     { background: rgb(41,44,48); color:  rgb(120,127,139); gridline-color: rgb(157,160,165); }" // gridline=wireframecolor
+                      "QHeaderView::section { background: rgb(29,34,39); color: rgb(255,255,255); }" //headertextcolor
+                      "QToolBar       { background: rgb(30,32,36); border-style: outset; border-width: 2px; border-radius: 10px; border-color: #2CA095; font: bold 12px; min-width: 3em; padding: 1px; }");
+}
+
 QString formatNiceTimeOffset(qint64 secs)
 {
     // Represent time from last generated block in human readable text

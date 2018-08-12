@@ -6,6 +6,8 @@
 #include "walletdb.h"
 #include "guiutil.h"
 
+bool fUseDarkTheme;
+
 OptionsModel::OptionsModel(QObject *parent) : QAbstractListModel(parent)
 {
     Init();
@@ -51,6 +53,7 @@ void OptionsModel::Init()
     nTransactionFee = settings.value("nTransactionFee").toLongLong();
     nReserveBalance = settings.value("nReserveBalance").toLongLong();
     language = settings.value("language", "").toString();
+    fUseDarkTheme = settings.value("fUseDarkTheme", false).toBool();
 
     if (!settings.contains("nDarksendRounds"))
         settings.setValue("nDarksendRounds", 2);
@@ -141,6 +144,8 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
             return settings.value("language", "");
         case CoinControlFeatures:
             return QVariant(fCoinControlFeatures);
+        case UseDarkTheme:
+            return QVariant(fUseDarkTheme);
         default:
             return QVariant();
         }
@@ -249,6 +254,10 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             nAnonymizeNeutronAmount = value.toInt();
             settings.setValue("nAnonymizeNeutronAmount", nAnonymizeNeutronAmount);
             emit anonymizeNeutronAmountChanged(nAnonymizeNeutronAmount);
+            break;
+        case UseDarkTheme:
+            fUseDarkTheme = value.toBool();
+            settings.setValue("fUseDarkTheme", fUseDarkTheme);
             break;
         default:
             break;

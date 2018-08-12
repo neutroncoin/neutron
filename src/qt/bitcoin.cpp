@@ -546,8 +546,7 @@ int main(int argc, char *argv[])
 
     // Show help message immediately after parsing command-line options (for "-lang") and setting locale,
     // but before showing splash screen.
-    if (mapArgs.count("-?") || mapArgs.count("--help"))
-    {
+    if (mapArgs.count("-?") || mapArgs.count("--help")) {
         GUIUtil::HelpMessageBox help;
         help.showOrPrint();
         return 1;
@@ -560,8 +559,7 @@ int main(int argc, char *argv[])
 
     /// 6. Determine availability of data directory and parse neutron.conf
     /// - Do not call GetDataDir(true) before this step finishes
-    if (!boost::filesystem::is_directory(GetDataDir(false)))
-    {
+    if (!boost::filesystem::is_directory(GetDataDir(false))) {
         // This message can not be translated, as translation is not initialized yet
         // (which not yet possible because lang=XX can be overridden in bitcoin.conf in the data directory)
         QMessageBox::critical(0, "Neutron",
@@ -591,11 +589,15 @@ int main(int argc, char *argv[])
 
     app.setQuitOnLastWindowClosed(false);
 
-    try
-    {
+    try {
+        if (fUseDarkTheme) {
+            GUIUtil::SetDarkThemeQSS(app);
+        }
+
         // Regenerate startup link, to fix links to old versions
-        if (GUIUtil::GetStartOnSystemStartup())
+        if (GUIUtil::GetStartOnSystemStartup()) {
             GUIUtil::SetStartOnSystemStartup(true);
+        }
 
         // BitcoinGUI window;
         app.createWindow();
@@ -612,8 +614,7 @@ int main(int argc, char *argv[])
         // app.requestShutdown();
         // app.exec();
 
-        if(AppInit2(threadGroupMain))
-        {
+        if(AppInit2(threadGroupMain)) {
             {
                 // Put this in a block, so that the Model objects are cleaned up before
                 // calling Shutdown().
