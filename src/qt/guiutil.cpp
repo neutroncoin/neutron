@@ -486,9 +486,18 @@ void HelpMessageBox::showOrPrint()
 #endif
 }
 
+void SetStandardThemeQSS(QApplication& app)
+{
+    app.setStyleSheet(
+                      "QProgressBar   { color: rgb(0,0,0); border-color: rgb(255,255,255); border-width: 1px; border-style: solid; }"
+                      "QProgressBar::chunk { background: rgb(212,211,211); }"
+                     );
+}
+
 void SetDarkThemeQSS(QApplication& app)
 {
-    app.setStyleSheet("QWidget        { background: rgb(41,44,48); }"
+    app.setStyleSheet(
+                      "QWidget        { background: rgb(41,44,48); }"
                       "QFrame         { border: none; }"
                       "QComboBox      { color: rgb(255,255,255); }"
                       "QComboBox QAbstractItemView::item { color: rgb(255,255,255); }"
@@ -511,14 +520,15 @@ void SetDarkThemeQSS(QApplication& app)
                       "QTabBar::tab:!selected { background: rgb(24,26,30); margin-top: 2px; }" //non-selected debug console tab
                       "QTabWidget::pane { border: 1px solid rgb(78,79,83); }"
                       "QToolButton    { background: rgb(30,32,36); color: rgb(116,122,134); border-style: outset; border-width: 2px; border-radius: 10px; border-color: #2CA095; font: bold 12px; min-width: 3em; padding: 1px; }"
-                      "QToolButton:checked { border-style: inset; border-left-color: #FF0000; border-radius: 10px;  border-left-style: solid; border-left-width: 6px; }" //navigation buttons
+                      "QToolButton:checked { border-style: inset; border-left-color: #FF0000; border-radius: 10px; border-left-style: solid; border-left-width: 6px; }" //navigation buttons
                       "QProgressBar   { color: rgb(149,148,148); border-color: rgb(255,255,255); border-width: 1px; border-style: solid; }"
                       "QProgressBar::chunk { background: rgb(255,255,255); }"
                       "QTreeView::item { background: rgb(41,44,48); color: rgb(212,213,213); }"
                       "QTreeView::item:selected { background-color: rgb(59,124,220); }"
-                      "QTableView     { background: rgb(41,44,48); color:  rgb(120,127,139); gridline-color: rgb(157,160,165); }" // gridline=wireframecolor
+                      "QTableView     { background: rgb(41,44,48); alternate-background-color: rgb(63,66,70); color: rgb(120,127,139); gridline-color: rgb(157,160,165); }" // gridline=wireframecolor
                       "QHeaderView::section { background: rgb(29,34,39); color: rgb(255,255,255); }" //headertextcolor
-                      "QToolBar       { background: rgb(30,32,36); border-style: outset; border-width: 2px; border-radius: 10px; border-color: #2CA095; font: bold 12px; min-width: 3em; padding: 1px; }");
+                      "QToolBar       { background: rgb(30,32,36); border-style: outset; border-width: 2px; border-radius: 10px; border-color: #2CA095; font: bold 12px; min-width: 3em; padding: 1px; }"
+                     );
 }
 
 QString formatNiceTimeOffset(qint64 secs)

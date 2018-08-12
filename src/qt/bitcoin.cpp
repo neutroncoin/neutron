@@ -592,6 +592,8 @@ int main(int argc, char *argv[])
     try {
         if (fUseDarkTheme) {
             GUIUtil::SetDarkThemeQSS(app);
+        } else {
+            GUIUtil::SetStandardThemeQSS(app);
         }
 
         // Regenerate startup link, to fix links to old versions
