@@ -285,7 +285,7 @@
           <string/>
          </property>
          <property name="pixmap">
-          <pixmap resource="../bitcoin.qrc">:/icons/neutron</pixmap>
+          <pixmap resource="../bitcoin.qrc">:/icons/neutronlogo</pixmap>
          </property>
          <property name="scaledContents">
           <bool>true</bool>

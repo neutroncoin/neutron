@@ -461,15 +461,23 @@ void BitcoinGUI::createToolBars()
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
     toolbar->setContextMenuPolicy(Qt::PreventContextMenu);
 
-    if (fUseDarkTheme)
-    {
-        QWidget* header = new QWidget();
-        header->setMinimumSize(160, 116);
-        header->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
-        header->setStyleSheet("QWidget { background-color: rgb(24,26,30); background-repeat: no-repeat; background-image: url(:/images/header); background-position: center; background-size: contain; }");
-        toolbar->addWidget(header);
-        // toolbar->addWidget(makeToolBarSpacer());
+    QWidget* header = new QWidget();
+    header->setMinimumSize(160, 116);
+    header->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    if (fUseDarkTheme) {
+        header->setStyleSheet("QWidget { background-color: rgb(24,26,30); background-repeat: no-repeat; background-image: url(:/icons/logo_white); background-position: center; background-size: contain; }");
+    } else {
+        QLabel *label = new QLabel(this);
+        QHBoxLayout *layout = new QHBoxLayout();
+
+        label->setPixmap(QIcon(":/icons/logo_standard").pixmap(90,90));
+        label->setAlignment(Qt::AlignCenter);
+
+        layout->addWidget(label);
+        header->setLayout(layout);
     }
+    toolbar->addWidget(header);
+    // toolbar->addWidget(makeToolBarSpacer());
 
     toolbar->addAction(overviewAction);
     toolbar->addAction(sendCoinsAction);

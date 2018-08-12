@@ -42,9 +42,12 @@
         <file alias="debugwindow">res/icons/debugwindow.png</file>
         <file alias="staking_off">res/icons/staking_off.png</file>
         <file alias="staking_on">res/icons/staking_on.png</file>
-        <file alias="neutron">res/images/splash.png</file>
+        <file alias="neutronlogo">res/icons/neutronlogo.png</file>
+        <file alias="neutronlogo_white">res/icons/neutronlogo-white-large.png</file>
         <file alias="bitcoin">res/icons/neutron.png</file>
         <file alias="masternode">res/icons/neutron-green-64.png</file>
+        <file alias="logo_standard">res/icons/neutron-128.png</file>
+        <file alias="logo_white">res/icons/neutron-white-90.png</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="about">res/images/about.png</file>
