@@ -289,9 +289,10 @@ void BitcoinGUI::createActions()
     addressBookAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(addressBookAction);
 
-    masternodeManagerAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Nucleus"), this);
-    masternodeManagerAction->setToolTip(tr("Show Nucleus Nodes status and configure your nodes."));
+    masternodeManagerAction = new QAction(QIcon(":/icons/masternode"), tr("&Nucleus"), this);
+    masternodeManagerAction->setToolTip(tr("Show Nucleus Nodes status and configure your nodes"));
     masternodeManagerAction->setCheckable(true);
+    masternodeManagerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
     tabGroup->addAction(masternodeManagerAction);
 
 #if 0
@@ -327,15 +328,18 @@ void BitcoinGUI::createActions()
     quitAction->setToolTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
+
     aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Neutron"), this);
     aboutAction->setToolTip(tr("Show information about Neutron"));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
     aboutQtAction->setToolTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
+
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
     optionsAction->setToolTip(tr("Modify configuration options for Neutron"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
+
     openConfEditorAction = new QAction(QIcon(":/icons/edit"), tr("Open Wallet &Config"), this);
     openConfEditorAction->setStatusTip(tr("Open Configuration File"));
     toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
@@ -372,8 +376,6 @@ void BitcoinGUI::createActions()
 
     exportAction = new QAction(QIcon(":/icons/export"), tr("&Export..."), this);
     exportAction->setToolTip(tr("Export the data in the current tab to a file"));
-    openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug window"), this);
-    openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
@@ -388,7 +390,6 @@ void BitcoinGUI::createActions()
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
     connect(stakeReportAction, SIGNAL(triggered()), this, SLOT(stakeReportClicked()));
-
 
     // Jump directly to tabs in RPC-console
     connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
@@ -431,17 +432,17 @@ void BitcoinGUI::createMenuBar()
     settings->addAction(optionsAction);
 
     QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
-    tools->addAction(openConfEditorAction);
+    tools->addAction(openInfoAction);
+    tools->addAction(openRPCConsoleAction);
+    tools->addSeparator();
     tools->addAction(stakeReportAction);
-
+    tools->addSeparator();
+    tools->addAction(openConfEditorAction);
     // TODO: NTRN - hide this option for now
     // tools->addAction(openMNConfEditorAction);
-    tools->addSeparator();
     tools->addAction(showBackupsAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
-    help->addAction(openRPCConsoleAction);
-    help->addSeparator();
     help->addAction(aboutAction);
     help->addAction(aboutQtAction);
 }
@@ -650,12 +651,12 @@ void BitcoinGUI::showDebugWindow()
 
 void BitcoinGUI::showInfo()
 {
-    rpcConsole->show();
+    rpcConsole->setTabFocus(RPCConsole::TAB_INFO);
     showDebugWindow();
 }
 void BitcoinGUI::showConsole()
 {
-    rpcConsole->show();
+    rpcConsole->setTabFocus(RPCConsole::TAB_CONSOLE);
     showDebugWindow();
 }
 
@@ -904,6 +905,15 @@ void BitcoinGUI::closeEvent(QCloseEvent *event)
 #endif
     }
     QMainWindow::closeEvent(event);
+}
+
+void BitcoinGUI::showEvent(QShowEvent *event)
+{
+    // enable the debug window when the main window shows up
+    openInfoAction->setEnabled(true);
+    openRPCConsoleAction->setEnabled(true);
+    aboutAction->setEnabled(true);
+    optionsAction->setEnabled(true);
 }
 
 void BitcoinGUI::askFee(qint64 nFeeRequired, bool *payFee)

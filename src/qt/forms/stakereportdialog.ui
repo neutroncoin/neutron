@@ -75,7 +75,7 @@
          <widget class="QLabel" name="TimeTook">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -98,7 +98,7 @@
          <widget class="QLabel" name="TimeTook_2">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -121,7 +121,7 @@
          <widget class="QLabel" name="Stake_Counted">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -146,7 +146,7 @@
        <widget class="QLabel" name="L_CurrentBlock">
         <property name="font">
          <font>
-          <pointsize>9</pointsize>
+          <pointsize>11</pointsize>
           <weight>50</weight>
           <bold>false</bold>
          </font>
@@ -264,7 +264,7 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -296,7 +296,7 @@
           </property>
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -413,7 +413,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -428,7 +428,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -443,7 +443,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
            <weight>75</weight>
            <bold>true</bold>
           </font>
@@ -458,7 +458,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
           </font>
          </property>
          <property name="flags">
@@ -474,7 +474,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
           </font>
          </property>
          <property name="textAlignment">
@@ -490,7 +490,7 @@
          </property>
          <property name="font">
           <font>
-           <pointsize>9</pointsize>
+           <pointsize>11</pointsize>
           </font>
          </property>
          <property name="textAlignment">
@@ -511,7 +511,7 @@
          <widget class="QLabel" name="label_3">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>75</weight>
             <bold>true</bold>
            </font>
@@ -534,7 +534,7 @@
          <widget class="QLabel" name="L1_24h">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -554,7 +554,7 @@
          <widget class="QLabel" name="Stake_365D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -578,7 +578,7 @@
          <widget class="QLabel" name="Stake_7D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -602,7 +602,7 @@
          <widget class="QLabel" name="L3_30D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -622,7 +622,7 @@
          <widget class="QLabel" name="Amount_30D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -646,7 +646,7 @@
          <widget class="QLabel" name="Stake_30D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -670,7 +670,7 @@
          <widget class="QLabel" name="L3_30D_2">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -690,7 +690,7 @@
          <widget class="QLabel" name="Amount_365D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -714,7 +714,7 @@
          <widget class="QLabel" name="L_Coin">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>75</weight>
             <bold>true</bold>
            </font>
@@ -734,7 +734,7 @@
          <widget class="QLabel" name="Amount_24H">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -758,7 +758,7 @@
          <widget class="QLabel" name="Stake_24H">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>
@@ -782,7 +782,7 @@
          <widget class="QLabel" name="L2_7D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
            </font>
@@ -802,7 +802,7 @@
          <widget class="QLabel" name="Amount_7D">
           <property name="font">
            <font>
-            <pointsize>9</pointsize>
+            <pointsize>11</pointsize>
             <weight>50</weight>
             <bold>false</bold>
             <kerning>false</kerning>

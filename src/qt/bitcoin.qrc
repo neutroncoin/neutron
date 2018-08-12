@@ -44,6 +44,7 @@
         <file alias="staking_on">res/icons/staking_on.png</file>
         <file alias="neutron">res/icons/neutron2.png</file>
         <file alias="bitcoin">res/icons/neutron.png</file>
+        <file alias="masternode">res/icons/neutron-green-64.png</file>
     </qresource>
     <qresource prefix="/images">
         <file alias="about">res/images/about.png</file>

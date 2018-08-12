@@ -1,5 +1,5 @@
-#ifndef RPCCONSOLE_H
-#define RPCCONSOLE_H
+#ifndef BITCOIN_QT_RPCCONSOLE_H
+#define BITCOIN_QT_RPCCONSOLE_H
 
 #include <QDialog>
 #include <QTimer>
@@ -28,10 +28,15 @@ public:
         CMD_ERROR
     };
 
+    enum TabTypes {
+        TAB_INFO = 0,
+        TAB_CONSOLE = 1
+    };
+
 protected:
     virtual bool eventFilter(QObject* obj, QEvent *event);
 
-private slots:
+private Q_SLOTS:
     void on_lineEdit_returnPressed();
     void on_tabWidget_currentChanged(int index);
     /** open the debug.log from the current datadir */
@@ -39,7 +44,7 @@ private slots:
     /** display messagebox with program parameters (same as bitcoin-qt --help) */
     void on_showCLOptionsButton_clicked();
 
-public slots:
+public Q_SLOTS:
     void clear();
     void message(int category, const QString &message, bool html = false);
     /** Set number of connections shown in the UI */
@@ -56,7 +61,10 @@ public slots:
     void scrollToEnd();
     void refreshDebugInfo();
     void updateLastBlockSeen();
-signals:
+    /** set which tab has the focus (is visible) */
+    void setTabFocus(enum TabTypes tabType);
+
+Q_SIGNALS:
     // For RPC command executor
     void stopExecutor();
     void cmdRequest(const QString &command);
@@ -74,4 +82,4 @@ private:
     void updateNetworkState();
 };
 
-#endif // RPCCONSOLE_H
+#endif // BITCOIN_QT_RPCCONSOLE_H
