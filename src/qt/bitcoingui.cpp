@@ -98,7 +98,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
-    nWeight(0)
+    nWeight(0),
+    spinnerFrame(0)
 {
     resize(850, 550);
     setWindowTitle(tr("Neutron") + " - " + tr("Wallet"));
@@ -217,8 +218,6 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
     // Subscribe to notifications from core
     subscribeToCoreSignals();
-
-    syncIconMovie = new QMovie(":/movies/update_spinner", "mng", this);
 
     // Clicking on a transaction on the overview page simply sends you to transaction history page
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
@@ -751,46 +750,43 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     QString text;
 
     // Represent time from last generated block in human readable text
-    if(secs <= 0)
-    {
+    if(secs <= 0) {
         // Fully up to date. Leave text empty.
     }
-    else if(secs < 60)
-    {
+    else if(secs < 60) {
         text = tr("%n second(s) ago","",secs);
     }
-    else if(secs < 60*60)
-    {
+    else if(secs < 60*60) {
         text = tr("%n minute(s) ago","",secs/60);
     }
-    else if(secs < 24*60*60)
-    {
+    else if(secs < 24*60*60) {
         text = tr("%n hour(s) ago","",secs/(60*60));
     }
-    else
-    {
+    else {
         text = tr("%n day(s) ago","",secs/(60*60*24));
     }
 
     // Set icon state: spinning if catching up, tick otherwise
-    if(secs < 90*60 && count >= nTotalBlocks)
-    {
+    if(secs < 90*60 && count >= nTotalBlocks) {
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
         labelBlocksIcon->setPixmap(QIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
 
         overviewPage->showOutOfSyncWarning(false);
     }
-    else
-    {
+    else {
         tooltip = tr("Catching up...") + QString("<br>") + tooltip;
-        labelBlocksIcon->setMovie(syncIconMovie);
-        syncIconMovie->start();
+        // labelBlocksIcon->setMovie(syncIconMovie);
+        // syncIconMovie->start();
+
+        labelBlocksIcon->setPixmap(QIcon(QString(
+            ":/movies/spinner-%1").arg(spinnerFrame, 3, 10, QChar('0')))
+            .pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES;
 
         overviewPage->showOutOfSyncWarning(true);
     }
 
-    if(!text.isEmpty())
-    {
+    if(!text.isEmpty()) {
         tooltip += QString("<br>");
         tooltip += tr("Last received block was generated %1.").arg(text);
     }
