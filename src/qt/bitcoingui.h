@@ -57,12 +57,15 @@ public:
 protected:
     void changeEvent(QEvent *e);
     void closeEvent(QCloseEvent *event);
+    void showEvent(QShowEvent *event);
     void dragEnterEvent(QDragEnterEvent *event);
     void dropEvent(QDropEvent *event);
 
 private:
     ClientModel *clientModel;
     WalletModel *walletModel;
+
+    QToolBar *toolbar;
 
     QStackedWidget *centralWidget;
 
@@ -117,9 +120,9 @@ private:
     TransactionView *transactionView;
     RPCConsole *rpcConsole;
 
-    QMovie *syncIconMovie;
-
     uint64_t nWeight;
+
+    int spinnerFrame;
 
     /** Create the main UI actions. */
     void createActions();

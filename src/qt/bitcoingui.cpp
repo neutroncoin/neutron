@@ -87,6 +87,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     QMainWindow(parent),
     clientModel(0),
     walletModel(0),
+    toolbar(0),
     encryptWalletAction(0),
     changePassphraseAction(0),
     unlockWalletAction(0),
@@ -97,7 +98,8 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     trayIcon(0),
     notificator(0),
     rpcConsole(0),
-    nWeight(0)
+    nWeight(0),
+    spinnerFrame(0)
 {
     resize(850, 550);
     setWindowTitle(tr("Neutron") + " - " + tr("Wallet"));
@@ -160,12 +162,14 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     statusBar();
 
     // Status bar notification icons
-    QFrame *frameBlocks = new QFrame();
+    QWidget *frameBlocks = new QWidget();
     frameBlocks->setContentsMargins(0,0,0,0);
     frameBlocks->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+    frameBlocks->setStyleSheet("QWidget { background: none; margin-bottom: 5px; }");
     QHBoxLayout *frameBlocksLayout = new QHBoxLayout(frameBlocks);
     frameBlocksLayout->setContentsMargins(3,0,3,0);
     frameBlocksLayout->setSpacing(3);
+    frameBlocksLayout->setAlignment(Qt::AlignHCenter);
     labelEncryptionIcon = new QLabel();
     labelStakingIcon = new QLabel();
     labelConnectionsIcon = new QLabel();
@@ -179,6 +183,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     frameBlocksLayout->addStretch();
     frameBlocksLayout->addWidget(labelBlocksIcon);
     frameBlocksLayout->addStretch();
+
+    // Moving icons on bottom to left instead of right
+    toolbar->addWidget(frameBlocks);
 
     if (GetBoolArg("-staking", true))
     {
@@ -195,23 +202,22 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     progressBar->setAlignment(Qt::AlignCenter);
     progressBar->setVisible(false);
 
-    // Override style sheet for progress bar for styles that have a segmented progress bar,
-    // as they make the text unreadable (workaround for issue #1071)
-    // See https://qt-project.org/doc/qt-4.8/gallery.html
-    QString curStyle = qApp->style()->metaObject()->className();
-    if(curStyle == "QWindowsStyle" || curStyle == "QWindowsXPStyle")
-    {
-        progressBar->setStyleSheet("QProgressBar { background-color: #e8e8e8; border: 1px solid grey; border-radius: 7px; padding: 1px; text-align: center; } QProgressBar::chunk { background: QLinearGradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #FF8000, stop: 1 orange); border-radius: 7px; margin: 0px; }");
+    if (!fUseDarkTheme) {
+        // Override style sheet for progress bar for styles that have a segmented progress bar,
+        // as they make the text unreadable (workaround for issue #1071)
+        // See https://qt-project.org/doc/qt-4.8/gallery.html
+        QString curStyle = qApp->style()->metaObject()->className();
+        if(curStyle == "QWindowsStyle" || curStyle == "QWindowsXPStyle")
+        {
+            progressBar->setStyleSheet("QProgressBar { background-color: #e8e8e8; border: 1px solid grey; border-radius: 7px; padding: 1px; text-align: center; } QProgressBar::chunk { background: QLinearGradient(x1: 0, y1: 0, x2: 1, y2: 0, stop: 0 #FF8000, stop: 1 orange); border-radius: 7px; margin: 0px; }");
+        }
     }
-
     statusBar()->addWidget(progressBarLabel);
     statusBar()->addWidget(progressBar);
-    statusBar()->addPermanentWidget(frameBlocks);
+    //statusBar()->addPermanentWidget(frameBlocks);
 
     // Subscribe to notifications from core
     subscribeToCoreSignals();
-
-    syncIconMovie = new QMovie(":/movies/update_spinner", "mng", this);
 
     // Clicking on a transaction on the overview page simply sends you to transaction history page
     connect(overviewPage, SIGNAL(transactionClicked(QModelIndex)), this, SLOT(gotoHistoryPage()));
@@ -282,9 +288,10 @@ void BitcoinGUI::createActions()
     addressBookAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_5));
     tabGroup->addAction(addressBookAction);
 
-    masternodeManagerAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Nucleus"), this);
-    masternodeManagerAction->setToolTip(tr("Show Nucleus Nodes status and configure your nodes."));
+    masternodeManagerAction = new QAction(QIcon(":/icons/masternode"), tr("&Nucleus"), this);
+    masternodeManagerAction->setToolTip(tr("Show Nucleus Nodes status and configure your nodes"));
     masternodeManagerAction->setCheckable(true);
+    masternodeManagerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
     tabGroup->addAction(masternodeManagerAction);
 
 #if 0
@@ -320,15 +327,18 @@ void BitcoinGUI::createActions()
     quitAction->setToolTip(tr("Quit application"));
     quitAction->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     quitAction->setMenuRole(QAction::QuitRole);
+
     aboutAction = new QAction(QIcon(":/icons/bitcoin"), tr("&About Neutron"), this);
     aboutAction->setToolTip(tr("Show information about Neutron"));
     aboutAction->setMenuRole(QAction::AboutRole);
     aboutQtAction = new QAction(QIcon(":/trolltech/qmessagebox/images/qtlogo-64.png"), tr("About &Qt"), this);
     aboutQtAction->setToolTip(tr("Show information about Qt"));
     aboutQtAction->setMenuRole(QAction::AboutQtRole);
+
     optionsAction = new QAction(QIcon(":/icons/options"), tr("&Options..."), this);
     optionsAction->setToolTip(tr("Modify configuration options for Neutron"));
     optionsAction->setMenuRole(QAction::PreferencesRole);
+
     openConfEditorAction = new QAction(QIcon(":/icons/edit"), tr("Open Wallet &Config"), this);
     openConfEditorAction->setStatusTip(tr("Open Configuration File"));
     toggleHideAction = new QAction(QIcon(":/icons/bitcoin"), tr("&Show / Hide"), this);
@@ -365,8 +375,6 @@ void BitcoinGUI::createActions()
 
     exportAction = new QAction(QIcon(":/icons/export"), tr("&Export..."), this);
     exportAction->setToolTip(tr("Export the data in the current tab to a file"));
-    openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug window"), this);
-    openRPCConsoleAction->setToolTip(tr("Open debugging and diagnostic console"));
 
     connect(quitAction, SIGNAL(triggered()), qApp, SLOT(quit()));
     connect(aboutAction, SIGNAL(triggered()), this, SLOT(aboutClicked()));
@@ -381,7 +389,6 @@ void BitcoinGUI::createActions()
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
     connect(stakeReportAction, SIGNAL(triggered()), this, SLOT(stakeReportClicked()));
-
 
     // Jump directly to tabs in RPC-console
     connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
@@ -424,25 +431,54 @@ void BitcoinGUI::createMenuBar()
     settings->addAction(optionsAction);
 
     QMenu *tools = appMenuBar->addMenu(tr("&Tools"));
-    tools->addAction(openConfEditorAction);
+    tools->addAction(openInfoAction);
+    tools->addAction(openRPCConsoleAction);
+    tools->addSeparator();
     tools->addAction(stakeReportAction);
-
+    tools->addSeparator();
+    tools->addAction(openConfEditorAction);
     // TODO: NTRN - hide this option for now
     // tools->addAction(openMNConfEditorAction);
-    tools->addSeparator();
     tools->addAction(showBackupsAction);
 
     QMenu *help = appMenuBar->addMenu(tr("&Help"));
-    help->addAction(openRPCConsoleAction);
-    help->addSeparator();
     help->addAction(aboutAction);
     help->addAction(aboutQtAction);
 }
 
+static QWidget* makeToolBarSpacer()
+{
+    QWidget* spacer = new QWidget();
+    spacer->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding);
+    spacer->setStyleSheet(fUseDarkTheme ? "QWidget { background: rgb(30,32,36); }" : "QWidget { background: none; }");
+    return spacer;
+}
+
 void BitcoinGUI::createToolBars()
 {
-    QToolBar *toolbar = addToolBar(tr("Tabs toolbar"));
+    // QToolBar *toolbar = addToolBar(tr("Tabs toolbar"));
+    toolbar = new QToolBar(tr("Tabs toolbar"));
     toolbar->setToolButtonStyle(Qt::ToolButtonTextBesideIcon);
+    toolbar->setContextMenuPolicy(Qt::PreventContextMenu);
+
+    QWidget* header = new QWidget();
+    header->setMinimumSize(160, 116);
+    header->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    if (fUseDarkTheme) {
+        header->setStyleSheet("QWidget { background-color: rgb(24,26,30); background-repeat: no-repeat; background-image: url(:/icons/logo_white); background-position: center; }");
+    } else {
+        QLabel *label = new QLabel(this);
+        QHBoxLayout *layout = new QHBoxLayout();
+
+        label->setPixmap(QIcon(":/icons/logo_standard").pixmap(90,90));
+        label->setAlignment(Qt::AlignCenter);
+
+        layout->addWidget(label);
+        header->setLayout(layout);
+    }
+    toolbar->addWidget(header);
+    // toolbar->addWidget(makeToolBarSpacer());
+
     toolbar->addAction(overviewAction);
     toolbar->addAction(sendCoinsAction);
     toolbar->addAction(receiveCoinsAction);
@@ -450,7 +486,21 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(addressBookAction);
     toolbar->addAction(masternodeManagerAction);
     toolbar->addAction(openRPCConsoleAction);
+    toolbar->addWidget(makeToolBarSpacer());
+    toolbar->setOrientation(Qt::Vertical);
+    toolbar->setMovable(false);
 
+    addToolBar(Qt::LeftToolBarArea, toolbar);
+
+    int w = 0;
+
+    foreach(QAction *action, toolbar->actions()) {
+        w = std::max(w, toolbar->widgetForAction(action)->width());
+    }
+
+    foreach(QAction *action, toolbar->actions()) {
+        toolbar->widgetForAction(action)->setFixedWidth(w);
+      }
 
 #if 0
     toolbar->addAction(openLoggerAction);
@@ -608,12 +658,12 @@ void BitcoinGUI::showDebugWindow()
 
 void BitcoinGUI::showInfo()
 {
-    rpcConsole->show();
+    rpcConsole->setTabFocus(RPCConsole::TAB_INFO);
     showDebugWindow();
 }
 void BitcoinGUI::showConsole()
 {
-    rpcConsole->show();
+    rpcConsole->setTabFocus(RPCConsole::TAB_CONSOLE);
     showDebugWindow();
 }
 
@@ -684,7 +734,7 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
             progressBar->setVisible(true);
         }
 
-        tooltip = tr("Downloaded %1 of %2 blocks of transaction history (%3% done).").arg(count).arg(nTotalBlocks).arg(nPercentageDone, 0, 'f', 2);
+        tooltip = tr("Downloaded %1 of %2 blocks of transaction history (%3% done)").arg(count).arg(nTotalBlocks).arg(nPercentageDone, 0, 'f', 2);
     }
     else
     {
@@ -708,46 +758,43 @@ void BitcoinGUI::setNumBlocks(int count, int nTotalBlocks)
     QString text;
 
     // Represent time from last generated block in human readable text
-    if(secs <= 0)
-    {
+    if(secs <= 0) {
         // Fully up to date. Leave text empty.
     }
-    else if(secs < 60)
-    {
+    else if(secs < 60) {
         text = tr("%n second(s) ago","",secs);
     }
-    else if(secs < 60*60)
-    {
+    else if(secs < 60*60) {
         text = tr("%n minute(s) ago","",secs/60);
     }
-    else if(secs < 24*60*60)
-    {
+    else if(secs < 24*60*60) {
         text = tr("%n hour(s) ago","",secs/(60*60));
     }
-    else
-    {
+    else {
         text = tr("%n day(s) ago","",secs/(60*60*24));
     }
 
     // Set icon state: spinning if catching up, tick otherwise
-    if(secs < 90*60 && count >= nTotalBlocks)
-    {
+    if(secs < 90*60 && count >= nTotalBlocks) {
         tooltip = tr("Up to date") + QString(".<br>") + tooltip;
         labelBlocksIcon->setPixmap(QIcon(":/icons/synced").pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
 
         overviewPage->showOutOfSyncWarning(false);
     }
-    else
-    {
+    else {
         tooltip = tr("Catching up...") + QString("<br>") + tooltip;
-        labelBlocksIcon->setMovie(syncIconMovie);
-        syncIconMovie->start();
+        // labelBlocksIcon->setMovie(syncIconMovie);
+        // syncIconMovie->start();
+
+        labelBlocksIcon->setPixmap(QIcon(QString(
+            ":/movies/spinner-%1").arg(spinnerFrame, 3, 10, QChar('0')))
+            .pixmap(STATUSBAR_ICONSIZE, STATUSBAR_ICONSIZE));
+        spinnerFrame = (spinnerFrame + 1) % SPINNER_FRAMES;
 
         overviewPage->showOutOfSyncWarning(true);
     }
 
-    if(!text.isEmpty())
-    {
+    if(!text.isEmpty()) {
         tooltip += QString("<br>");
         tooltip += tr("Last received block was generated %1.").arg(text);
     }
@@ -862,6 +909,15 @@ void BitcoinGUI::closeEvent(QCloseEvent *event)
 #endif
     }
     QMainWindow::closeEvent(event);
+}
+
+void BitcoinGUI::showEvent(QShowEvent *event)
+{
+    // enable the debug window when the main window shows up
+    openInfoAction->setEnabled(true);
+    openRPCConsoleAction->setEnabled(true);
+    aboutAction->setEnabled(true);
+    optionsAction->setEnabled(true);
 }
 
 void BitcoinGUI::askFee(qint64 nFeeRequired, bool *payFee)
