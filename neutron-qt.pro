@@ -109,7 +109,7 @@ SOURCES += src/univalue/lib/univalue.cpp src/univalue/lib/univalue_get.cpp src/u
         QMAKE_RANLIB = $$replace(QMAKE_STRIP, strip, ranlib)
     }
     LIBS += -lshlwapi
-    gen_univalue_lib.commands = cd $$PWD/src/univalue && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+    gen_univalue_lib.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure --host='i686-w64-mingw32.static' --build='x86_64-pc-linux-gnu' && CC=$$QMAKE_CC CXX=$$QMAKE_CXX TARGET_OS=OS_WINDOWS_CROSSCOMPILE $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
 }
 gen_univalue_lib.target = $$PWD/src/univalue/lunivalue.la
 PRE_TARGETDEPS += $$PWD/src/univalue/lunivalue.la
