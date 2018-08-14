@@ -363,7 +363,7 @@ void BitcoinGUI::createActions()
     openInfoAction = new QAction(QIcon(":/icons/edit"), tr("&Information"), this);
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
     openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug console"), this);
-    openRPCConsoleAction->setStatusTip(tr("Open debugging console"));
+    openRPCConsoleAction->setToolTip(tr("Open debugging console"));
     openMNConfEditorAction = new QAction(QIcon(":/icons/configure"), tr("Open &Masternode Configuration File"), this);
     openMNConfEditorAction->setStatusTip(tr("Open Masternode configuration file"));
     showBackupsAction = new QAction(QIcon(":/icons/filesave"), tr("Show &Backups"), this);
