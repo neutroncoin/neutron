@@ -32,6 +32,8 @@ MasternodeManager::MasternodeManager(QWidget *parent) :
 {
     ui->setupUi(this);
 
+    ui->editButton->setVisible(false); // NTRN: hide this button for now
+
     ui->editButton->setEnabled(false);
     ui->getConfigButton->setEnabled(false);
     ui->startButton->setEnabled(false);
