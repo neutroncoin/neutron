@@ -84,6 +84,7 @@ OBJS= \
     obj/masternode.o \
     obj/masternodeconfig.o \
     obj/net.o \
+    obj/netaddress.o \
     obj/netbase.o \
     obj/noui.o \
     obj/pbkdf2.o \

@@ -8,6 +8,7 @@
 
 #include "tinyformat.h"
 #include "uint256.h"
+#include "allocators.h"
 
 #ifndef WIN32
 #include <sys/types.h>
@@ -34,7 +35,6 @@
 #include <openssl/rand.h>
 #include <openssl/bn.h>
 
-#include "netbase.h" // for AddTimeData
 
 // to obtain PRId64 on some old systems
 #define __STDC_FORMAT_MACROS 1

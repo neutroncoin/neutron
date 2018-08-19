@@ -174,6 +174,7 @@ HEADERS += src/activemasternode.h \
     src/miner.h \
     src/mruset.h \
     src/net.h \
+    src/netaddress.h \
     src/netbase.h \
     src/noui.h \
     src/pbkdf2.h \
@@ -270,6 +271,7 @@ SOURCES += src/activemasternode.cpp \
     src/masternodeconfig.cpp \
     src/miner.cpp \
     src/net.cpp \
+    src/netaddress.cpp \
     src/netbase.cpp \
     src/noui.cpp \
     src/protocol.cpp \
