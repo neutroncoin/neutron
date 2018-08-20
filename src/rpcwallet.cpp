@@ -1791,7 +1791,7 @@ UniValue makekeypair(const UniValue& params, bool fHelp)
     return result;
 }
 
-// getstakereport
+// getminingreport
 struct StakePeriodRange_T {
     int64_t Start;
     int64_t End;
@@ -1860,8 +1860,8 @@ int GetsStakeSubTotal(vStakePeriodRange_T& aRange)
     return nElement;
 }
 
-// prepare range for stake report
-vStakePeriodRange_T PrepareRangeForStakeReport()
+// prepare range for mining report
+vStakePeriodRange_T PrepareRangeForMiningReport()
 {
     vStakePeriodRange_T aRange;
     StakePeriodRange_T x;
@@ -1919,21 +1919,21 @@ vStakePeriodRange_T PrepareRangeForStakeReport()
     // Special case. not a subtotal, but last stake
     x.End  = 0;
     x.Start = 0;
-    x.Name = "Latest Stake";
+    x.Name = "Latest Reward";
     aRange.push_back(x);
 
 return aRange;
 }
 
-// getstakereport: return SubTotal of the staked coin in last 24H, 7 days, etc.. of all owns address
-UniValue getstakereport(const UniValue& params, bool fHelp)
+// getminingreport: return SubTotal of the staked coin in last 24H, 7 days, etc.. of all owns address
+UniValue getminingreport(const UniValue& params, bool fHelp)
 {
     if ((params.size()>0) || (fHelp))
         throw runtime_error(
-            "getstakereport\n"
-            "List last single 30 day stake subtotal and last 24h, 7, 30, 365 day subtotal.\n");
+            "getminingreport\n"
+            "List last single 30 day mining subtotal and last 24h, 7, 30, 365 day subtotal.\n");
 
-    vStakePeriodRange_T aRange = PrepareRangeForStakeReport();
+    vStakePeriodRange_T aRange = PrepareRangeForMiningReport();
 
     // get subtotal calc
     int64_t nTook = GetTimeMillis();
@@ -1956,7 +1956,7 @@ UniValue getstakereport(const UniValue& params, bool fHelp)
        "Never"));
 
     // report element counted / time took
-    result.push_back(Pair("Stake counted", nItemCounted));
+    result.push_back(Pair("Rewards counted", nItemCounted));
     result.push_back(Pair("time took (ms)",  nTook ));
 
     return  result;

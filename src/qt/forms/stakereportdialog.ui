@@ -23,7 +23,7 @@
    </size>
   </property>
   <property name="windowTitle">
-   <string>Stake Report</string>
+   <string>Mining Report</string>
   </property>
   <property name="modal">
    <bool>false</bool>
@@ -127,7 +127,7 @@
            </font>
           </property>
           <property name="toolTip">
-           <string>Total Stakes Analyzed</string>
+           <string>Total Rewards Analyzed</string>
           </property>
           <property name="text">
            <string>0</string>
@@ -439,7 +439,7 @@
         </column>
         <column>
          <property name="text">
-          <string>Stakes</string>
+          <string>Rewards</string>
          </property>
          <property name="font">
           <font>
@@ -520,7 +520,7 @@
            <string>Blocks Staked</string>
           </property>
           <property name="text">
-           <string>Stakes</string>
+           <string>Rewards</string>
           </property>
           <property name="alignment">
            <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
@@ -858,7 +858,7 @@
          <number>3</number>
         </property>
         <property name="text">
-         <string>Stake Report</string>
+         <string>Mining Report</string>
         </property>
         <property name="alignment">
          <set>Qt::AlignHCenter|Qt::AlignTop</set>
