@@ -233,9 +233,9 @@ UniValue masternode(const UniValue& params, bool fHelp)
             strCommand = params[1].get_str().c_str();
         }
 
-        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" && strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol"){
+        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" && strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol" && strCommand != "status"){
             throw runtime_error(
-                "list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds', 'rank', 'protocol'\n");
+                "list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds', 'rank', 'protocol', 'status'\n");
         }
 
         UniValue obj(UniValue::VOBJ);
@@ -247,13 +247,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
             } else if (strCommand == "vin") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.vin.prevout.hash.ToString().c_str()));
             } else if (strCommand == "pubkey") {
-                CScript pubkey;
-                pubkey =GetScriptForDestination(mn.pubkey.GetID());
-                CTxDestination address1;
-                ExtractDestination(pubkey, address1);
-                CBitcoinAddress address2(address1);
-
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       address2.ToString().c_str()));
+                obj.push_back(Pair(mn.addr.ToString().c_str(), CBitcoinAddress(mn.pubkey.GetID()).ToString().c_str()));
             } else if (strCommand == "protocol") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)mn.protocolVersion));
             } else if (strCommand == "lastseen") {
@@ -262,6 +256,8 @@ UniValue masternode(const UniValue& params, bool fHelp)
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)(mn.lastTimeSeen - mn.now)));
             } else if (strCommand == "rank") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int)(GetMasternodeRank(mn.vin, pindexBest->nHeight))));
+            } else if (strCommand == "status") {
+                obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.GetStatus()));
             }
         }
         return obj;
