@@ -33,7 +33,7 @@ struct StakePeriodRange_T {
 
 typedef vector<StakePeriodRange_T> vStakePeriodRange_T;
 
-extern vStakePeriodRange_T PrepareRangeForStakeReport();
+extern vStakePeriodRange_T PrepareRangeForMiningReport();
 extern int GetsStakeSubTotal(vStakePeriodRange_T& aRange);
 
 StakeReportDialog::StakeReportDialog(QWidget *parent) :
@@ -163,7 +163,7 @@ void StakeReportDialog::updateStakeReport(bool fImmediate=false)
         ui->TimeTook->repaint();
         QApplication::processEvents();
 
-        aRange = PrepareRangeForStakeReport();
+        aRange = PrepareRangeForMiningReport();
 
         // get subtotal calc
         nItemCounted = GetsStakeSubTotal(aRange);
@@ -208,9 +208,9 @@ void StakeReportDialog::updateStakeReport(bool fImmediate=false)
     ui->Stake_365D->setText(QString::number(aRange[i++].Count));
 
     ui->Amount_Last->setText(tr("Amount: ") + Coin_0Pad(nDisplayUnit, aRange[i].Total) + tr(" [NTRN]"));
-    ui->L_LastStakeTime->setText(tr("Latest stake date: ") + HalfDate(aRange[i].Start, "hh:mm"));
+    ui->L_LastStakeTime->setText(tr("Latest reward date: ") + HalfDate(aRange[i].Start, "hh:mm"));
 
-    ui->Stake_Counted->setText(tr("Stakes analysed: ") + QString::number(nItemCounted));
+    ui->Stake_Counted->setText(tr("Rewards analysed: ") + QString::number(nItemCounted));
     if (nItemCounted)
         ui->TimeTook->setText(tr("Last Recalc took ") + QString::number(nTook) +  "ms");
 

@@ -357,8 +357,8 @@ void BitcoinGUI::createActions()
     verifyMessageAction = new QAction(QIcon(":/icons/transaction_0"), tr("&Verify message..."), this);
 
     //Stakingreport
-    stakeReportAction = new QAction(QIcon(":/icons/tx_mined"), tr("Show Stake Report"), this);
-    stakeReportAction->setToolTip(tr("Open the Stake Report Box"));
+    miningReportAction = new QAction(QIcon(":/icons/tx_mined"), tr("Show Mining Report"), this);
+    miningReportAction->setToolTip(tr("Open the Mining Report Box"));
 
     openInfoAction = new QAction(QIcon(":/icons/edit"), tr("&Information"), this);
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
@@ -388,7 +388,7 @@ void BitcoinGUI::createActions()
     connect(lockWalletAction, SIGNAL(triggered()), this, SLOT(lockWallet()));
     connect(signMessageAction, SIGNAL(triggered()), this, SLOT(gotoSignMessageTab()));
     connect(verifyMessageAction, SIGNAL(triggered()), this, SLOT(gotoVerifyMessageTab()));
-    connect(stakeReportAction, SIGNAL(triggered()), this, SLOT(stakeReportClicked()));
+    connect(miningReportAction, SIGNAL(triggered()), this, SLOT(miningReportClicked()));
 
     // Jump directly to tabs in RPC-console
     connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
@@ -434,7 +434,7 @@ void BitcoinGUI::createMenuBar()
     tools->addAction(openInfoAction);
     tools->addAction(openRPCConsoleAction);
     tools->addSeparator();
-    tools->addAction(stakeReportAction);
+    tools->addAction(miningReportAction);
     tools->addSeparator();
     tools->addAction(openConfEditorAction);
     // TODO: NTRN - hide this option for now
@@ -682,8 +682,8 @@ void BitcoinGUI::showBackups()
     GUIUtil::showBackups();
 }
 
-// Stake report dialog
-void BitcoinGUI::stakeReportClicked()
+// Mining report dialog
+void BitcoinGUI::miningReportClicked()
 {
     static StakeReportDialog dlg;
     dlg.setModel(walletModel);
