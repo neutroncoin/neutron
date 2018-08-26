@@ -6,6 +6,7 @@
 #include "walletdb.h"
 #include "bitcoinrpc.h"
 #include "net.h"
+#include "netbase.h"
 #include "noui.h"
 #include "init.h"
 #include "util.h"
@@ -43,10 +44,31 @@ unsigned int nMinerSleep;
 bool fUseFastIndex;
 enum Checkpoints::CPMode CheckpointsMode;
 
+
+std::unique_ptr<CConnman> g_connman;
+CConnman* shared_connman;
+
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
 //
+
+void WaitForShutdown(boost::thread_group* threadGroup)
+{
+    bool fShutdown = ShutdownRequested();
+    // Tell the main threads to shutdown.
+    while (!fShutdown)
+    {
+        MilliSleep(200);
+        fShutdown = ShutdownRequested();
+    }
+    if (threadGroup)
+    {
+        Interrupt(*threadGroup);
+        threadGroup->join_all();
+    }
+}
 
 void ExitTimeout(void* parg)
 {
@@ -65,6 +87,11 @@ void StartShutdown()
     // Without UI, Shutdown() can simply be started in a new thread
     NewThread(Shutdown, NULL);
 #endif
+}
+
+bool ShutdownRequested()
+{
+    return fRequestShutdown;
 }
 
 void Interrupt(boost::thread_group& threadGroup)
@@ -107,7 +134,7 @@ void Shutdown(void* parg)
         nTransactionsUpdated++;
 //        CTxDB().Close();
         bitdb.Flush(false);
-        StopNode();
+        g_connman->StopNode();
         bitdb.Flush(true);
         boost::filesystem::remove(GetPidFile());
         UnregisterWallet(pwalletMain);
@@ -202,8 +229,18 @@ bool AppInit(int argc, char* argv[])
     } catch (...) {
         PrintException(NULL, "AppInit()");
     }
+
     if (!fRet)
-        Shutdown(NULL);
+    {
+        Interrupt(threadGroup);
+        // threadGroup.join_all(); was left out intentionally here, because we didn't re-test all of
+        // the startup-failure cases to make sure they don't result in a hang due to some
+        // thread-blocking-waiting-for-another-thread-during-startup case
+    } else {
+        WaitForShutdown(&threadGroup);
+    }
+    Shutdown(NULL);
+
     return fRet;
 }
 
@@ -615,6 +652,11 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     // ********************************************************* Step 6: network initialization
 
+    assert(!g_connman);
+    g_connman = std::unique_ptr<CConnman>(new CConnman(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max())));
+    CConnman& connman = *g_connman;
+    shared_connman = &connman;
+
     int nSocksVersion = GetArg("-socks", 5);
 
     if (nSocksVersion != 4 && nSocksVersion != 5)
@@ -721,8 +763,8 @@ bool AppInit2(boost::thread_group& threadGroup)
             InitError(_("Unable to sign checkpoint, wrong checkpointkey?\n"));
     }
 
-    BOOST_FOREACH(string strDest, mapMultiArgs["-seednode"])
-        AddOneShot(strDest);
+    BOOST_FOREACH(const std::string& strDest, mapMultiArgs["-seednode"])
+        connman.AddOneShot(strDest);
 
     // ********************************************************* Step 7: load blockchain
 
@@ -1005,9 +1047,10 @@ bool AppInit2(boost::thread_group& threadGroup)
     LogPrintf("mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
     LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain->mapAddressBook.size());
 
-    if (!NewThread(StartNode, NULL))
+    if (!connman.Start()) {
         InitError(_("Error: could not start node"));
-    // StartNode(threadGroup);
+        return false;
+    }
 
     if (fServer)
         NewThread(ThreadRPCServer, NULL);

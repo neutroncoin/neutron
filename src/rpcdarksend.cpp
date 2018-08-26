@@ -285,7 +285,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
         if(activeMasternode.status != MASTERNODE_REMOTELY_ENABLED && activeMasternode.status != MASTERNODE_IS_CAPABLE){
             activeMasternode.status = MASTERNODE_NOT_PROCESSED; // TODO: consider better way
             std::string errorMessage;
-            activeMasternode.ManageStatus();
+            activeMasternode.ManageStatus(*g_connman);
             pwalletMain->Lock();
         }
 
@@ -495,7 +495,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
         CService addr = CService(strAddress);
 
-        if(ConnectNode((CAddress)addr, NULL, true)){
+        if(g_connman->ConnectNode((CAddress)addr, NULL, true)){
             return "successfully connected";
         } else {
             return "error connecting";

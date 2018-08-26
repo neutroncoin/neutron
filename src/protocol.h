@@ -10,10 +10,13 @@
 #ifndef __INCLUDED_PROTOCOL_H__
 #define __INCLUDED_PROTOCOL_H__
 
+#include "netaddress.h"
 #include "serialize.h"
-#include "netbase.h"
-#include <string>
 #include "uint256.h"
+#include "version.h"
+
+#include <stdint.h>
+#include <string>
 
 extern bool fTestNet;
 static inline unsigned short GetDefaultPort(const bool testnet = fTestNet)

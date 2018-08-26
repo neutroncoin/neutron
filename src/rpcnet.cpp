@@ -90,43 +90,27 @@ UniValue addnode(const UniValue& params, bool fHelp)
             + HelpExampleRpc("addnode", "\"192.168.0.6:32001\", \"onetry\"")
         );
 
-    string strNode = params[0].get_str();
+    if(!g_connman)
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
+
+    std::string strNode = params[0].get_str();
 
     if (strCommand == "onetry")
     {
         CAddress addr;
-        ConnectNode(addr, strNode.c_str());
+        g_connman->OpenNetworkConnection(addr, NULL, strNode.c_str());
         return NullUniValue;
-    }
-
-    CNode* connectedNode = NULL;
-    LOCK(cs_vNodes);
-    BOOST_FOREACH(CNode* pnode, vNodes) {
-        if (strNode == pnode->addrName) {
-            connectedNode = pnode;
-        }
     }
 
     if (strCommand == "add")
     {
-        if (connectedNode != NULL) {
+        if(!g_connman->AddNode(strNode))
             throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Node already added");
-        }
-
-        CService addr = CService(strNode);
-        if(ConnectNode((CAddress)addr, NULL, true)){
-            LogPrintf("successfully connected to node\n");
-        } else {
-            LogPrintf("error connecting to node\n");
-        }
     }
     else if(strCommand == "remove")
     {
-        if (connectedNode == NULL) {
+        if(!g_connman->RemoveAddedNode(strNode))
             throw JSONRPCError(RPC_CLIENT_NODE_NOT_ADDED, "Error: Node has not been added.");
-        }
-
-        connectedNode->CloseSocketDisconnect();
     }
 
     return NullUniValue;
@@ -222,7 +206,7 @@ UniValue listbanned(const UniValue& params, bool fHelp)
                             );
 
     banmap_t banMap;
-    CNode::GetBanned(banMap);
+    g_connman->GetBanned(banMap);
 
     UniValue bannedAddresses(UniValue::VARR);
     for (banmap_t::iterator it = banMap.begin(); it != banMap.end(); it++)
@@ -250,8 +234,7 @@ UniValue clearbanned(const UniValue& params, bool fHelp)
                             + HelpExampleRpc("clearbanned", "")
                             );
 
-    CNode::ClearBanned();
-    // NTRN TODO - store banlist to disk
+    g_connman->ClearBanned();
 
     return NullUniValue;
 }

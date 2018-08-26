@@ -14,8 +14,10 @@ namespace boost {
 } // namespace boost
 
 extern CWallet* pwalletMain;
+extern CConnman* shared_connman;
 
 void StartShutdown();
+bool ShutdownRequested();
 /** Interrupt threads */
 void Interrupt(boost::thread_group& threadGroup);
 void Shutdown(void* parg);

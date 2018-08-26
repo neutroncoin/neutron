@@ -10,6 +10,7 @@
 #include "db.h"
 #include "init.h"
 #include "miner.h"
+#include "netbase.h"
 #include "strlcpy.h"
 #include "wallet.h"
 #include "ui_interface.h"
@@ -34,13 +35,9 @@
 #include <math.h>
 
 void ThreadMessageHandler2(void* parg);
-void ThreadSocketHandler2(void* parg);
-void ThreadOpenConnections2(void* parg);
-void ThreadOpenAddedConnections2(void* parg);
 #ifdef USE_UPNP
 void ThreadMapPort2(void* parg);
 #endif
-bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
 
 
 struct LocalServiceInfo {
@@ -83,10 +80,9 @@ CCriticalSection cs_setservAddNodeAddresses;
 NodeId nLastNodeId = 0;
 CCriticalSection cs_nLastNodeId;
 
-static CSemaphore *semOutbound = NULL;
 boost::condition_variable messageHandlerCondition;
 
-void AddOneShot(string strDest)
+void CConnman::AddOneShot(const std::string& strDest)
 {
     LOCK(cs_vOneShots);
     vOneShots.push_back(strDest);
@@ -353,7 +349,7 @@ CNode* FindNode(const CService& addr)
     return NULL;
 }
 
-CNode* ConnectNode(CAddress addrConnect, const char *pszDest, bool darkSendMaster)
+CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool darkSendMaster)
 {
     if (pszDest == NULL) {
         if (IsLocal(addrConnect))
@@ -425,6 +421,34 @@ void CNode::CloseSocketDisconnect()
     }
 }
 
+bool CConnman::AddNode(const std::string& strNode)
+{
+    // check if node already added
+    CNode* pnode = FindNode(strNode);
+    if (pnode != NULL)
+        return false;
+
+    CService addr = CService(strNode);
+    if(shared_connman->ConnectNode((CAddress)addr, NULL, true)){
+        LogPrintf("successfully connected to node\n");
+    } else {
+        LogPrintf("error connecting to node\n");
+    }
+
+    return true;
+}
+
+bool CConnman::RemoveAddedNode(const std::string& strNode)
+{
+    CNode* pnode = FindNode(strNode);
+    if (pnode != NULL) {
+        pnode->CloseSocketDisconnect();
+        return true;
+    }
+
+    return false;
+}
+
 void CNode::Cleanup()
 {
 }
@@ -446,18 +470,13 @@ void CNode::PushVersion()
 
 
 
-banmap_t CNode::setBanned;
-CCriticalSection CNode::cs_setBanned;
-
-// NTRN TODO - create CConnman class and move this method there eventually
-void CNode::ClearBanned()
+void CConnman::ClearBanned()
 {
     LOCK(cs_setBanned);
     setBanned.clear();
 }
 
-// NTRN TODO - create CConnman class and move this method there eventually
-bool CNode::IsBanned(CNetAddr ip)
+bool CConnman::IsBanned(CNetAddr ip)
 {
     bool fResult = false;
     {
@@ -473,8 +492,30 @@ bool CNode::IsBanned(CNetAddr ip)
     return fResult;
 }
 
-// NTRN TODO - create CConnman class and move this method there eventually
-bool CNode::Unban(const CNetAddr &addr) {
+void CConnman::Ban(const CNetAddr& addr, int64_t bantimeoffset) {
+    if (bantimeoffset <= 0)
+    {
+        bantimeoffset = GetArg("-bantime", 60*60*24);  // Default 24-hour ban
+    }
+
+    int64_t nBanUntil = GetTime()+bantimeoffset;
+    {
+        LOCK(cs_setBanned);
+        if (setBanned[addr] < nBanUntil) {
+            setBanned[addr] = nBanUntil;
+            setBannedIsDirty = true;
+        }
+        else
+            return;
+    }
+
+    CNode* pnode = FindNode((CNetAddr)addr);
+    if (pnode) {
+        pnode->CloseSocketDisconnect();
+    }
+}
+
+bool CConnman::Unban(const CNetAddr &addr) {
     // NTRN TODO - not implemented yet
     // CSubNet subNet(addr);
     // return Unban(subNet);
@@ -487,29 +528,50 @@ bool CNode::Unban(const CNetAddr &addr) {
     return true;
 }
 
-// // NTRN TODO - create CConnman class and move this method there eventually
-// bool CNode::Unban(const CSubNet &subNet)
-// {
-//     {
-//         LOCK(cs_setBanned);
-//         if (!setBanned.erase(subNet))
-//             return false;
-//     }
-//     return true;
-// }
-
-// NTRN TODO - create CConnman class and move this method there eventually
-void CNode::GetBanned(banmap_t &banMap)
+void CConnman::GetBanned(banmap_t &banMap)
 {
     LOCK(cs_setBanned);
     banMap = setBanned; //create a thread safe copy
 }
 
-// NTRN TODO - create CConnman class and move this method there eventually
-void CNode::SetBanned(const banmap_t &banMap)
+void CConnman::SetBanned(const banmap_t &banMap)
 {
     LOCK(cs_setBanned);
     setBanned = banMap;
+    setBannedIsDirty = true;
+}
+
+void CConnman::SweepBanned()
+{
+    int64_t now = GetTime();
+
+    LOCK(cs_setBanned);
+    banmap_t::iterator it = setBanned.begin();
+    while(it != setBanned.end())
+    {
+        CNetAddr addr = (*it).first;
+        int64_t nBanUntil = (*it).second;
+        if(now > nBanUntil)
+        {
+            setBanned.erase(it++);
+            setBannedIsDirty = true;
+            LogPrintf("%s: Removed banned node ip/addr from banlist.dat: %s\n", __func__, addr.ToString());
+        }
+        else
+            ++it;
+    }
+}
+
+bool CConnman::BannedSetIsDirty()
+{
+    LOCK(cs_setBanned);
+    return setBannedIsDirty;
+}
+
+void CConnman::SetBannedSetDirty(bool dirty)
+{
+    LOCK(cs_setBanned); //reuse setBanned lock for the isDirty flag
+    setBannedIsDirty = dirty;
 }
 
 bool CNode::Misbehaving(int howmuch)
@@ -523,14 +585,10 @@ bool CNode::Misbehaving(int howmuch)
     nMisbehavior += howmuch;
     if (nMisbehavior >= GetArg("-banscore", 100))
     {
-        int64_t banTime = GetTime()+GetArg("-bantime", 60*60*24);  // Default 24-hour ban
         LogPrintf("Misbehaving: %s (%d -> %d) DISCONNECTING\n", addr.ToString().c_str(), nMisbehavior-howmuch, nMisbehavior);
         {
-            LOCK(cs_setBanned);
-            if (setBanned[addr] < banTime)
-                setBanned[addr] = banTime;
+            g_connman->Ban(addr, 0);
         }
-        CloseSocketDisconnect();
         return true;
     } else
         LogPrintf("Misbehaving: %s (%d -> %d)\n", addr.ToString().c_str(), nMisbehavior-howmuch, nMisbehavior);
@@ -688,7 +746,7 @@ void SocketSendData(CNode *pnode)
     pnode->vSendMsg.erase(pnode->vSendMsg.begin(), it);
 }
 
-void ThreadSocketHandler(void* parg)
+void CConnman::ThreadSocketHandler()
 {
     // Make this thread recognisable as the networking thread
     RenameThread("Neutron-net");
@@ -696,7 +754,7 @@ void ThreadSocketHandler(void* parg)
     try
     {
         vnThreadsRunning[THREAD_SOCKETHANDLER]++;
-        ThreadSocketHandler2(parg);
+        ThreadSocketHandler2();
         vnThreadsRunning[THREAD_SOCKETHANDLER]--;
     }
     catch (std::exception& e) {
@@ -709,7 +767,7 @@ void ThreadSocketHandler(void* parg)
     LogPrintf("ThreadSocketHandler exited\n");
 }
 
-void ThreadSocketHandler2(void* parg)
+void CConnman::ThreadSocketHandler2()
 {
     LogPrintf("ThreadSocketHandler started\n");
     list<CNode*> vNodesDisconnected;
@@ -883,7 +941,7 @@ void ThreadSocketHandler2(void* parg)
             {
                 CloseSocket(hSocket);
             }
-            else if (CNode::IsBanned(addr))
+            else if (IsBanned(addr))
             {
                 LogPrintf("connection from %s dropped (banned)\n", addr.ToString().c_str());
                 CloseSocket(hSocket);
@@ -1008,12 +1066,6 @@ void ThreadSocketHandler2(void* parg)
         MilliSleep(10);
     }
 }
-
-
-
-
-
-
 
 
 
@@ -1181,7 +1233,7 @@ const std::vector<CDNSSeedData>& DNSSeeds() {
     return vSeeds;
 }
 
-void ThreadDNSAddressSeed(void* parg)
+void CConnman::ThreadDNSAddressSeed()
 {
     LogPrintf("ThreadDNSAddressSeed - started\n");
 
@@ -1280,7 +1332,7 @@ void ThreadDumpAddress(void* parg)
     LogPrintf("ThreadDumpAddress exited\n");
 }
 
-void ThreadOpenConnections(void* parg)
+void CConnman::ThreadOpenConnections()
 {
     // Make this thread recognisable as the connection opening thread
     RenameThread("Neutron-opencon");
@@ -1288,7 +1340,7 @@ void ThreadOpenConnections(void* parg)
     try
     {
         vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
-        ThreadOpenConnections2(parg);
+        ThreadOpenConnections2();
         vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
     }
     catch (std::exception& e) {
@@ -1301,7 +1353,7 @@ void ThreadOpenConnections(void* parg)
     LogPrintf("ThreadOpenConnections exited\n");
 }
 
-void static ProcessOneShot()
+void CConnman::ProcessOneShot()
 {
     string strDest;
     {
@@ -1339,7 +1391,7 @@ void static ThreadStakeMiner(void* parg)
     LogPrintf("ThreadStakeMiner exiting, %d threads remaining\n", vnThreadsRunning[THREAD_STAKE_MINER]);
 }
 
-void ThreadOpenConnections2(void* parg)
+void CConnman::ThreadOpenConnections2()
 {
     LogPrintf("ThreadOpenConnections started\n");
 
@@ -1349,7 +1401,7 @@ void ThreadOpenConnections2(void* parg)
         for (int64_t nLoop = 0;; nLoop++)
         {
             ProcessOneShot();
-            BOOST_FOREACH(string strAddr, mapMultiArgs["-connect"])
+            BOOST_FOREACH(const std::string& strAddr, mapMultiArgs["-connect"])
             {
                 CAddress addr;
                 OpenNetworkConnection(addr, NULL, strAddr.c_str());
@@ -1461,7 +1513,7 @@ void ThreadOpenConnections2(void* parg)
     }
 }
 
-void ThreadOpenAddedConnections(void* parg)
+void CConnman::ThreadOpenAddedConnections()
 {
     // Make this thread recognisable as the connection opening thread
     RenameThread("Neutron-opencon");
@@ -1469,7 +1521,7 @@ void ThreadOpenAddedConnections(void* parg)
     try
     {
         vnThreadsRunning[THREAD_ADDEDCONNECTIONS]++;
-        ThreadOpenAddedConnections2(parg);
+        ThreadOpenAddedConnections2();
         vnThreadsRunning[THREAD_ADDEDCONNECTIONS]--;
     }
     catch (std::exception& e) {
@@ -1482,7 +1534,7 @@ void ThreadOpenAddedConnections(void* parg)
     LogPrintf("ThreadOpenAddedConnections exited\n");
 }
 
-void ThreadOpenAddedConnections2(void* parg)
+void CConnman::ThreadOpenAddedConnections2()
 {
     LogPrintf("ThreadOpenAddedConnections started\n");
 
@@ -1491,7 +1543,7 @@ void ThreadOpenAddedConnections2(void* parg)
 
     if (HaveNameProxy()) {
         while(!fShutdown) {
-            BOOST_FOREACH(string& strAddNode, mapMultiArgs["-addnode"]) {
+            BOOST_FOREACH(const std::string& strAddNode, mapMultiArgs["-addnode"]) {
                 CAddress addr;
                 CSemaphoreGrant grant(*semOutbound);
                 OpenNetworkConnection(addr, &grant, strAddNode.c_str());
@@ -1555,7 +1607,7 @@ void ThreadOpenAddedConnections2(void* parg)
 
 // NTRN TODO - create CConnman class and move this method there eventually
 // if successful, this moves the passed grant to the constructed node
-bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)
+bool CConnman::OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound, const char *strDest, bool fOneShot)
 {
     //
     // Initiate outbound network connection
@@ -1564,7 +1616,7 @@ bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOu
         return false;
     if (!strDest)
         if (IsLocal(addrConnect) ||
-            FindNode((CNetAddr)addrConnect) || CNode::IsBanned(addrConnect) ||
+            FindNode((CNetAddr)addrConnect) || IsBanned(addrConnect) ||
             FindNode(addrConnect.ToStringIPPort().c_str()))
             return false;
     if (strDest && FindNode(strDest))
@@ -1855,7 +1907,34 @@ void Discover()
 #endif
 }
 
-void StartNode(void* parg)
+
+CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In) :
+        nSeed0(nSeed0In), nSeed1(nSeed1In)
+{
+//    fNetworkActive = true;
+    setBannedIsDirty = false;
+//    fAddressesInitialized = false;
+//    nLastNodeId = 0;
+//    nSendBufferMaxSize = 0;
+//    nReceiveFloodSize = 0;
+   semOutbound = NULL;
+//    semAddnode = NULL;
+//    semMasternodeOutbound = NULL;
+//    nMaxConnections = 0;
+//    nMaxOutbound = 0;
+//    nMaxAddnode = 0;
+//    nBestHeight = 0;
+//    clientInterface = NULL;
+   flagInterruptMsgProc = false;
+}
+
+CConnman::~CConnman()
+{
+    // Interrupt();
+    // Stop();
+}
+
+bool CConnman::Start()
 {
     // Make this thread recognisable as the startup thread
     RenameThread("Neutron-start");
@@ -1892,50 +1971,123 @@ void StartNode(void* parg)
     if (!GetBoolArg("-dnsseed", true))
         LogPrintf("DNS seeding disabled\n");
     else
-        if (!NewThread(ThreadDNSAddressSeed, NULL))
-            LogPrintf("Error: NewThread(ThreadDNSAddressSeed) failed\n");
+        threadDNSAddressSeed = std::thread(&TraceThread<std::function<void()> >, "dnsseed", std::function<void()>(std::bind(&CConnman::ThreadDNSAddressSeed, this)));
 
     // Map ports with UPnP
     if (fUseUPnP)
         MapPort();
 
     // Send and receive from sockets, accept connections
-    if (!NewThread(ThreadSocketHandler, NULL))
-        LogPrintf("Error: NewThread(ThreadSocketHandler) failed\n");
+    threadSocketHandler = std::thread(&TraceThread<std::function<void()> >, "net", std::function<void()>(std::bind(&CConnman::ThreadSocketHandler, this)));
 
     // Initiate outbound connections from -addnode
-    if (!NewThread(ThreadOpenAddedConnections, NULL))
-        LogPrintf("Error: NewThread(ThreadOpenAddedConnections) failed\n");
+    threadOpenAddedConnections = std::thread(&TraceThread<std::function<void()> >, "addcon", std::function<void()>(std::bind(&CConnman::ThreadOpenAddedConnections, this)));
 
-    // Initiate outbound connections
-    if (!NewThread(ThreadOpenConnections, NULL))
-        LogPrintf("Error: NewThread(ThreadOpenConnections) failed\n");
+    threadOpenConnections = std::thread(&TraceThread<std::function<void()> >, "opencon", std::function<void()>(std::bind(&CConnman::ThreadOpenConnections, this)));
 
+
+    // NTRN TODO: convert this to use std::thread
     // Process messages
     if (!NewThread(ThreadMessageHandler, NULL))
         LogPrintf("Error: NewThread(ThreadMessageHandler) failed\n");
 
+    // NTRN TODO: convert this to use std::thread
     // Dump network addresses
     if (!NewThread(ThreadDumpAddress, NULL))
         LogPrintf("Error; NewThread(ThreadDumpAddress) failed\n");
 
+    // NTRN TODO: convert this to use std::thread
     // Mine proof-of-stake blocks in the background
     if (!GetBoolArg("-staking", true))
         LogPrintf("Staking disabled\n");
     else
         if (!NewThread(ThreadStakeMiner, pwalletMain))
             LogPrintf("Error: NewThread(ThreadStakeMiner) failed\n");
+
+    return true;
 }
 
-bool StopNode()
+void CConnman::Interrupt()
 {
-    LogPrintf("StopNode()\n");
+    {
+        std::lock_guard<std::mutex> lock(mutexMsgProc);
+        flagInterruptMsgProc = true;
+    }
+    messageHandlerCondition.notify_all();
+
+    // interruptNet();
+    // InterruptSocks5(true);
+
+    // if (semOutbound) {
+    //     for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++) {
+    //         semOutbound->post();
+    //     }
+    // }
+
+    // if (semAddnode) {
+    //     for (int i=0; i<nMaxAddnode; i++) {
+    //         semAddnode->post();
+    //     }
+    // }
+}
+
+void CConnman::Stop()
+{
+    LogPrintf("CConnman::Stop()\n");
+
+    // if (threadMessageHandler.joinable())
+    //     threadMessageHandler.join();
+    if (threadOpenConnections.joinable())
+        threadOpenConnections.join();
+    if (threadOpenAddedConnections.joinable())
+        threadOpenAddedConnections.join();
+    if (threadDNSAddressSeed.joinable())
+        threadDNSAddressSeed.join();
+    if (threadSocketHandler.joinable())
+        threadSocketHandler.join();
+
+    // if (fAddressesInitialized)
+    // {
+    //     DumpData();
+    //     fAddressesInitialized = false;
+    // }
+
+    // Close sockets
+    for (CNode* pnode : vNodes)
+        pnode->CloseSocketDisconnect();
+    // for (ListenSocket& hListenSocket : vhListenSocket)
+    //     if (hListenSocket.socket != INVALID_SOCKET)
+    //         if (!CloseSocket(hListenSocket.socket))
+    //             LogPrintf("CloseSocket(hListenSocket) failed with error %s\n", NetworkErrorString(WSAGetLastError()));
+
+    // // clean up some globals (to help leak detection)
+    // for (CNode *pnode : vNodes) {
+    //     DeleteNode(pnode);
+    // }
+    // for (CNode *pnode : vNodesDisconnected) {
+    //     DeleteNode(pnode);
+    // }
+    // vNodes.clear();
+    // vNodesDisconnected.clear();
+    // vhListenSocket.clear();
+    // semOutbound.reset();
+    // semAddnode.reset();
+}
+
+void CConnman::StopNode()
+{
+    Stop();
+
+    LogPrintf("CConnman::StopNode()\n");
+
     fShutdown = true;
     nTransactionsUpdated++;
     int64_t nStart = GetTime();
+
     if (semOutbound)
         for (int i=0; i<MAX_OUTBOUND_CONNECTIONS; i++)
             semOutbound->post();
+
     do
     {
         int nThreadsRunning = 0;
@@ -1947,6 +2099,7 @@ bool StopNode()
             break;
         MilliSleep(20);
     } while(true);
+
     if (vnThreadsRunning[THREAD_SOCKETHANDLER] > 0) LogPrintf("ThreadSocketHandler still running\n");
     if (vnThreadsRunning[THREAD_OPENCONNECTIONS] > 0) LogPrintf("ThreadOpenConnections still running\n");
     if (vnThreadsRunning[THREAD_MESSAGEHANDLER] > 0) LogPrintf("ThreadMessageHandler still running\n");
@@ -1963,7 +2116,6 @@ bool StopNode()
         MilliSleep(20);
     MilliSleep(50);
     DumpAddresses();
-    return true;
 }
 
 class CNetCleanup

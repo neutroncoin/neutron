@@ -1,6 +1,8 @@
 #ifndef OPTIONSMODEL_H
 #define OPTIONSMODEL_H
 
+#include "netbase.h"
+
 #include <QAbstractListModel>
 
 extern bool fUseDarkTheme;
