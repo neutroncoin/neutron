@@ -2198,7 +2198,7 @@ void ThreadCheckDarkSendPool(void* parg)
             }
 
             if(nTick % MASTERNODE_PING_SECONDS == 0){
-                activeMasternode.ManageStatus();
+                activeMasternode.ManageStatus(*g_connman);
             }
 
             // TODO: NTRN - disabled for now
