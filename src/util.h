@@ -204,6 +204,7 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map
 #ifdef WIN32
 boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
+int RaiseFileDescriptorLimit(int nMinFD);
 void ShrinkDebugFile();
 void runCommand(std::string strCommand);
 

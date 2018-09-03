@@ -16,6 +16,7 @@
 #include "random.h"
 #include "script.h"
 #include "streams.h"
+#include "threadinterrupt.h"
 #include "timedata.h"
 #include "utiltime.h"
 
@@ -38,12 +39,16 @@ class CNode;
 class CBlockIndex;
 extern int nBestHeight;
 
+/** Run the feeler connection loop once every 2 minutes or 120 seconds. **/
+static const int FEELER_INTERVAL = 120;
 /** The maximum number of new addresses to accumulate before announcing. */
 static const unsigned int MAX_ADDR_TO_SEND = 1000;
 /** Maximum length of incoming protocol messages (no message over 2 MiB is currently acceptable). */
 static const unsigned int MAX_PROTOCOL_MESSAGE_LENGTH = 2 * 1024 * 1024;
 /** Maximum number of automatic outgoing nodes */
 static const int MAX_OUTBOUND_CONNECTIONS = 16;
+/** Maximum number of addnode outgoing nodes */
+static const int MAX_ADDNODE_CONNECTIONS = 8;
 /** -listen default */
 static const bool DEFAULT_LISTEN = true;
 /** -upnp default */
@@ -52,6 +57,8 @@ static const bool DEFAULT_UPNP = USE_UPNP;
 #else
 static const bool DEFAULT_UPNP = false;
 #endif
+/** The maximum number of peer connections to maintain. */
+static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
@@ -71,6 +78,15 @@ bool StopNode();
 void SocketSendData(CNode *pnode);
 
 typedef int NodeId;
+
+#ifdef WIN32
+// Win32 LevelDB doesn't use filedescriptors, and the ones used for
+// accessing block files don't count towards the fd_set size limit
+// anyway.
+#define MIN_CORE_FILEDESCRIPTORS 0
+#else
+#define MIN_CORE_FILEDESCRIPTORS 150
+#endif
 
 enum
 {
@@ -185,7 +201,7 @@ public:
     };
     CConnman(uint64_t seed0, uint64_t seed1);
     ~CConnman();
-    bool Start();
+    bool Start(Options connOptions);
     void Stop();
     void StopNode();
     void Interrupt();
@@ -531,8 +547,8 @@ private:
     CSemaphore *semOutbound;
     // CSemaphore *semAddnode;
     // CSemaphore *semMasternodeOutbound;
-    // int nMaxConnections;
-    // int nMaxOutbound;
+    int nMaxConnections;
+    int nMaxOutbound;
     // int nMaxAddnode;
     // int nMaxFeeler;
     // std::atomic<int> nBestHeight;
@@ -548,7 +564,7 @@ private:
     std::mutex mutexMsgProc;
     std::atomic<bool> flagInterruptMsgProc;
 
-    // CThreadInterrupt interruptNet;
+    CThreadInterrupt interruptNet;
 
     std::thread threadDNSAddressSeed;
     std::thread threadSocketHandler;
@@ -1092,5 +1108,10 @@ public:
     bool Write(const CAddrMan& addr);
     bool Read(CAddrMan& addr);
 };
+
+
+
+/** Return a timestamp in the future (in microseconds) for exponentially distributed events. */
+int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds);
 
 #endif // BITCOIN_NET_H

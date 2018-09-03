@@ -1422,43 +1422,52 @@ void CConnman::ThreadOpenConnections2()
     LogPrintf("ThreadOpenConnections started\n");
 
     // Connect to specific addresses
-    if (mapArgs.count("-connect") && mapMultiArgs["-connect"].size() > 0)
+    if (mapMultiArgs.count("-connect") && mapMultiArgs.at("-connect").size() > 0)
     {
         for (int64_t nLoop = 0;; nLoop++)
         {
             ProcessOneShot();
-            BOOST_FOREACH(const std::string& strAddr, mapMultiArgs["-connect"])
+            BOOST_FOREACH(const std::string& strAddr, mapMultiArgs.at("-connect"))
             {
                 CAddress addr;
                 OpenNetworkConnection(addr, NULL, strAddr.c_str());
                 for (int i = 0; i < 10 && i < nLoop; i++)
                 {
-                    MilliSleep(500);
-                    if (fShutdown)
+                    if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
                         return;
                 }
             }
-            MilliSleep(500);
+            if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
+                return;
         }
     }
 
     // Initiate network connections
     int64_t nStart = GetTime();
-    while (true)
+
+    // Minimum time before next feeler connection (in microseconds).
+    int64_t nNextFeeler = PoissonNextSend(nStart*1000*1000, FEELER_INTERVAL);
+    while (!interruptNet)
     {
         ProcessOneShot();
 
-        vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-        MilliSleep(500);
-        vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
-        if (fShutdown)
+        // vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
+        // MilliSleep(500);
+        // vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
+        // if (fShutdown)
+        //     return;
+
+        if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
             return;
 
+        // vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
+        // CSemaphoreGrant grant(*semOutbound);
+        // vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
+        // if (fShutdown)
+        //     return;
 
-        vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
         CSemaphoreGrant grant(*semOutbound);
-        vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
-        if (fShutdown)
+        if (interruptNet)
             return;
 
         // Add seed nodes
@@ -1488,22 +1497,45 @@ void CConnman::ThreadOpenConnections2()
 
         // Only connect out to one peer per network group (/16 for IPv4).
         // Do this here so we don't have to critsect vNodes inside mapAddresses critsect.
+        // This is only done for mainnet and testnet
         int nOutbound = 0;
-        set<vector<unsigned char> > setConnected;
+        std::set<std::vector<unsigned char> > setConnected;
         {
             LOCK(cs_vNodes);
             BOOST_FOREACH(CNode* pnode, vNodes) {
-                if (!pnode->fInbound) {
+                if (!pnode->fInbound && !pnode->fMasternode) {
                     setConnected.insert(pnode->addr.GetGroup());
                     nOutbound++;
                 }
             }
         }
 
-        int64_t nANow = GetAdjustedTime();
+        // Feeler Connections
+        //
+        // Design goals:
+        //  * Increase the number of connectable addresses in the tried table.
+        //
+        // Method:
+        //  * Choose a random address from new and attempt to connect to it if we can connect
+        //    successfully it is added to tried.
+        //  * Start attempting feeler connections only after node finishes making outbound
+        //    connections.
+        //  * Only make a feeler connection once every few minutes.
+        //
+        bool fFeeler = false;
+        if (nOutbound >= nMaxOutbound) {
+            int64_t nTime = GetTimeMicros(); // The current time right now (in microseconds).
+            if (nTime > nNextFeeler) {
+                nNextFeeler = PoissonNextSend(nTime, FEELER_INTERVAL);
+                fFeeler = true;
+            } else {
+                continue;
+            }
+        }
 
+        int64_t nANow = GetAdjustedTime();
         int nTries = 0;
-        while (true)
+        while (!interruptNet)
         {
             // use an nUnkBias between 10 (no outgoing connections) and 90 (8 outgoing connections)
             CAddress addr = addrman.Select(10 + min(nOutbound,8)*10);
@@ -1946,8 +1978,8 @@ CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In) :
    semOutbound = NULL;
 //    semAddnode = NULL;
 //    semMasternodeOutbound = NULL;
-//    nMaxConnections = 0;
-//    nMaxOutbound = 0;
+   nMaxConnections = 0;
+   nMaxOutbound = 0;
 //    nMaxAddnode = 0;
 //    nBestHeight = 0;
 //    clientInterface = NULL;
@@ -1960,10 +1992,13 @@ CConnman::~CConnman()
     // Stop();
 }
 
-bool CConnman::Start()
+bool CConnman::Start(Options connOptions)
 {
     // Make this thread recognisable as the startup thread
     RenameThread("Neutron-start");
+
+    nMaxConnections = connOptions.nMaxConnections;
+    nMaxOutbound = std::min((connOptions.nMaxOutbound), nMaxConnections);
 
     uiInterface.InitMessage(_("Loading addresses..."));
     // Load addresses for peers.dat
@@ -1993,6 +2028,8 @@ bool CConnman::Start()
     //
     // Start threads
     //
+    InterruptSocks5(false);
+    interruptNet.reset();
 
     if (!GetBoolArg("-dnsseed", true))
         LogPrintf("DNS seeding disabled\n");
@@ -2041,8 +2078,8 @@ void CConnman::Interrupt()
     }
     messageHandlerCondition.notify_all();
 
-    // interruptNet();
-    // InterruptSocks5(true);
+    interruptNet();
+    InterruptSocks5(true);
 
     // if (semOutbound) {
     //     for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++) {
@@ -2059,7 +2096,7 @@ void CConnman::Interrupt()
 
 void CConnman::Stop()
 {
-    LogPrintf("CConnman::Stop()\n");
+    LogPrintf("CConnman::Stop() started\n");
 
     // if (threadMessageHandler.joinable())
     //     threadMessageHandler.join();
@@ -2098,13 +2135,15 @@ void CConnman::Stop()
     // vhListenSocket.clear();
     // semOutbound.reset();
     // semAddnode.reset();
+
+    LogPrintf("CConnman::Stop() finished\n");
 }
 
 void CConnman::StopNode()
 {
     Stop();
 
-    LogPrintf("CConnman::StopNode()\n");
+    LogPrintf("CConnman::StopNode() started\n");
 
     fShutdown = true;
     nTransactionsUpdated++;
@@ -2142,6 +2181,8 @@ void CConnman::StopNode()
         MilliSleep(20);
     MilliSleep(50);
     DumpAddresses();
+
+    LogPrintf("CConnman::StopNode() finished\n");
 }
 
 class CNetCleanup
@@ -2168,6 +2209,10 @@ public:
     }
 }
 instance_of_cnetcleanup;
+
+int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds) {
+    return nNow + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);
+}
 
 void RelayInv(CInv& inv)
 {
