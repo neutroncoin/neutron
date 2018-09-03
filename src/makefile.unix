@@ -137,6 +137,7 @@ OBJS= \
     obj/rpcblockchain.o \
     obj/rpcdarksend.o \
     obj/rpcrawtransaction.o \
+    obj/scheduler.o \
     obj/script.o \
     obj/scrypt.o \
     obj/scrypt-arm.o \

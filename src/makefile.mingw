@@ -81,6 +81,7 @@ OBJS= \
     obj/rpcwallet.o \
     obj/rpcblockchain.o \
     obj/rpcrawtransaction.o \
+    obj/scheduler.o \
     obj/script.o \
     obj/sync.o \
     obj/threadinterrupt.o \

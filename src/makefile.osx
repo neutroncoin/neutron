@@ -62,6 +62,7 @@ LIBS += \
  -lboost_filesystem-mt \
  -lboost_program_options-mt \
  -lboost_thread-mt \
+ -lboost_chrono-mt \
  -lssl \
  -lcrypto \
  -lz
@@ -114,6 +115,7 @@ OBJS= \
     obj/rpcblockchain.o \
     obj/rpcdarksend.o \
     obj/rpcrawtransaction.o \
+    obj/scheduler.o \
     obj/script.o \
     obj/scrypt.o \
     obj/scrypt-arm.o \
