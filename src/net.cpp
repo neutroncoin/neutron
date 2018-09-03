@@ -481,7 +481,24 @@ bool CConnman::IsBanned(CNetAddr ip)
     bool fResult = false;
     {
         LOCK(cs_setBanned);
-        std::map<CNetAddr, int64_t>::iterator i = setBanned.find(ip);
+        for (banmap_t::iterator it = setBanned.begin(); it != setBanned.end(); it++)
+        {
+            CSubNet subNet = (*it).first;
+            int64_t t = (*it).second;
+
+            if(subNet.Match(ip) && GetTime() < t)
+                fResult = true;
+        }
+    }
+    return fResult;
+}
+
+bool CConnman::IsBanned(CSubNet subnet)
+{
+    bool fResult = false;
+    {
+        LOCK(cs_setBanned);
+        banmap_t::iterator i = setBanned.find(subnet);
         if (i != setBanned.end())
         {
             int64_t t = (*i).second;
@@ -493,36 +510,45 @@ bool CConnman::IsBanned(CNetAddr ip)
 }
 
 void CConnman::Ban(const CNetAddr& addr, int64_t bantimeoffset) {
+    CSubNet subNet(addr);
+    Ban(subNet, bantimeoffset);
+}
+
+void CConnman::Ban(const CSubNet& subNet, int64_t bantimeoffset) {
     if (bantimeoffset <= 0)
     {
         bantimeoffset = GetArg("-bantime", 60*60*24);  // Default 24-hour ban
     }
-
     int64_t nBanUntil = GetTime()+bantimeoffset;
+
     {
         LOCK(cs_setBanned);
-        if (setBanned[addr] < nBanUntil) {
-            setBanned[addr] = nBanUntil;
+        if (setBanned[subNet] < nBanUntil) {
+            setBanned[subNet] = nBanUntil;
             setBannedIsDirty = true;
         }
         else
             return;
     }
 
-    CNode* pnode = FindNode((CNetAddr)addr);
-    if (pnode) {
-        pnode->CloseSocketDisconnect();
+    {
+        LOCK(cs_vNodes);
+        BOOST_FOREACH(CNode* pnode, vNodes) {
+            if (subNet.Match((CNetAddr)pnode->addr))
+                pnode->CloseSocketDisconnect();
+        }
     }
 }
 
 bool CConnman::Unban(const CNetAddr &addr) {
-    // NTRN TODO - not implemented yet
-    // CSubNet subNet(addr);
-    // return Unban(subNet);
+    CSubNet subNet(addr);
+    return Unban(subNet);
+}
 
+bool CConnman::Unban(const CSubNet &subNet) {
     {
         LOCK(cs_setBanned);
-        if (!setBanned.erase(addr))
+        if (!setBanned.erase(subNet))
             return false;
     }
     return true;
@@ -549,13 +575,13 @@ void CConnman::SweepBanned()
     banmap_t::iterator it = setBanned.begin();
     while(it != setBanned.end())
     {
-        CNetAddr addr = (*it).first;
+        CSubNet subNet = (*it).first;
         int64_t nBanUntil = (*it).second;
         if(now > nBanUntil)
         {
             setBanned.erase(it++);
             setBannedIsDirty = true;
-            LogPrintf("%s: Removed banned node ip/addr from banlist.dat: %s\n", __func__, addr.ToString());
+            LogPrintf("%s: Removed banned node ip/addr from banlist.dat: %s\n", __func__, subNet.ToString());
         }
         else
             ++it;

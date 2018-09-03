@@ -56,7 +56,7 @@ static const bool DEFAULT_UPNP = false;
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
 
-typedef std::map<CNetAddr, int64_t> banmap_t;
+typedef std::map<CSubNet, int64_t> banmap_t;
 
 bool RecvLine(SOCKET hSocket, std::string& strLine);
 bool GetMyExternalIP(CNetAddr& ipRet);
@@ -368,11 +368,12 @@ public:
     // // between nodes running old code and nodes running
     // // new code.
     void Ban(const CNetAddr& addr, int64_t bantimeoffset);
+    void Ban(const CSubNet& subNet, int64_t bantimeoffset);
     void ClearBanned(); // needed for unit testing
     bool IsBanned(CNetAddr ip);
-    // bool IsBanned(CSubNet subnet);
+    bool IsBanned(CSubNet subnet);
     bool Unban(const CNetAddr &ip);
-    // bool Unban(const CSubNet &ip);
+    bool Unban(const CSubNet &ip);
     void GetBanned(banmap_t &banmap);
     void SetBanned(const banmap_t &banmap);
 

@@ -166,29 +166,29 @@ UniValue setban(const UniValue& params, bool fHelp)
             "Not implemented yet\n");
 
 
-    CSubNet subNet;
-    CNetAddr netAddr;
-    bool isSubnet = false;
+   // CSubNet subNet;
+   // CNetAddr netAddr;
+   // bool isSubnet = false;
 
-    if (params[0].get_str().find("/") != string::npos)
-        isSubnet = true;
+   // if (params[0].get_str().find("/") != string::npos)
+   //     isSubnet = true;
 
-    if (!isSubnet)
-        netAddr = CNetAddr(params[0].get_str());
-    else
-        subNet = CSubNet(params[0].get_str());
+   // if (!isSubnet)
+   //     netAddr = CNetAddr(params[0].get_str());
+   // else
+   //     subNet = CSubNet(params[0].get_str());
 
-    if (! (isSubnet ? subNet.IsValid() : netAddr.IsValid()) )
-        throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Invalid IP/Subnet");
+   // if (! (isSubnet ? subNet.IsValid() : netAddr.IsValid()) )
+   //     throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Invalid IP/Subnet");
 
-    if (strCommand == "add")
-    {
-        // TODO
-    }
-    else if(strCommand == "remove")
-    {
-        // TODO
-    }
+   // if (strCommand == "add")
+   // {
+   //     // TODO
+   // }
+   // else if(strCommand == "remove")
+   // {
+   //     // TODO
+   // }
 
 
     return NullUniValue;
