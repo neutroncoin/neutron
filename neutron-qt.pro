@@ -187,6 +187,7 @@ HEADERS += src/activemasternode.h \
     src/streams.h \
     src/strlcpy.h \
     src/sync.h \
+    src/threadinterrupt.h \
     src/threadsafety.h \
     src/timedata.h \
     src/txdb.h \
@@ -291,6 +292,7 @@ SOURCES += src/activemasternode.cpp \
     src/scrypt-x86_64.S \
     src/spork.cpp \
     src/sync.cpp \
+    src/threadinterrupt.cpp \
     src/timedata.cpp \
     src/txmempool.cpp \
     src/util.cpp \

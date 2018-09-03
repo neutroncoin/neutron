@@ -144,6 +144,7 @@ OBJS= \
     obj/scrypt-x86_64.o \
     obj/spork.o \
     obj/sync.o \
+    obj/threadinterrupt.o \
     obj/timedata.o \
     obj/txmempool.o \
     obj/util.o \
