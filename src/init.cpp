@@ -1030,7 +1030,7 @@ bool AppInit2(boost::thread_group& threadGroup)
 
     darkSendPool.InitCollateralAddress();
 
-    NewThread(ThreadCheckDarkSendPool, NULL);
+    threadGroup.create_thread(boost::bind(&ThreadCheckDarkSend, boost::ref(*g_connman)));
 
 
     RandAddSeedPerfmon();
