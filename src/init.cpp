@@ -9,6 +9,7 @@
 #include "netbase.h"
 #include "noui.h"
 #include "init.h"
+#include "scheduler.h"
 #include "util.h"
 #include "utiltime.h"
 #include "ui_interface.h"
@@ -212,6 +213,7 @@ void HandleSIGHUP(int)
 bool AppInit(int argc, char* argv[])
 {
     boost::thread_group threadGroup;
+    CScheduler scheduler;
 
     bool fRet = false;
     try
@@ -255,7 +257,7 @@ bool AppInit(int argc, char* argv[])
             exit(ret);
         }
 
-        fRet = AppInit2(threadGroup);
+        fRet = AppInit2(threadGroup, scheduler);
     }
     catch (std::exception& e) {
         PrintException(&e, "AppInit()");
@@ -1107,6 +1109,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     CConnman::Options connOptions;
     connOptions.nMaxConnections = nMaxConnections;
     connOptions.nMaxOutbound = std::min(MAX_OUTBOUND_CONNECTIONS, connOptions.nMaxConnections);
+    connOptions.nMaxAddnode = MAX_ADDNODE_CONNECTIONS;
+    connOptions.nMaxFeeler = 1;
 
     if (!connman.Start(scheduler, connOptions)) {
         InitError(_("Error: could not start node"));
