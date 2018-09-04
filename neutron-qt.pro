@@ -180,6 +180,7 @@ HEADERS += src/activemasternode.h \
     src/pbkdf2.h \
     src/protocol.h \
     src/random.h \
+    src/scheduler.h \
     src/script.h \
     src/scrypt.h \
     src/serialize.h \
@@ -285,6 +286,7 @@ SOURCES += src/activemasternode.cpp \
     src/rpcnet.cpp \
     src/rpcrawtransaction.cpp \
     src/rpcwallet.cpp \
+    src/scheduler.cpp \
     src/script.cpp \
     src/scrypt.cpp \
     src/scrypt-arm.S \
@@ -537,8 +539,7 @@ LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
-windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
+LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX -lboost_chrono$$BOOST_LIB_SUFFIX
 
 contains(RELEASE, 1) {
     !windows:!macx {

@@ -14,6 +14,7 @@
 #include "main.h"
 #include "mruset.h"
 #include "random.h"
+#include "scheduler.h"
 #include "script.h"
 #include "streams.h"
 #include "threadinterrupt.h"
@@ -35,6 +36,7 @@
 class CTxIn;
 class CTxOut;
 class CRequestTracker;
+class CScheduler;
 class CNode;
 class CBlockIndex;
 extern int nBestHeight;
@@ -74,7 +76,6 @@ CNode* FindNode(const CService& ip);
 void MapPort();
 unsigned short GetListenPort();
 bool BindListenPort(const CService &bindAddr, std::string& strError=REF(std::string()));
-bool StopNode();
 void SocketSendData(CNode *pnode);
 
 typedef int NodeId;
@@ -142,7 +143,6 @@ enum threadId
     THREAD_UPNP,
     THREAD_DNSSEED,
     THREAD_ADDEDCONNECTIONS,
-    THREAD_DUMPADDRESS,
     THREAD_RPCHANDLER,
     THREAD_STAKE_MINER,
     THREAD_MINER,
@@ -201,9 +201,8 @@ public:
     };
     CConnman(uint64_t seed0, uint64_t seed1);
     ~CConnman();
-    bool Start(Options connOptions);
+    bool Start(CScheduler& scheduler, Options connOptions);
     void Stop();
-    void StopNode();
     void Interrupt();
     // bool BindListenPort(const CService &bindAddr, std::string& strError, bool fWhitelisted = false);
     // bool GetNetworkActive() const { return fNetworkActive; };
@@ -489,8 +488,8 @@ private:
     void SetBannedSetDirty(bool dirty=true);
     //!clean unused entries (if bantime has expired)
     void SweepBanned();
-    // void DumpAddresses();
-    // void DumpData();
+    void DumpAddresses();
+    void DumpData();
     // void DumpBanlist();
 
     // // Network stats
@@ -525,7 +524,7 @@ private:
     banmap_t setBanned;
     CCriticalSection cs_setBanned;
     bool setBannedIsDirty;
-    // bool fAddressesInitialized;
+    bool fAddressesInitialized;
     // CAddrMan addrman;
     // std::deque<std::string> vOneShots;
     // CCriticalSection cs_vOneShots;
@@ -545,12 +544,12 @@ private:
     // ServiceFlags nRelevantServices;
 
     CSemaphore *semOutbound;
-    // CSemaphore *semAddnode;
+    CSemaphore *semAddnode;
     // CSemaphore *semMasternodeOutbound;
     int nMaxConnections;
     int nMaxOutbound;
-    // int nMaxAddnode;
-    // int nMaxFeeler;
+    int nMaxAddnode;
+    int nMaxFeeler;
     // std::atomic<int> nBestHeight;
     // CClientUIInterface* clientInterface;
 

@@ -54,6 +54,34 @@ CConnman* shared_connman;
 // Shutdown
 //
 
+//
+// Thread management and startup/shutdown:
+//
+// The network-processing threads are all part of a thread group
+// created by AppInit() or the Qt main() function.
+//
+// A clean exit happens when StartShutdown() or the SIGTERM
+// signal handler sets fRequestShutdown, which triggers
+// the DetectShutdownThread(), which interrupts the main thread group.
+// DetectShutdownThread() then exits, which causes AppInit() to
+// continue (it .joins the shutdown thread).
+// Shutdown() is then
+// called to clean up database connections, and stop other
+// threads that should only be stopped after the main network-processing
+// threads have exited.
+//
+// Note that if running -daemon the parent process returns from AppInit2
+// before adding any threads to the threadGroup, so .join_all() returns
+// immediately and the parent exits from main().
+//
+// Shutdown for Qt is very similar, only it uses a QTimer to detect
+// fRequestShutdown getting set, and then does the normal Qt
+// shutdown thing.
+//
+
+std::atomic<bool> fRequestShutdown(false);
+std::atomic<bool> fRequestRestart(false);
+
 void WaitForShutdown(boost::thread_group* threadGroup)
 {
     bool fShutdown = ShutdownRequested();
@@ -80,6 +108,8 @@ void ExitTimeout(void* parg)
 
 void StartShutdown()
 {
+    fRequestShutdown = true;
+
 #ifdef QT_GUI
     // ensure we leave the Qt main loop for a clean GUI exit (Shutdown() is called in bitcoin.cpp afterwards)
     uiInterface.QueueShutdown();
@@ -96,67 +126,70 @@ bool ShutdownRequested()
 
 void Interrupt(boost::thread_group& threadGroup)
 {
+    LogPrintf("%s: In progress...\n", __func__);
+
+    if (g_connman)
+        g_connman->Interrupt();
     threadGroup.interrupt_all();
 }
 
 /** Preparing steps before shutting down or restarting the wallet */
 void PrepareShutdown()
 {
-    fRequestShutdown = true; // Needed when we shutdown the wallet
-    // fRestartRequested = true; // Needed when we restart the wallet
     LogPrintf("%s: In progress...\n", __func__);
-
-    // TODO: move some of this logic to this function later
-    Shutdown(NULL);
-}
-
-void Shutdown(void* parg)
-{
     static CCriticalSection cs_Shutdown;
-    static bool fTaken;
+    TRY_LOCK(cs_Shutdown, lockShutdown);
+    if (!lockShutdown)
+        return;
 
-    // Make this thread recognisable as the shutdown thread
+    // fRequestShutdown = true; // Needed when we shutdown the wallet
+    // fRestartRequested = true; // Needed when we restart the wallet
+
+
+    /// Note: Shutdown() must be able to handle cases in which AppInit2() failed part of the way,
+    /// for example if the data directory was found to be locked.
+    /// Be sure that anything that writes files or flushes caches only does this if the respective
+    /// module was initialized.
     RenameThread("Neutron-shutoff");
 
-    bool fFirstThread = false;
-    {
-        TRY_LOCK(cs_Shutdown, lockShutdown);
-        if (lockShutdown)
-        {
-            fFirstThread = !fTaken;
-            fTaken = true;
-        }
-    }
     static bool fExit;
-    if (fFirstThread)
-    {
-        fShutdown = true;
-        nTransactionsUpdated++;
-//        CTxDB().Close();
-        bitdb.Flush(false);
-        g_connman->StopNode();
-        bitdb.Flush(true);
-        boost::filesystem::remove(GetPidFile());
-        UnregisterWallet(pwalletMain);
-        delete pwalletMain;
-        NewThread(ExitTimeout, NULL);
-        MilliSleep(50);
-        LogPrintf("Neutron exited\n\n");
-        fExit = true;
-#ifndef QT_GUI
-        // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
-        exit(0);
-#endif
-    }
-    else
-    {
-        while (!fExit)
-            MilliSleep(500);
-        MilliSleep(100);
-        ExitThread(0);
-    }
+    fShutdown = true;
+    nTransactionsUpdated++;
+    // CTxDB().Close();
+    bitdb.Flush(false);
+    LogPrintf("%s: call ConnMan::reset\n", __func__);
+    g_connman.reset();
+    LogPrintf("%s: call ConnMan::reset finished\n", __func__);
+    bitdb.Flush(true);
+    boost::filesystem::remove(GetPidFile());
+    UnregisterWallet(pwalletMain);
+    delete pwalletMain;
+    NewThread(ExitTimeout, NULL);
+    MilliSleep(50);
+    LogPrintf("Neutron exited\n\n");
+    fExit = true;
 }
 
+void Shutdown()
+{
+    LogPrintf("%s: In progress...\n", __func__);
+
+    // Shutdown part 1: prepare shutdown
+    if(!fRequestRestart) {
+        PrepareShutdown();
+    }
+
+#ifndef QT_GUI
+    // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
+    exit(0);
+#endif
+
+    LogPrintf("%s: done\n", __func__);
+}
+
+/**
+ * Signal handlers are very limited in what they are allowed to do, so:
+ */
 void HandleSIGTERM(int)
 {
     fRequestShutdown = true;
@@ -191,7 +224,7 @@ bool AppInit(int argc, char* argv[])
         if (!boost::filesystem::is_directory(GetDataDir(false)))
         {
             fprintf(stderr, "Error: Specified directory does not exist\n");
-            Shutdown(NULL);
+            Shutdown();
         }
         ReadConfigFile(mapArgs, mapMultiArgs);
 
@@ -239,7 +272,7 @@ bool AppInit(int argc, char* argv[])
     } else {
         WaitForShutdown(&threadGroup);
     }
-    Shutdown(NULL);
+    Shutdown();
 
     return fRet;
 }
@@ -406,7 +439,7 @@ int nFD;
 /** Initialize bitcoin.
  *  @pre Parameters should be parsed and config file should be read.
  */
-bool AppInit2(boost::thread_group& threadGroup)
+bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 {
     // ********************************************************* Step 1: setup
 #ifdef _MSC_VER
@@ -1075,7 +1108,7 @@ bool AppInit2(boost::thread_group& threadGroup)
     connOptions.nMaxConnections = nMaxConnections;
     connOptions.nMaxOutbound = std::min(MAX_OUTBOUND_CONNECTIONS, connOptions.nMaxConnections);
 
-    if (!connman.Start(connOptions)) {
+    if (!connman.Start(scheduler, connOptions)) {
         InitError(_("Error: could not start node"));
         return false;
     }

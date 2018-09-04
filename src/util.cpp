@@ -94,7 +94,6 @@ bool fDebugNet = false;
 bool fPrintToConsole = false;
 bool fPrintToDebugLog = true;
 bool fPrintToDebugger = false;
-bool fRequestShutdown = false;
 bool fShutdown = false;
 bool fDaemon = false;
 bool fServer = false;

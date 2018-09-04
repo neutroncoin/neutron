@@ -34,6 +34,9 @@
 
 #include <math.h>
 
+// Dump addresses to peers.dat and banlist.dat every 15 minutes (900s)
+#define DUMP_ADDRESSES_INTERVAL 900
+
 void ThreadMessageHandler2(void* parg);
 #ifdef USE_UPNP
 void ThreadMapPort2(void* parg);
@@ -726,8 +729,9 @@ int CNetMessage::readData(const char *pch, unsigned int nBytes)
 
 
 
-
-
+// NTRN TODO - implement: void CConnman::AcceptConnection
+// NTRN TODO - implement: void CConnman::AcceptConnection
+// NTRN TODO - implement: void CConnman::AcceptConnection
 
 
 // requires LOCK(cs_vSend)
@@ -1319,7 +1323,7 @@ unsigned int pnSeed[] =
 
 };
 
-void DumpAddresses()
+void CConnman::DumpAddresses()
 {
     int64_t nStart = GetTimeMillis();
 
@@ -1330,32 +1334,9 @@ void DumpAddresses()
            addrman.size(), GetTimeMillis() - nStart);
 }
 
-void ThreadDumpAddress2(void* parg)
+void CConnman::DumpData()
 {
-    vnThreadsRunning[THREAD_DUMPADDRESS]++;
-    while (!fShutdown)
-    {
-        DumpAddresses();
-        vnThreadsRunning[THREAD_DUMPADDRESS]--;
-        MilliSleep(600000);
-        vnThreadsRunning[THREAD_DUMPADDRESS]++;
-    }
-    vnThreadsRunning[THREAD_DUMPADDRESS]--;
-}
-
-void ThreadDumpAddress(void* parg)
-{
-    // Make this thread recognisable as the address dumping thread
-    RenameThread("Neutron-adrdump");
-
-    try
-    {
-        ThreadDumpAddress2(parg);
-    }
-    catch (std::exception& e) {
-        PrintException(&e, "ThreadDumpAddress()");
-    }
-    LogPrintf("ThreadDumpAddress exited\n");
+    DumpAddresses();
 }
 
 void CConnman::ThreadOpenConnections()
@@ -1451,20 +1432,8 @@ void CConnman::ThreadOpenConnections2()
     {
         ProcessOneShot();
 
-        // vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-        // MilliSleep(500);
-        // vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
-        // if (fShutdown)
-        //     return;
-
         if (!interruptNet.sleep_for(std::chrono::milliseconds(500)))
             return;
-
-        // vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-        // CSemaphoreGrant grant(*semOutbound);
-        // vnThreadsRunning[THREAD_OPENCONNECTIONS]++;
-        // if (fShutdown)
-        //     return;
 
         CSemaphoreGrant grant(*semOutbound);
         if (interruptNet)
@@ -1969,36 +1938,38 @@ void Discover()
 CConnman::CConnman(uint64_t nSeed0In, uint64_t nSeed1In) :
         nSeed0(nSeed0In), nSeed1(nSeed1In)
 {
-//    fNetworkActive = true;
+    // fNetworkActive = true;
     setBannedIsDirty = false;
-//    fAddressesInitialized = false;
-//    nLastNodeId = 0;
-//    nSendBufferMaxSize = 0;
-//    nReceiveFloodSize = 0;
-   semOutbound = NULL;
-//    semAddnode = NULL;
-//    semMasternodeOutbound = NULL;
-   nMaxConnections = 0;
-   nMaxOutbound = 0;
-//    nMaxAddnode = 0;
-//    nBestHeight = 0;
-//    clientInterface = NULL;
-   flagInterruptMsgProc = false;
+    fAddressesInitialized = false;
+    // nLastNodeId = 0;
+    // nSendBufferMaxSize = 0;
+    // nReceiveFloodSize = 0;
+    semOutbound = NULL;
+    semAddnode = NULL;
+    // semMasternodeOutbound = NULL;
+    nMaxConnections = 0;
+    nMaxOutbound = 0;
+    nMaxAddnode = 0;
+    // nBestHeight = 0;
+    // clientInterface = NULL;
+    flagInterruptMsgProc = false;
 }
 
 CConnman::~CConnman()
 {
-    // Interrupt();
-    // Stop();
+    Interrupt();
+    Stop();
 }
 
-bool CConnman::Start(Options connOptions)
+bool CConnman::Start(CScheduler& scheduler, Options connOptions)
 {
     // Make this thread recognisable as the startup thread
     RenameThread("Neutron-start");
 
     nMaxConnections = connOptions.nMaxConnections;
     nMaxOutbound = std::min((connOptions.nMaxOutbound), nMaxConnections);
+    nMaxAddnode = connOptions.nMaxAddnode;
+    nMaxFeeler = connOptions.nMaxFeeler;
 
     uiInterface.InitMessage(_("Loading addresses..."));
     // Load addresses for peers.dat
@@ -2014,10 +1985,17 @@ bool CConnman::Start(Options connOptions)
     LogPrintf("Loaded %i addresses from peers.dat  %dms\n",
            addrman.size(), GetTimeMillis() - nStart);
 
+    uiInterface.InitMessage(_("Starting network threads..."));
+
+    fAddressesInitialized = true;
+
     if (semOutbound == NULL) {
         // initialize semaphore
-        int nMaxOutbound = min(MAX_OUTBOUND_CONNECTIONS, (int)GetArg("-maxconnections", 125));
-        semOutbound = new CSemaphore(nMaxOutbound);
+        semOutbound = new CSemaphore(std::min((nMaxOutbound + nMaxFeeler), nMaxConnections));
+    }
+    if (semAddnode == NULL) {
+        // initialize semaphore
+        semAddnode = new CSemaphore(nMaxAddnode);
     }
 
     if (pnodeLocalHost == NULL)
@@ -2030,6 +2008,10 @@ bool CConnman::Start(Options connOptions)
     //
     InterruptSocks5(false);
     interruptNet.reset();
+    flagInterruptMsgProc = false;
+
+    // // Send and receive from sockets, accept connections
+    // threadSocketHandler = std::thread(&TraceThread<std::function<void()> >, "net", std::function<void()>(std::bind(&CConnman::ThreadSocketHandler, this)));
 
     if (!GetBoolArg("-dnsseed", true))
         LogPrintf("DNS seeding disabled\n");
@@ -2046,19 +2028,20 @@ bool CConnman::Start(Options connOptions)
     // Initiate outbound connections from -addnode
     threadOpenAddedConnections = std::thread(&TraceThread<std::function<void()> >, "addcon", std::function<void()>(std::bind(&CConnman::ThreadOpenAddedConnections, this)));
 
-    threadOpenConnections = std::thread(&TraceThread<std::function<void()> >, "opencon", std::function<void()>(std::bind(&CConnman::ThreadOpenConnections, this)));
+    // Initiate outbound connections unless connect=0
+    if (!mapMultiArgs.count("-connect") || mapMultiArgs.at("-connect").size() != 1 || mapMultiArgs.at("-connect")[0] != "0")
+        threadOpenConnections = std::thread(&TraceThread<std::function<void()> >, "opencon", std::function<void()>(std::bind(&CConnman::ThreadOpenConnections, this)));
 
 
+    // NTRN TODO: convert this to use std::thread
+    // NTRN TODO: convert this to use std::thread
     // NTRN TODO: convert this to use std::thread
     // Process messages
     if (!NewThread(ThreadMessageHandler, NULL))
         LogPrintf("Error: NewThread(ThreadMessageHandler) failed\n");
 
     // NTRN TODO: convert this to use std::thread
-    // Dump network addresses
-    if (!NewThread(ThreadDumpAddress, NULL))
-        LogPrintf("Error; NewThread(ThreadDumpAddress) failed\n");
-
+    // NTRN TODO: convert this to use std::thread
     // NTRN TODO: convert this to use std::thread
     // Mine proof-of-stake blocks in the background
     if (!GetBoolArg("-staking", true))
@@ -2067,11 +2050,16 @@ bool CConnman::Start(Options connOptions)
         if (!NewThread(ThreadStakeMiner, pwalletMain))
             LogPrintf("Error: NewThread(ThreadStakeMiner) failed\n");
 
+    // Dump network addresses
+    scheduler.scheduleEvery(boost::bind(&CConnman::DumpData, this), DUMP_ADDRESSES_INTERVAL);
+
     return true;
 }
 
 void CConnman::Interrupt()
 {
+    LogPrintf("CConnman::Interrupt() started\n");
+
     {
         std::lock_guard<std::mutex> lock(mutexMsgProc);
         flagInterruptMsgProc = true;
@@ -2081,40 +2069,50 @@ void CConnman::Interrupt()
     interruptNet();
     InterruptSocks5(true);
 
-    // if (semOutbound) {
-    //     for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++) {
-    //         semOutbound->post();
-    //     }
-    // }
+    if (semOutbound) {
+        for (int i=0; i<(nMaxOutbound + nMaxFeeler); i++) {
+            semOutbound->post();
+        }
+    }
 
-    // if (semAddnode) {
-    //     for (int i=0; i<nMaxAddnode; i++) {
-    //         semAddnode->post();
-    //     }
-    // }
+    if (semAddnode) {
+        for (int i=0; i<nMaxAddnode; i++) {
+            semAddnode->post();
+        }
+    }
+
+    LogPrintf("CConnman::Interrupt() finished\n");
 }
 
 void CConnman::Stop()
 {
     LogPrintf("CConnman::Stop() started\n");
 
+    // fShutdown = true;
+
     // if (threadMessageHandler.joinable())
     //     threadMessageHandler.join();
+    LogPrintf("CConnman::Stop() 1 threadOpenConnections\n");
     if (threadOpenConnections.joinable())
         threadOpenConnections.join();
+    LogPrintf("CConnman::Stop() 2 threadOpenAddedConnections\n");
     if (threadOpenAddedConnections.joinable())
         threadOpenAddedConnections.join();
+    LogPrintf("CConnman::Stop() 3 threadDNSAddressSeed\n");
     if (threadDNSAddressSeed.joinable())
         threadDNSAddressSeed.join();
+    LogPrintf("CConnman::Stop() 4 threadSocketHandler\n");
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
 
-    // if (fAddressesInitialized)
-    // {
-    //     DumpData();
-    //     fAddressesInitialized = false;
-    // }
+    LogPrintf("CConnman::Stop() 5 DumpData\n");
+    if (fAddressesInitialized)
+    {
+        DumpData();
+        fAddressesInitialized = false;
+    }
 
+    LogPrintf("CConnman::Stop() 6 CloseSockets\n");
     // Close sockets
     for (CNode* pnode : vNodes)
         pnode->CloseSocketDisconnect();
@@ -2123,47 +2121,34 @@ void CConnman::Stop()
     //         if (!CloseSocket(hListenSocket.socket))
     //             LogPrintf("CloseSocket(hListenSocket) failed with error %s\n", NetworkErrorString(WSAGetLastError()));
 
-    // // clean up some globals (to help leak detection)
+    // clean up some globals (to help leak detection)
     // for (CNode *pnode : vNodes) {
     //     DeleteNode(pnode);
     // }
     // for (CNode *pnode : vNodesDisconnected) {
     //     DeleteNode(pnode);
     // }
-    // vNodes.clear();
+    vNodes.clear();
     // vNodesDisconnected.clear();
     // vhListenSocket.clear();
-    // semOutbound.reset();
-    // semAddnode.reset();
+    delete semOutbound;
+    semOutbound = NULL;
+    delete semAddnode;
+    semAddnode = NULL;
 
-    LogPrintf("CConnman::Stop() finished\n");
-}
 
-void CConnman::StopNode()
-{
-    Stop();
-
-    LogPrintf("CConnman::StopNode() started\n");
-
-    fShutdown = true;
-    nTransactionsUpdated++;
-    int64_t nStart = GetTime();
-
-    if (semOutbound)
-        for (int i=0; i<MAX_OUTBOUND_CONNECTIONS; i++)
-            semOutbound->post();
-
-    do
-    {
-        int nThreadsRunning = 0;
-        for (int n = 0; n < THREAD_MAX; n++)
-            nThreadsRunning += vnThreadsRunning[n];
-        if (nThreadsRunning == 0)
-            break;
-        if (GetTime() - nStart > 20)
-            break;
-        MilliSleep(20);
-    } while(true);
+    // int64_t nStart = GetTime();
+    // do
+    // {
+    //     int nThreadsRunning = 0;
+    //     for (int n = 0; n < THREAD_MAX; n++)
+    //         nThreadsRunning += vnThreadsRunning[n];
+    //     if (nThreadsRunning == 0)
+    //         break;
+    //     if (GetTime() - nStart > 20)
+    //         break;
+    //     MilliSleep(20);
+    // } while(true);
 
     if (vnThreadsRunning[THREAD_SOCKETHANDLER] > 0) LogPrintf("ThreadSocketHandler still running\n");
     if (vnThreadsRunning[THREAD_OPENCONNECTIONS] > 0) LogPrintf("ThreadOpenConnections still running\n");
@@ -2175,14 +2160,13 @@ void CConnman::StopNode()
 #endif
     if (vnThreadsRunning[THREAD_DNSSEED] > 0) LogPrintf("ThreadDNSAddressSeed still running\n");
     if (vnThreadsRunning[THREAD_ADDEDCONNECTIONS] > 0) LogPrintf("ThreadOpenAddedConnections still running\n");
-    if (vnThreadsRunning[THREAD_DUMPADDRESS] > 0) LogPrintf("ThreadDumpAddresses still running\n");
     if (vnThreadsRunning[THREAD_STAKE_MINER] > 0) LogPrintf("ThreadStakeMiner still running\n");
     while (vnThreadsRunning[THREAD_MESSAGEHANDLER] > 0 || vnThreadsRunning[THREAD_RPCHANDLER] > 0)
         MilliSleep(20);
-    MilliSleep(50);
-    DumpAddresses();
 
-    LogPrintf("CConnman::StopNode() finished\n");
+    MilliSleep(50);
+
+    LogPrintf("CConnman::Stop() finished\n");
 }
 
 class CNetCleanup

@@ -24,6 +24,8 @@
 using namespace std;
 using namespace boost;
 
+extern std::atomic<bool> fRequestShutdown;
+
 //
 // Global state
 //

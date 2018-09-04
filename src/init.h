@@ -9,6 +9,8 @@
 
 #include <string>
 
+class CScheduler;
+
 namespace boost {
     class thread_group;
 } // namespace boost
@@ -20,8 +22,8 @@ void StartShutdown();
 bool ShutdownRequested();
 /** Interrupt threads */
 void Interrupt(boost::thread_group& threadGroup);
-void Shutdown(void* parg);
-bool AppInit2(boost::thread_group& threadGroup);
+void Shutdown();
+bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler);
 void PrepareShutdown();
 
 /** Help for options shared between UI and daemon (for -help) */
