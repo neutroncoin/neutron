@@ -337,6 +337,7 @@ BitcoinApplication::BitcoinApplication(int &argc, char **argv) :
 #endif
     returnValue(0)
 {
+    LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     LogPrintf("Core: Starting application\n");
 
     setQuitOnLastWindowClosed(false);
