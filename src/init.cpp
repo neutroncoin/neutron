@@ -116,7 +116,7 @@ void StartShutdown()
     uiInterface.QueueShutdown();
 #else
     // Without UI, Shutdown() can simply be started in a new thread
-    NewThread(Shutdown, NULL);
+    boost::thread(Shutdown);
 #endif
 }
 
