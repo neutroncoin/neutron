@@ -1389,85 +1389,25 @@ public:
  */
 static const CRPCConvertParam vRPCConvertParams[] =
 {
+    { "setgenerate", 0, "generate" },
+    { "setgenerate", 0, "genproclimit" },
     { "sendtoaddress", 1, "amount" },
     { "settxfee", 0, "amount" },
     { "getreceivedbyaddress", 1, "minconf" },
     { "getreceivedbyaccount", 1, "minconf" },
-
-//     //
-//     // Special case non-string parameter types
-//     //
-//     if (strMethod == "stop"                   && n > 0) ConvertTo<bool>(params[0]);
-//     if (strMethod == "sendtoaddress"          && n > 1) ConvertTo<double>(params[1]);
-//     if (strMethod == "settxfee"               && n > 0) ConvertTo<double>(params[0]);
-//     if (strMethod == "getreceivedbyaddress"   && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "getreceivedbyaccount"   && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "listreceivedbyaddress"  && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "listreceivedbyaddress"  && n > 1) ConvertTo<bool>(params[1]);
-//     if (strMethod == "listreceivedbyaccount"  && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "listreceivedbyaccount"  && n > 1) ConvertTo<bool>(params[1]);
-//     if (strMethod == "getbalance"             && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "getblock"               && n > 1) ConvertTo<bool>(params[1]);
-//     if (strMethod == "getblockbynumber"       && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "getblockbynumber"       && n > 1) ConvertTo<bool>(params[1]);
-//     if (strMethod == "getblockhash"           && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "move"                   && n > 2) ConvertTo<double>(params[2]);
-//     if (strMethod == "move"                   && n > 3) ConvertTo<int64_t>(params[3]);
-//     if (strMethod == "sendfrom"               && n > 2) ConvertTo<double>(params[2]);
-//     if (strMethod == "sendfrom"               && n > 3) ConvertTo<int64_t>(params[3]);
-//     if (strMethod == "listtransactions"       && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "listtransactions"       && n > 2) ConvertTo<int64_t>(params[2]);
-//     if (strMethod == "listaccounts"           && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "walletpassphrase"       && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "walletpassphrase"       && n > 2) ConvertTo<bool>(params[2]);
-//     if (strMethod == "getblocktemplate"       && n > 0) ConvertTo<json_spirit::Object>(params[0]);
-//     if (strMethod == "listsinceblock"         && n > 1) ConvertTo<int64_t>(params[1]);
-
-//     if (strMethod == "sendalert"              && n > 2) ConvertTo<int64_t>(params[2]);
-//     if (strMethod == "sendalert"              && n > 3) ConvertTo<int64_t>(params[3]);
-//     if (strMethod == "sendalert"              && n > 4) ConvertTo<int64_t>(params[4]);
-//     if (strMethod == "sendalert"              && n > 5) ConvertTo<int64_t>(params[5]);
-//     if (strMethod == "sendalert"              && n > 6) ConvertTo<int64_t>(params[6]);
-
-//     if (strMethod == "sendmany"               && n > 1) ConvertTo<json_spirit::Object>(params[1]);
-//     if (strMethod == "sendmany"               && n > 2) ConvertTo<int64_t>(params[2]);
-//     if (strMethod == "reservebalance"         && n > 0) ConvertTo<bool>(params[0]);
-//     if (strMethod == "reservebalance"         && n > 1) ConvertTo<double>(params[1]);
-//     if (strMethod == "addmultisigaddress"     && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "addmultisigaddress"     && n > 1) ConvertTo<json_spirit::Array>(params[1]);
-//     if (strMethod == "listunspent"            && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "listunspent"            && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "listunspent"            && n > 2) ConvertTo<json_spirit::Array>(params[2]);
-//     if (strMethod == "getrawtransaction"      && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "createrawtransaction"   && n > 0) ConvertTo<json_spirit::Array>(params[0]);
-//     if (strMethod == "createrawtransaction"   && n > 1) ConvertTo<json_spirit::Object>(params[1]);
-//     if (strMethod == "signrawtransaction"     && n > 1) ConvertTo<json_spirit::Array>(params[1], true);
-//     if (strMethod == "signrawtransaction"     && n > 2) ConvertTo<json_spirit::Array>(params[2], true);
-//     if (strMethod == "keypoolrefill"          && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "setgenerate"            && n > 0) ConvertTo<bool>(params[0]);
-//     if (strMethod == "setgenerate"            && n > 1) ConvertTo<int64_t>(params[1]);
-//     if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[0]);
-//     if (strMethod == "getblockversionstats"   && n > 0) ConvertTo<int64_t>(params[1]);
-
-//     return params;
-// }
-
-
     { "listaddressbalances", 0, "minamount" },
     { "listreceivedbyaddress", 0, "minconf" },
     { "listreceivedbyaddress", 1, "addlockconf" },
-    { "listreceivedbyaddress", 2, "include_empty" },
-    { "listreceivedbyaddress", 3, "include_watchonly" },
     { "listreceivedbyaccount", 0, "minconf" },
     { "listreceivedbyaccount", 1, "addlockconf" },
-    { "listreceivedbyaccount", 2, "include_empty" },
-    { "listreceivedbyaccount", 3, "include_watchonly" },
     { "getbalance", 1, "minconf" },
-    { "getbalance", 2, "addlockconf" },
-    { "getbalance", 3, "include_watchonly" },
     { "getchaintips", 0, "count" },
     { "getchaintips", 1, "branchlen" },
     { "getblockhash", 0, "height" },
+    { "getblockbynumber", 0, "height" },
+    { "getblockbynumber", 1, "txinfo" },
+    { "getblockversionstats", 0, "version" },
+    { "getblockversionstats", 1, "blocks_to_count" },
     { "getsuperblockbudget", 0, "index" },
     { "waitforblockheight", 0, "height" },
     { "waitforblockheight", 1, "timeout" },
@@ -1477,24 +1417,15 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "move", 3, "minconf" },
     { "sendfrom", 2, "amount" },
     { "sendfrom", 3, "minconf" },
-    { "sendfrom", 4, "addlockconf" },
     { "listtransactions", 1, "count" },
     { "listtransactions", 2, "skip" },
-    { "listtransactions", 3, "include_watchonly" },
     { "listaccounts", 0, "minconf" },
-    { "listaccounts", 1, "addlockconf" },
-    { "listaccounts", 2, "include_watchonly" },
     { "walletpassphrase", 1, "timeout" },
     { "walletpassphrase", 2, "mixingonly" },
     { "getblocktemplate", 0, "template_request" },
     { "listsinceblock", 1, "target_confirmations" },
-    { "listsinceblock", 2, "include_watchonly" },
     { "sendmany", 1, "amounts" },
     { "sendmany", 2, "minconf" },
-    { "sendmany", 3, "addlockconf" },
-    { "sendmany", 5, "subtractfeefromamount" },
-    { "sendmany", 6, "use_is" },
-    { "sendmany", 7, "use_ps" },
     { "addmultisigaddress", 0, "nrequired" },
     { "addmultisigaddress", 1, "keys" },
     { "createmultisig", 0, "nrequired" },
@@ -1502,7 +1433,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "listunspent", 0, "minconf" },
     { "listunspent", 1, "maxconf" },
     { "listunspent", 2, "addresses" },
-    { "listunspent", 3, "include_unsafe" },
     { "getblock", 1, "verbose" },
     { "getblockheader", 1, "verbose" },
     { "getblockheaders", 1, "count" },
@@ -1511,7 +1441,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "getrawtransaction", 1, "verbose" },
     { "createrawtransaction", 0, "inputs" },
     { "createrawtransaction", 1, "outputs" },
-    { "createrawtransaction", 2, "locktime" },
     { "signrawtransaction", 1, "prevtxs" },
     { "signrawtransaction", 2, "privkeys" },
     { "sendrawtransaction", 1, "allowhighfees" },
@@ -1524,7 +1453,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "lockunspent", 0, "unlock" },
     { "lockunspent", 1, "transactions" },
     { "importprivkey", 2, "rescan" },
-    { "importelectrumwallet", 1, "index" },
     { "importaddress", 2, "rescan" },
     { "importaddress", 3, "p2sh" },
     { "importpubkey", 2, "rescan" },
@@ -1543,7 +1471,6 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "prioritisetransaction", 2, "fee_delta" },
     { "setban", 2, "bantime" },
     { "setban", 3, "absolute" },
-    { "setbip69enabled", 0, "enabled" },
     { "setnetworkactive", 0, "state" },
     { "getmempoolancestors", 1, "verbose" },
     { "getmempooldescendants", 1, "verbose" },
@@ -1569,6 +1496,15 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 7, "arg7" },
     { "echojson", 8, "arg8" },
     { "echojson", 9, "arg9" },
+
+    { "stop", 0, "detach" },
+    { "reservebalance", 0, "reserve" },
+    { "reservebalance", 1, "amount" },
+    { "sendalert", 2, "" },
+    { "sendalert", 3, "" },
+    { "sendalert", 4, "" },
+    { "sendalert", 5, "" },
+    { "sendalert", 6, "" },
 };
 
 class CRPCConvertTable
