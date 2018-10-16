@@ -79,9 +79,9 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (fHelp  ||
         (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count"  && strCommand != "enforce"
-            && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs"))
+            && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs" && strCommand != "listfull"))
         throw runtime_error(
-            "masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|count|debug|current|winners|genkey|enforce|outputs> [passphrase]\n");
+            "masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|listfull|list-conf|count|debug|current|winners|genkey|enforce|outputs> [passphrase]\n");
 
     if (strCommand == "stop")
     {
@@ -224,7 +224,31 @@ UniValue masternode(const UniValue& params, bool fHelp)
 		return returnObj;
 
     }
+    // MNPMod Adding PIVX Style masternode List - START
+    if (strCommand == "listfull") {
+        UniValue obj(UniValue::VOBJ);
+        UniValue ret(UniValue::VARR);
+        BOOST_FOREACH(CMasternode mn, vecMasternodes) {
+            mn.Check();
+            CScript pubkey;
+            pubkey = GetScriptForDestination(mn.pubkey.GetID());
+            CTxDestination address1;
+            ExtractDestination(pubkey, address1);
+            CBitcoinAddress address2(address1);
 
+            obj.push_back(Pair("rank", (int) (GetMasternodeRank(mn.vin, pindexBest->nHeight))));
+            obj.push_back(Pair("txhash", mn.vin.prevout.hash.ToString().c_str()));
+            obj.push_back(Pair("status", mn.Status()));
+            obj.push_back(Pair("addr", address2.ToString().c_str()));
+            obj.push_back(Pair("version", (int64_t) mn.protocolVersion));
+            obj.push_back(Pair("lastseen", (int64_t) mn.lastTimeSeen));
+            obj.push_back(Pair("activetime", (int64_t)(mn.lastTimeSeen - mn.now)));
+            ret.push_back(obj);
+        }
+        return ret;
+    }
+    // MNPMod Adding PIVX Style masternode List - END
+	
     if (strCommand == "list")
     {
         std::string strCommand = "active";
