@@ -119,6 +119,8 @@ UniValue RPCConvertNamedValues(const std::string& strMethod, const std::vector<s
  */
 UniValue ParseNonRFCJSONValue(const std::string& strVal);
 
+/** Query whether RPC is running */
+bool IsRPCRunning();
 
 /**
  * Type-check arguments; throws JSONRPCError if wrong type given. Does not check that
@@ -183,9 +185,16 @@ public:
      * @throws an exception (UniValue) when an error happens.
      */
     UniValue execute(const JSONRPCRequest &request) const;
+
+    /**
+     * Appends a CRPCCommand to the dispatch table.
+     * Returns false if RPC server is already running (dump concurrency protection).
+     * Commands cannot be overwritten (returns false).
+     */
+    bool appendCommand(const std::string& name, const CRPCCommand* pcmd);
 };
 
-extern const CRPCTable tableRPC;
+extern CRPCTable tableRPC;
 
 extern int64_t nWalletUnlockTime;
 extern int64_t AmountFromValue(const UniValue& value);
@@ -225,6 +234,7 @@ extern UniValue spork(const UniValue& params, bool fHelp);
 // in rpcdarksend.cpp
 extern UniValue getpoolinfo(const UniValue& params, bool fHelp);
 extern UniValue masternode(const UniValue& params, bool fHelp);
+extern UniValue masternodelist(const UniValue& params, bool fHelp);
 
 // in rpcdump.cpp
 extern UniValue importprivkey(const UniValue& params, bool fHelp);

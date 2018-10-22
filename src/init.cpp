@@ -9,6 +9,7 @@
 #include "netbase.h"
 #include "noui.h"
 #include "init.h"
+#include "rpc/register.h"
 #include "scheduler.h"
 #include "util.h"
 #include "utiltime.h"
@@ -587,6 +588,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     fPrintToConsole = GetBoolArg("-printtoconsole");
     fPrintToDebugger = GetBoolArg("-printtodebugger");
     fLogTimestamps = GetBoolArg("-logtimestamps");
+
+    RegisterAllCoreRPCCommands(tableRPC);
 
     if (mapArgs.count("-timeout"))
     {

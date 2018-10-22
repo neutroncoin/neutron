@@ -77,8 +77,13 @@ INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
 !win32 {
-    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    !exists( $$PWD/src/leveldb/libleveldb.a ) {
+        message("Generating libleveldb")
+        # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+        genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    } else {
+        message("Already built libleveldb")
+    }
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -101,8 +106,13 @@ LIBS += -L$$PWD/src/univalue
 HEADERS += src/univalue/include/univalue.h
 SOURCES += src/univalue/lib/univalue.cpp src/univalue/lib/univalue_get.cpp src/univalue/lib/univalue_read.cpp src/univalue/lib/univalue_write.cpp
 !win32 {
-    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    gen_univalue_lib.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+    !exists( $$PWD/src/univalue/libunivalue.la ) {
+        message("Build libunivalue")
+        # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+        gen_univalue_lib.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+    } else {
+        message("Already built libunivalue")
+    }
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -252,7 +262,8 @@ HEADERS += src/activemasternode.h \
     src/qt/transactionrecord.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
-    src/qt/walletmodel.h
+    src/qt/walletmodel.h \
+    src/rpc/register.h
 
 SOURCES += src/activemasternode.cpp \
     src/addrman.cpp \
@@ -345,7 +356,8 @@ SOURCES += src/activemasternode.cpp \
     src/qt/transactionrecord.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
-    src/qt/walletmodel.cpp
+    src/qt/walletmodel.cpp \
+    src/rpc/rpcmasternode.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc

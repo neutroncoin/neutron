@@ -33,6 +33,8 @@ using namespace std;
 using namespace boost;
 using namespace boost::asio;
 
+static bool fRPCRunning = false;
+
 void ThreadRPCServer2(void* parg);
 
 static std::string strRPCUserColonPass;
@@ -169,6 +171,11 @@ void JSONRequest::parse(const json_spirit::Value& valRequest)
 //         }
 //     }
 // }
+
+bool IsRPCRunning()
+{
+    return fRPCRunning;
+}
 
 void RPCTypeCheck(const UniValue& params,
                   const std::list<UniValue::VType>& typesExpected,
@@ -799,6 +806,8 @@ void ThreadRPCServer(void* parg)
     // Make this thread recognisable as the RPC listener
     RenameThread("Neutron-rpclist");
 
+    fRPCRunning = true;
+
     try
     {
         vnThreadsRunning[THREAD_RPCLISTENER]++;
@@ -812,6 +821,9 @@ void ThreadRPCServer(void* parg)
         vnThreadsRunning[THREAD_RPCLISTENER]--;
         PrintException(NULL, "ThreadRPCServer()");
     }
+
+    fRPCRunning = false;
+
     LogPrintf("ThreadRPCServer exited\n");
 }
 
@@ -1270,56 +1282,19 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
     }
 }
 
-
-//
-// JSON-RPC protocol.  Bitcoin speaks version 1.0 for maximum compatibility,
-// but uses JSON-RPC 1.1/2.0 standards for parts of the 1.0 standard that were
-// unspecified (HTTP errors and contents of 'error').
-//
-// 1.0 spec: http://json-rpc.org/wiki/specification
-// 1.2 spec: http://groups.google.com/group/json-rpc/web/json-rpc-over-http
-// http://www.codeproject.com/KB/recipes/JSON_Spirit.aspx
-//
-
-string OLD_JSONRPCRequest(const string& strMethod, const json_spirit::Array& params, const json_spirit::Value& id)
+bool CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
 {
-    json_spirit::Object request;
-    request.push_back(json_spirit::Pair("method", strMethod));
-    request.push_back(json_spirit::Pair("params", params));
-    request.push_back(json_spirit::Pair("id", id));
-    return write_string(json_spirit::Value(request), false) + "\n";
+    if (IsRPCRunning())
+        return false;
+
+    // don't allow overwriting for now
+    std::map<std::string, const CRPCCommand*>::const_iterator it = mapCommands.find(name);
+    if (it != mapCommands.end())
+        return false;
+
+    mapCommands[name] = pcmd;
+    return true;
 }
-
-json_spirit::Object OLD_JSONRPCReplyObj(const json_spirit::Value& result, const json_spirit::Value& error, const json_spirit::Value& id)
-{
-    json_spirit::Object reply;
-    if (error.type() != json_spirit::null_type)
-        reply.push_back(json_spirit::Pair("result", json_spirit::Value::null));
-    else
-        reply.push_back(json_spirit::Pair("result", result));
-    reply.push_back(json_spirit::Pair("error", error));
-    reply.push_back(json_spirit::Pair("id", id));
-    return reply;
-}
-
-string OLD_JSONRPCReply(const json_spirit::Value& result, const json_spirit::Value& error, const json_spirit::Value& id)
-{
-    json_spirit::Object reply = OLD_JSONRPCReplyObj(result, error, id);
-    return write_string(json_spirit::Value(reply), false) + "\n";
-}
-
-void OLD_ErrorReply(std::ostream& stream, const json_spirit::Object& objError, const json_spirit::Value& id)
-{
-    // Send error reply from json-rpc error object
-    int nStatus = HTTP_INTERNAL_SERVER_ERROR;
-    int code = find_value(objError, "code").get_int();
-    if (code == RPC_INVALID_REQUEST) nStatus = HTTP_BAD_REQUEST;
-    else if (code == RPC_METHOD_NOT_FOUND) nStatus = HTTP_NOT_FOUND;
-    string strReply = OLD_JSONRPCReply(json_spirit::Value::null, objError, id);
-    stream << HTTPReply(nStatus, strReply, false) << std::flush;
-}
-
-
 
 UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 {
@@ -1705,4 +1680,4 @@ std::string HelpExampleRpc(string methodname, string args){
         "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:32001/\n";
 }
 
-const CRPCTable tableRPC;
+CRPCTable tableRPC;
