@@ -53,7 +53,15 @@ QMAKE_CXXFLAGS *= -D_FORTIFY_SOURCE=2
 # for extra security on Windows: enable ASLR and DEP via GCC linker flags
 win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
 # on Windows: enable GCC large address aware linker flag
-win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+win32 {
+    !contains(QT_ARCH, x86_64) {
+        message("Windows x86 (32bit) specific build")
+        win32:QMAKE_LFLAGS *= -Wl,--large-address-aware
+    } else {
+        message("Windows x86 (64bit) specific build")
+    }
+}
+win32:QMAKE_LFLAGS *= -static
 # i686-w64-mingw32
 win32:QMAKE_LFLAGS *= -static-libgcc -static-libstdc++
 
@@ -77,7 +85,7 @@ INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
 !win32 {
-    !exists( $$PWD/src/leveldb/libleveldb.a ) {
+    !exists( $$PWD/src/leveldb ) | !exists( $$PWD/src/leveldb/libleveldb.a ) {
         message("Generating libleveldb")
         # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
         genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a

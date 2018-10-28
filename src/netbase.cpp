@@ -10,11 +10,9 @@
 #include "uint256.h"
 #include "random.h"
 #include "util.h"
-#include "utiltime.h"
 #include "utilstrencodings.h"
 
 #include <atomic>
-#include <netinet/tcp.h>
 
 #ifndef WIN32
 #include <fcntl.h>
@@ -445,7 +443,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
             int nRet = select(hSocket + 1, NULL, &fdset, NULL, &timeout);
             if (nRet == 0)
             {
-                LogPrintf("connection to %s timeout\n", addrConnect.ToString());
+                LogPrint("net", "connection to %s timeout\n", addrConnect.ToString());
                 CloseSocket(hSocket);
                 return false;
             }

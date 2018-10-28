@@ -9,6 +9,7 @@
 #include "tinyformat.h"
 #include "uint256.h"
 #include "allocators.h"
+#include "utiltime.h"
 
 #ifndef WIN32
 #include <sys/types.h>
