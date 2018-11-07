@@ -371,7 +371,8 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool dar
 
 
     /// debug print
-    LogPrintf("trying connection %s lastseen=%.1fhrs\n",
+    if (fDebug)
+        LogPrintf("trying connection %s lastseen=%.1fhrs\n",
         pszDest ? pszDest : addrConnect.ToString(),
         pszDest ? 0.0 : (double)(GetAdjustedTime() - addrConnect.nTime)/3600.0);
 
@@ -463,10 +464,12 @@ void CNode::PushVersion()
     CAddress addrYou = (addr.IsRoutable() && !IsProxy(addr) ? addr : CAddress(CService("0.0.0.0",0)));
     CAddress addrMe = GetLocalAddress(&addr);
     GetRandBytes((unsigned char*)&nLocalHostNonce, sizeof(nLocalHostNonce));
-    if (fLogIPs)
+    if (fDebug) {
+      if (fLogIPs)
         LogPrintf("send version message: version %d, blocks=%d, us=%s, them=%s, peer=%d\n", PROTOCOL_VERSION, nBestHeight, addrMe.ToString(), addrYou.ToString(), id);
-    else
+      else
         LogPrintf("send version message: version %d, blocks=%d, us=%s, peer=%d\n", PROTOCOL_VERSION, nBestHeight, addrMe.ToString(), id);
+    }
     PushMessage(NetMsgType::VERSION, PROTOCOL_VERSION, nLocalServices, nTime, addrYou, addrMe,
                 nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight, true);
 }
@@ -1280,7 +1283,6 @@ void CConnman::ThreadDNSAddressSeed()
         if (!fTestNet)
         {
             LogPrintf("ThreadDNSAddressSeed - Loading addresses from DNS seeds (could take a while)\n");
-
             BOOST_FOREACH (const CDNSSeedData& seed, vSeeds) {
                 if (HaveNameProxy()) {
                     LogPrintf("ThreadDNSAddressSeed - Trying %s using proxy\n", seed.host);
@@ -1291,7 +1293,7 @@ void CConnman::ThreadDNSAddressSeed()
                     vector<CAddress> vAdd;
                     if (LookupHost(seed.host.c_str(), vaddr, 0, true))
                     {
-                        LogPrintf("ThreadDNSAddressSeed - Found %d addresses from %s\n", vaddr.size(), seed.host);
+                        if (fDebug) LogPrintf("ThreadDNSAddressSeed - Found %d addresses from %s\n", vaddr.size(), seed.host);
                         BOOST_FOREACH(CNetAddr& ip, vaddr)
                         {
                             int nOneDay = 24*3600;
@@ -2352,10 +2354,12 @@ CNode::CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn, bool fIn
         id = nLastNodeId++;
     }
 
-    if (fLogIPs)
-        LogPrintf("Added connection to %s peer=%d\n", addrName, id);
-    else
-        LogPrintf("Added connection peer=%d\n", id);
+    if (fDebug) {
+      if (fLogIPs)
+          LogPrintf("Added connection to %s peer=%d\n", addrName, id);
+      else
+          LogPrintf("Added connection peer=%d\n", id);
+    }
 
     // Be shy and don't send version until we hear
     if (hSocket != INVALID_SOCKET && !fInbound)
