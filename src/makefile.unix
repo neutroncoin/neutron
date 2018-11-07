@@ -28,6 +28,7 @@ LIBS += \
    -l boost_filesystem$(BOOST_LIB_SUFFIX) \
    -l boost_program_options$(BOOST_LIB_SUFFIX) \
    -l boost_thread$(BOOST_LIB_SUFFIX) \
+   -l boost_chrono$(BOOST_LIB_SUFFIX) \
    -l db_cxx$(BDB_LIB_SUFFIX) \
    -l ssl \
    -l crypto
@@ -124,6 +125,7 @@ OBJS= \
     obj/masternode.o \
     obj/masternodeconfig.o \
     obj/net.o \
+    obj/netaddress.o \
     obj/netbase.o \
     obj/noui.o \
     obj/pbkdf2.o \
@@ -136,6 +138,7 @@ OBJS= \
     obj/rpcblockchain.o \
     obj/rpcdarksend.o \
     obj/rpcrawtransaction.o \
+    obj/scheduler.o \
     obj/script.o \
     obj/scrypt.o \
     obj/scrypt-arm.o \
@@ -143,6 +146,7 @@ OBJS= \
     obj/scrypt-x86_64.o \
     obj/spork.o \
     obj/sync.o \
+    obj/threadinterrupt.o \
     obj/timedata.o \
     obj/txmempool.o \
     obj/util.o \

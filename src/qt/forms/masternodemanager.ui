@@ -263,17 +263,17 @@
            </column>
            <column>
             <property name="text">
+             <string>Status</string>
+            </property>
+           </column>
+           <column>
+            <property name="text">
              <string>Active</string>
             </property>
            </column>
            <column>
             <property name="text">
-             <string>Active (secs)</string>
-            </property>
-           </column>
-           <column>
-            <property name="text">
-             <string>Last Seen</string>
+             <string>Last Seen (UTC)</string>
             </property>
            </column>
            <column>

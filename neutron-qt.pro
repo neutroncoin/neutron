@@ -53,7 +53,15 @@ QMAKE_CXXFLAGS *= -D_FORTIFY_SOURCE=2
 # for extra security on Windows: enable ASLR and DEP via GCC linker flags
 win32:QMAKE_LFLAGS *= -Wl,--dynamicbase -Wl,--nxcompat
 # on Windows: enable GCC large address aware linker flag
-win32:QMAKE_LFLAGS *= -Wl,--large-address-aware -static
+win32 {
+    !contains(QT_ARCH, x86_64) {
+        message("Windows x86 (32bit) specific build")
+        win32:QMAKE_LFLAGS *= -Wl,--large-address-aware
+    } else {
+        message("Windows x86 (64bit) specific build")
+    }
+}
+win32:QMAKE_LFLAGS *= -static
 # i686-w64-mingw32
 win32:QMAKE_LFLAGS *= -static-libgcc -static-libstdc++
 
@@ -77,8 +85,13 @@ INCLUDEPATH += src/leveldb/include src/leveldb/helpers
 LIBS += $$PWD/src/leveldb/libleveldb.a $$PWD/src/leveldb/libmemenv.a
 SOURCES += src/txdb-leveldb.cpp
 !win32 {
-    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    !exists( $$PWD/src/leveldb ) | !exists( $$PWD/src/leveldb/libleveldb.a ) {
+        message("Generating libleveldb")
+        # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+        genleveldb.commands = cd $$PWD/src/leveldb && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libleveldb.a libmemenv.a
+    } else {
+        message("Already built libleveldb")
+    }
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -101,8 +114,13 @@ LIBS += -L$$PWD/src/univalue
 HEADERS += src/univalue/include/univalue.h
 SOURCES += src/univalue/lib/univalue.cpp src/univalue/lib/univalue_get.cpp src/univalue/lib/univalue_read.cpp src/univalue/lib/univalue_write.cpp
 !win32 {
-    # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
-    gen_univalue_lib.commands = cd $$PWD/src/univalue && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+    !exists( $$PWD/src/univalue/libunivalue.la ) {
+        message("Build libunivalue")
+        # we use QMAKE_CXXFLAGS_RELEASE even without RELEASE=1 because we use RELEASE to indicate linking preferences not -O preferences
+        gen_univalue_lib.commands = cd $$PWD/src/univalue && ./autogen.sh && ./configure && CC=$$QMAKE_CC CXX=$$QMAKE_CXX $(MAKE) OPT=\"$$QMAKE_CXXFLAGS $$QMAKE_CXXFLAGS_RELEASE\" libunivalue.la && cd ..
+    } else {
+        message("Already built libunivalue")
+    }
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
@@ -174,11 +192,13 @@ HEADERS += src/activemasternode.h \
     src/miner.h \
     src/mruset.h \
     src/net.h \
+    src/netaddress.h \
     src/netbase.h \
     src/noui.h \
     src/pbkdf2.h \
     src/protocol.h \
     src/random.h \
+    src/scheduler.h \
     src/script.h \
     src/scrypt.h \
     src/serialize.h \
@@ -186,6 +206,7 @@ HEADERS += src/activemasternode.h \
     src/streams.h \
     src/strlcpy.h \
     src/sync.h \
+    src/threadinterrupt.h \
     src/threadsafety.h \
     src/timedata.h \
     src/txdb.h \
@@ -249,7 +270,8 @@ HEADERS += src/activemasternode.h \
     src/qt/transactionrecord.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
-    src/qt/walletmodel.h
+    src/qt/walletmodel.h \
+    src/rpc/register.h
 
 SOURCES += src/activemasternode.cpp \
     src/addrman.cpp \
@@ -270,6 +292,7 @@ SOURCES += src/activemasternode.cpp \
     src/masternodeconfig.cpp \
     src/miner.cpp \
     src/net.cpp \
+    src/netaddress.cpp \
     src/netbase.cpp \
     src/noui.cpp \
     src/protocol.cpp \
@@ -282,6 +305,7 @@ SOURCES += src/activemasternode.cpp \
     src/rpcnet.cpp \
     src/rpcrawtransaction.cpp \
     src/rpcwallet.cpp \
+    src/scheduler.cpp \
     src/script.cpp \
     src/scrypt.cpp \
     src/scrypt-arm.S \
@@ -289,6 +313,7 @@ SOURCES += src/activemasternode.cpp \
     src/scrypt-x86_64.S \
     src/spork.cpp \
     src/sync.cpp \
+    src/threadinterrupt.cpp \
     src/timedata.cpp \
     src/txmempool.cpp \
     src/util.cpp \
@@ -339,7 +364,8 @@ SOURCES += src/activemasternode.cpp \
     src/qt/transactionrecord.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
-    src/qt/walletmodel.cpp
+    src/qt/walletmodel.cpp \
+    src/rpc/rpcmasternode.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc
@@ -533,8 +559,7 @@ LIBS += $$join(BOOST_LIB_PATH,,-L,) $$join(BDB_LIB_PATH,,-L,) $$join(OPENSSL_LIB
 LIBS += -lssl -lcrypto -ldb_cxx$$BDB_LIB_SUFFIX
 # -lgdi32 has to happen after -lcrypto (see  #681)
 windows:LIBS += -lws2_32 -lshlwapi -lmswsock -lole32 -loleaut32 -luuid -lgdi32
-LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX
-windows:LIBS += -lboost_chrono$$BOOST_LIB_SUFFIX
+LIBS += -lboost_system$$BOOST_LIB_SUFFIX -lboost_filesystem$$BOOST_LIB_SUFFIX -lboost_program_options$$BOOST_LIB_SUFFIX -lboost_thread$$BOOST_THREAD_LIB_SUFFIX -lboost_chrono$$BOOST_LIB_SUFFIX
 
 contains(RELEASE, 1) {
     !windows:!macx {

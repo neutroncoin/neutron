@@ -1,6 +1,8 @@
 #ifndef OPTIONSMODEL_H
 #define OPTIONSMODEL_H
 
+#include "netbase.h"
+
 #include <QAbstractListModel>
 
 extern bool fUseDarkTheme;
@@ -27,7 +29,7 @@ public:
         ProxyUse,          // bool
         ProxyIP,           // QString
         ProxyPort,         // int
-        ProxySocksVersion, // int
+        ProxySocksVersion, // DEPRECATED - int
         Fee,               // qint64
         ReserveBalance,    // qint64
         DisplayUnit,       // BitcoinUnits::Unit

@@ -96,7 +96,7 @@ public:
     int64_t lastDseep;
     int cacheInputAge;
     int cacheInputAgeBlock;
-    int enabled;
+    int nActiveState;
     bool unitTest;
     bool allowFreeTx;
     int protocolVersion;
@@ -111,7 +111,7 @@ public:
         pubkey2 = newPubkey2;
         sig = newSig;
         now = newNow;
-        enabled = MASTERNODE_ENABLED;
+        nActiveState = MASTERNODE_ENABLED;
         lastTimeSeen = 0;
         unitTest = false;
         cacheInputAge = 0;
@@ -157,10 +157,7 @@ public:
         lastTimeSeen = 0;
     }
 
-    bool IsEnabled()
-    {
-        return enabled == MASTERNODE_ENABLED;
-    }
+    bool IsEnabled() { return nActiveState == MASTERNODE_ENABLED; }
 
     int GetMasternodeInputAge()
     {
@@ -174,18 +171,9 @@ public:
         return cacheInputAge+(pindexBest->nHeight-cacheInputAgeBlock);
     }
 
-    std::string Status(){
-        std::string strStatus = "ACTIVE";
-
-        if(enabled == CMasternode::MASTERNODE_ENABLED) strStatus   = "ENABLED";
-        if(enabled == CMasternode::MASTERNODE_EXPIRED) strStatus   = "EXPIRED";
-        if(enabled == CMasternode::MASTERNODE_VIN_SPENT) strStatus = "VIN_SPENT";
-        if(enabled == CMasternode::MASTERNODE_REMOVE) strStatus    = "REMOVE";
-        if(enabled == CMasternode::MASTERNODE_POS_ERROR) strStatus = "POS_ERROR";
-
-        return strStatus;
-    }
-
+    static std::string StateToString(int nStateIn);
+    std::string GetStateString() const;
+    std::string GetStatus() const;
 };
 
 

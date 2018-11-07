@@ -4,7 +4,7 @@
 #ifndef _BITCOIN_ADDRMAN
 #define _BITCOIN_ADDRMAN 1
 
-#include "netbase.h"
+#include "netaddress.h"
 #include "protocol.h"
 #include "timedata.h"
 #include "util.h"

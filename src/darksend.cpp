@@ -2120,7 +2120,7 @@ bool CDarksendQueue::CheckSignature()
 
 
 //TODO: Rename/move to core
-void ThreadCheckDarkSendPool(void* parg)
+void ThreadCheckDarkSend(CConnman& connman)
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
 
@@ -2152,14 +2152,14 @@ void ThreadCheckDarkSendPool(void* parg)
                     //     segfaults from this code without the cs_main lock.
 
 
-                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool: Check timeout\n");
+                    if (fDebug) LogPrintf("ThreadCheckDarkSend: Check timeout\n");
 
                     mnodeman.CheckAndRemove();
                     masternodePayments.CleanPaymentList();
                 }
             }
 
-            // if (fDebug) LogPrintf("ThreadCheckDarkSendPool::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
+            // if (fDebug) LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
 
             //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
@@ -2173,7 +2173,7 @@ void ThreadCheckDarkSendPool(void* parg)
                     }
                 }
 
-                if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Asking peers for Spork and Masternode lists\n");
+                if (fDebug) LogPrintf("ThreadCheckDarkSend::Asking peers for Spork and Masternode lists\n");
 
                 LOCK(cs_vNodes);
                 BOOST_FOREACH(CNode* pnode, vNodes){
@@ -2191,14 +2191,14 @@ void ThreadCheckDarkSendPool(void* parg)
                     pnode->FulfilledRequest("mnwsync");
                     pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
 
-                    if (fDebug) LogPrintf("ThreadCheckDarkSendPool::Synced with peer=%s\n", pnode->id);
+                    if (fDebug) LogPrintf("ThreadCheckDarkSend::Synced with peer=%s\n", pnode->id);
 
                     // RequestedMasterNodeList++;
                 }
             }
 
             if(nTick % MASTERNODE_PING_SECONDS == 0){
-                activeMasternode.ManageStatus();
+                activeMasternode.ManageStatus(*g_connman);
             }
 
             // TODO: NTRN - disabled for now
@@ -2212,11 +2212,11 @@ void ThreadCheckDarkSendPool(void* parg)
             //     // If we've used 90% of the Masternode list then drop the oldest first ~30%
             //     int nThreshold_high = nMnCountEnabled * 0.9;
             //     int nThreshold_low = nThreshold_high * 0.7;
-            //     LogPrintf("ThreadCheckDarkSendPool::Checking vecMasternodesUsed: size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+            //     LogPrintf("ThreadCheckDarkSend::Checking vecMasternodesUsed: size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
 
             //     if((int)vecMasternodesUsed.size() > nThreshold_high) {
             //         vecMasternodesUsed.erase(vecMasternodesUsed.begin(), vecMasternodesUsed.begin() + vecMasternodesUsed.size() - nThreshold_low);
-            //         LogPrintf("ThreadCheckDarkSendPool::Cleaning vecMasternodesUsed: new size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+            //         LogPrintf("ThreadCheckDarkSend::Cleaning vecMasternodesUsed: new size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
             //     }
             // }
         }
