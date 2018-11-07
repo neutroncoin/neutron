@@ -7,6 +7,9 @@
 #include <QWidget>
 #include <QTimer>
 
+#define MY_MASTERNODELIST_UPDATE_SECONDS                 60
+#define MASTERNODELIST_UPDATE_SECONDS                    15
+
 namespace Ui {
     class MasternodeManager;
 }
@@ -31,17 +34,26 @@ public:
 
 
 public slots:
+    void updateMyMasternodeInfo(QString alias, QString addr, QString privkey, QString collateral);
     void updateNodeList();
     void updateMyNodeList();
-    void updateAdrenalineNode(QString alias, QString addr, QString privkey, QString collateral);
 
 signals:
 
 private:
+    QTimer *timer;
     Ui::MasternodeManager *ui;
     ClientModel *clientModel;
     WalletModel *walletModel;
+
     CCriticalSection cs_adrenaline;
+
+    // Protects tableWidgetMasternodes
+    CCriticalSection cs_mnlist;
+
+    // Protects tableWidgetMyMasternodes
+    CCriticalSection cs_mymnlist;
+
     void subscribeToCoreSignals();
     void unsubscribeFromCoreSignals();
 

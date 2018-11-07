@@ -425,6 +425,6 @@ public:
 
 void ConnectToDarkSendMasterNodeWinner();
 
-void ThreadCheckDarkSendPool(void* parg);
+void ThreadCheckDarkSend(CConnman& connman);
 
 #endif

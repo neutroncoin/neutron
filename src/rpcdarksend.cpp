@@ -12,9 +12,7 @@
 #include "masternodeconfig.h"
 #include "bitcoinrpc.h"
 #include <boost/lexical_cast.hpp>
-//#include "amount.h"
 #include "util.h"
-//#include "utilmoneystr.h"
 
 #include <fstream>
 
@@ -105,7 +103,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
         std::string errorMessage;
         if(!activeMasternode.StopMasterNode(errorMessage)) {
-        	return "stop failed: " + errorMessage;
+            return "stop failed: " + errorMessage;
         }
         pwalletMain->Lock();
 
@@ -117,111 +115,111 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (strCommand == "stop-alias")
     {
-	    if (params.size() < 2){
-			throw runtime_error(
-			"command needs at least 2 parameters\n");
-	    }
-
-	    std::string alias = params[1].get_str().c_str();
-
-    	if(pwalletMain->IsLocked()) {
-    		SecureString strWalletPass;
-    	    strWalletPass.reserve(100);
-
-			if (params.size() == 3){
-				strWalletPass = params[2].get_str().c_str();
-			} else {
-				throw runtime_error(
-				"Your wallet is locked, passphrase is required\n");
-			}
-
-			if(!pwalletMain->Unlock(strWalletPass)){
-				return "incorrect passphrase";
-			}
+        if (params.size() < 2){
+            throw runtime_error(
+            "command needs at least 2 parameters\n");
         }
 
-    	bool found = false;
+        std::string alias = params[1].get_str().c_str();
+
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
+
+            if (params.size() == 3){
+                strWalletPass = params[2].get_str().c_str();
+            } else {
+                throw runtime_error(
+                "Your wallet is locked, passphrase is required\n");
+            }
+
+            if(!pwalletMain->Unlock(strWalletPass)){
+                return "incorrect passphrase";
+            }
+        }
+
+        bool found = false;
 
         UniValue statusObj(UniValue::VOBJ);
 
-		statusObj.push_back(Pair("alias", alias));
+        statusObj.push_back(Pair("alias", alias));
 
-    	BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-    		if(mne.getAlias() == alias) {
-    			found = true;
-    			std::string errorMessage;
-    			bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+            if(mne.getAlias() == alias) {
+                found = true;
+                std::string errorMessage;
+                bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
 
-				statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-    			if(!result) {
-   					statusObj.push_back(Pair("errorMessage", errorMessage));
-   				}
-    			break;
-    		}
-    	}
+                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+                if(!result) {
+                    statusObj.push_back(Pair("errorMessage", errorMessage));
+                }
+                break;
+            }
+        }
 
-    	if(!found) {
-    		statusObj.push_back(Pair("result", "failed"));
-    		statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
-    	}
+        if(!found) {
+            statusObj.push_back(Pair("result", "failed"));
+            statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
+        }
 
-    	pwalletMain->Lock();
-    	return statusObj;
+        pwalletMain->Lock();
+        return statusObj;
     }
 
     if (strCommand == "stop-many")
     {
-    	if(pwalletMain->IsLocked()) {
-			SecureString strWalletPass;
-			strWalletPass.reserve(100);
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
 
-			if (params.size() == 2){
-				strWalletPass = params[1].get_str().c_str();
-			} else {
-				throw runtime_error(
-				"Your wallet is locked, passphrase is required\n");
-			}
+            if (params.size() == 2){
+                strWalletPass = params[1].get_str().c_str();
+            } else {
+                throw runtime_error(
+                "Your wallet is locked, passphrase is required\n");
+            }
 
-			if(!pwalletMain->Unlock(strWalletPass)){
-				return "incorrect passphrase";
-			}
-		}
+            if(!pwalletMain->Unlock(strWalletPass)){
+                return "incorrect passphrase";
+            }
+        }
 
-		int total = 0;
-		int successful = 0;
-		int fail = 0;
+        int total = 0;
+        int successful = 0;
+        int fail = 0;
 
 
         UniValue resultsObj(UniValue::VOBJ);
 
-		BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-			total++;
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+            total++;
 
-			std::string errorMessage;
-			bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
+            std::string errorMessage;
+            bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
 
             UniValue statusObj(UniValue::VOBJ);
-			statusObj.push_back(Pair("alias", mne.getAlias()));
-			statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+            statusObj.push_back(Pair("alias", mne.getAlias()));
+            statusObj.push_back(Pair("result", result ? "successful" : "failed"));
 
-			if(result) {
-				successful++;
-			} else {
-				fail++;
-				statusObj.push_back(Pair("errorMessage", errorMessage));
-			}
+            if(result) {
+                successful++;
+            } else {
+                fail++;
+                statusObj.push_back(Pair("errorMessage", errorMessage));
+            }
 
-			resultsObj.push_back(Pair("status", statusObj));
-		}
-		pwalletMain->Lock();
+            resultsObj.push_back(Pair("status", statusObj));
+        }
+        pwalletMain->Lock();
 
         UniValue returnObj(UniValue::VOBJ);
 
-		returnObj.push_back(Pair("overall", "Successfully stopped " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to stop " +
-				boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
-		returnObj.push_back(Pair("detail", resultsObj));
+        returnObj.push_back(Pair("overall", "Successfully stopped " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to stop " +
+                boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
+        returnObj.push_back(Pair("detail", resultsObj));
 
-		return returnObj;
+        return returnObj;
 
     }
 
@@ -233,9 +231,9 @@ UniValue masternode(const UniValue& params, bool fHelp)
             strCommand = params[1].get_str().c_str();
         }
 
-        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" && strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol"){
+        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" && strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol" && strCommand != "status"){
             throw runtime_error(
-                "list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds', 'rank', 'protocol'\n");
+                "list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds', 'rank', 'protocol', 'status'\n");
         }
 
         UniValue obj(UniValue::VOBJ);
@@ -247,13 +245,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
             } else if (strCommand == "vin") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.vin.prevout.hash.ToString().c_str()));
             } else if (strCommand == "pubkey") {
-                CScript pubkey;
-                pubkey =GetScriptForDestination(mn.pubkey.GetID());
-                CTxDestination address1;
-                ExtractDestination(pubkey, address1);
-                CBitcoinAddress address2(address1);
-
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       address2.ToString().c_str()));
+                obj.push_back(Pair(mn.addr.ToString().c_str(), CBitcoinAddress(mn.pubkey.GetID()).ToString().c_str()));
             } else if (strCommand == "protocol") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)mn.protocolVersion));
             } else if (strCommand == "lastseen") {
@@ -262,6 +254,8 @@ UniValue masternode(const UniValue& params, bool fHelp)
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)(mn.lastTimeSeen - mn.now)));
             } else if (strCommand == "rank") {
                 obj.push_back(Pair(mn.addr.ToString().c_str(),       (int)(GetMasternodeRank(mn.vin, pindexBest->nHeight))));
+            } else if (strCommand == "status") {
+                obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.GetStatus()));
             }
         }
         return obj;
@@ -291,7 +285,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
         if(activeMasternode.status != MASTERNODE_REMOTELY_ENABLED && activeMasternode.status != MASTERNODE_IS_CAPABLE){
             activeMasternode.status = MASTERNODE_NOT_PROCESSED; // TODO: consider better way
             std::string errorMessage;
-            activeMasternode.ManageStatus();
+            activeMasternode.ManageStatus(*g_connman);
             pwalletMain->Lock();
         }
 
@@ -307,113 +301,113 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (strCommand == "start-alias")
     {
-	    if (params.size() < 2){
-			throw runtime_error(
-			"command needs at least 2 parameters\n");
-	    }
-
-	    std::string alias = params[1].get_str().c_str();
-
-    	if(pwalletMain->IsLocked()) {
-    		SecureString strWalletPass;
-    	    strWalletPass.reserve(100);
-
-			if (params.size() == 3){
-				strWalletPass = params[2].get_str().c_str();
-			} else {
-				throw runtime_error(
-				"Your wallet is locked, passphrase is required\n");
-			}
-
-			if(!pwalletMain->Unlock(strWalletPass)){
-				return "incorrect passphrase";
-			}
+        if (params.size() < 2){
+            throw runtime_error(
+            "command needs at least 2 parameters\n");
         }
 
-    	bool found = false;
+        std::string alias = params[1].get_str().c_str();
 
-		UniValue statusObj(UniValue::VOBJ);
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
 
-		statusObj.push_back(Pair("alias", alias));
+            if (params.size() == 3){
+                strWalletPass = params[2].get_str().c_str();
+            } else {
+                throw runtime_error(
+                "Your wallet is locked, passphrase is required\n");
+            }
 
-    	BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-    		if(mne.getAlias() == alias) {
-    			found = true;
-    			std::string errorMessage;
-    			bool result = activeMasternode.Register(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage);
+            if(!pwalletMain->Unlock(strWalletPass)){
+                return "incorrect passphrase";
+            }
+        }
 
-    			statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-    			if(!result) {
-					statusObj.push_back(Pair("errorMessage", errorMessage));
-				}
-    			break;
-    		}
-    	}
+        bool found = false;
 
-    	if(!found) {
-    		statusObj.push_back(Pair("result", "failed"));
-    		statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
-    	}
+        UniValue statusObj(UniValue::VOBJ);
 
-    	pwalletMain->Lock();
-    	return statusObj;
+        statusObj.push_back(Pair("alias", alias));
+
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+            if(mne.getAlias() == alias) {
+                found = true;
+                std::string errorMessage;
+                bool result = activeMasternode.Register(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage);
+
+                statusObj.push_back(Pair("result", result ? "successful" : "failed"));
+                if(!result) {
+                    statusObj.push_back(Pair("errorMessage", errorMessage));
+                }
+                break;
+            }
+        }
+
+        if(!found) {
+            statusObj.push_back(Pair("result", "failed"));
+            statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
+        }
+
+        pwalletMain->Lock();
+        return statusObj;
 
     }
 
     if (strCommand == "start-many")
     {
-    	if(pwalletMain->IsLocked()) {
-			SecureString strWalletPass;
-			strWalletPass.reserve(100);
+        if(pwalletMain->IsLocked()) {
+            SecureString strWalletPass;
+            strWalletPass.reserve(100);
 
-			if (params.size() == 2){
-				strWalletPass = params[1].get_str().c_str();
-			} else {
-				throw runtime_error(
-				"Your wallet is locked, passphrase is required\n");
-			}
+            if (params.size() == 2){
+                strWalletPass = params[1].get_str().c_str();
+            } else {
+                throw runtime_error(
+                "Your wallet is locked, passphrase is required\n");
+            }
 
-			if(!pwalletMain->Unlock(strWalletPass)){
-				return "incorrect passphrase";
-			}
-		}
+            if(!pwalletMain->Unlock(strWalletPass)){
+                return "incorrect passphrase";
+            }
+        }
 
-		std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
-		mnEntries = masternodeConfig.getEntries();
+        std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
+        mnEntries = masternodeConfig.getEntries();
 
-		int total = 0;
-		int successful = 0;
-		int fail = 0;
+        int total = 0;
+        int successful = 0;
+        int fail = 0;
 
         UniValue resultsObj(UniValue::VOBJ);
 
-		BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-			total++;
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+            total++;
 
-			std::string errorMessage;
-			bool result = activeMasternode.Register(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage);
+            std::string errorMessage;
+            bool result = activeMasternode.Register(mne.getIp(), mne.getPrivKey(), mne.getTxHash(), mne.getOutputIndex(), errorMessage);
 
             UniValue statusObj(UniValue::VOBJ);
-			statusObj.push_back(Pair("alias", mne.getAlias()));
-			statusObj.push_back(Pair("result", result ? "succesful" : "failed"));
+            statusObj.push_back(Pair("alias", mne.getAlias()));
+            statusObj.push_back(Pair("result", result ? "succesful" : "failed"));
 
-			if(result) {
-				successful++;
-			} else {
-				fail++;
-				statusObj.push_back(Pair("errorMessage", errorMessage));
-			}
+            if(result) {
+                successful++;
+            } else {
+                fail++;
+                statusObj.push_back(Pair("errorMessage", errorMessage));
+            }
 
-			resultsObj.push_back(Pair("status", statusObj));
-		}
-		pwalletMain->Lock();
+            resultsObj.push_back(Pair("status", statusObj));
+        }
+        pwalletMain->Lock();
 
         UniValue returnObj(UniValue::VOBJ);
-		returnObj.push_back(Pair("overall", "Successfully started " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to start " +
-				boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
-		returnObj.push_back(Pair("detail", resultsObj));
+        returnObj.push_back(Pair("overall", "Successfully started " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to start " +
+                boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
+        returnObj.push_back(Pair("detail", resultsObj));
 
-		return returnObj;
+        return returnObj;
     }
 
     if (strCommand == "debug")
@@ -457,9 +451,9 @@ UniValue masternode(const UniValue& params, bool fHelp)
         CKey secret;
         secret.MakeNewKey(false);
 
-	CBitcoinSecret s;
-	bool fCompressedOut;
-	s.SetSecret(secret.GetSecret(fCompressedOut), false);
+    CBitcoinSecret s;
+    bool fCompressedOut;
+    s.SetSecret(secret.GetSecret(fCompressedOut), false);
         return s.ToString();
     }
 
@@ -501,7 +495,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
         CService addr = CService(strAddress);
 
-        if(ConnectNode((CAddress)addr, NULL, true)){
+        if(g_connman->ConnectNode((CAddress)addr, NULL, true)){
             return "successfully connected";
         } else {
             return "error connecting";
@@ -510,22 +504,22 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if(strCommand == "list-conf")
     {
-    	std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
-    	mnEntries = masternodeConfig.getEntries();
+        std::vector<CMasternodeConfig::CMasternodeEntry> mnEntries;
+        mnEntries = masternodeConfig.getEntries();
 
         UniValue resultObj(UniValue::VOBJ);
 
         BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
             UniValue mnObj(UniValue::VOBJ);
-    		mnObj.push_back(Pair("alias", mne.getAlias()));
-    		mnObj.push_back(Pair("address", mne.getIp()));
-    		mnObj.push_back(Pair("privateKey", mne.getPrivKey()));
-    		mnObj.push_back(Pair("txHash", mne.getTxHash()));
-    		mnObj.push_back(Pair("outputIndex", mne.getOutputIndex()));
-    		resultObj.push_back(Pair("masternode", mnObj));
-    	}
+            mnObj.push_back(Pair("alias", mne.getAlias()));
+            mnObj.push_back(Pair("address", mne.getIp()));
+            mnObj.push_back(Pair("privateKey", mne.getPrivKey()));
+            mnObj.push_back(Pair("txHash", mne.getTxHash()));
+            mnObj.push_back(Pair("outputIndex", mne.getOutputIndex()));
+            resultObj.push_back(Pair("masternode", mnObj));
+        }
 
-    	return resultObj;
+        return resultObj;
     }
 
     if (strCommand == "outputs"){
@@ -543,4 +537,3 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     return NullUniValue;
 }
-

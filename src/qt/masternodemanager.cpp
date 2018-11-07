@@ -44,6 +44,13 @@ MasternodeManager::MasternodeManager(QWidget *parent) :
     ui->tableWidget_2->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
 
     subscribeToCoreSignals();
+
+    timer = new QTimer(this);
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateNodeList()));
+    connect(timer, SIGNAL(timeout()), this, SLOT(updateMyNodeList()));
+    timer->start(1000);
+
+    updateNodeList();
 }
 
 MasternodeManager::~MasternodeManager()
@@ -59,7 +66,7 @@ static void NotifyAdrenalineNodeUpdated(MasternodeManager *page, CAdrenalineNode
     QString privkey = QString::fromStdString(nodeConfig.sMasternodePrivKey);
     QString collateral = QString::fromStdString(nodeConfig.sCollateralAddress);
 
-    QMetaObject::invokeMethod(page, "updateAdrenalineNode", Qt::QueuedConnection,
+    QMetaObject::invokeMethod(page, "updateMyMasternodeInfo", Qt::QueuedConnection,
                               Q_ARG(QString, alias),
                               Q_ARG(QString, addr),
                               Q_ARG(QString, privkey),
@@ -91,7 +98,7 @@ void MasternodeManager::on_tableWidget_2_itemSelectionChanged()
     }
 }
 
-void MasternodeManager::updateAdrenalineNode(QString alias, QString addr, QString privkey, QString collateral)
+void MasternodeManager::updateMyMasternodeInfo(QString alias, QString addr, QString privkey, QString collateral)
 {
     LOCK(cs_adrenaline);
 
@@ -143,52 +150,66 @@ static QString seconds_to_DHMS(quint32 duration)
 
 void MasternodeManager::updateMyNodeList()
 {
-    TRY_LOCK(cs_adrenaline, lockMasternodes);
-    if(!lockMasternodes) {
+    TRY_LOCK(cs_mymnlist, fLockAcquired);
+    if(!fLockAcquired) {
         return;
     }
+    static int64_t nTimeMyListUpdated = 0;
+
+    // automatically update my masternode list only once in MY_MASTERNODELIST_UPDATE_SECONDS seconds,
+    // this update still can be triggered manually at any time via button click
+    int64_t nSecondsTillUpdate = nTimeMyListUpdated + MY_MASTERNODELIST_UPDATE_SECONDS - GetTime();
+    // NTRN TODO - show in UI
+    // ui->secondsLabel->setText(QString::number(nSecondsTillUpdate));
+
+    if(nSecondsTillUpdate > 0) return;
+    nTimeMyListUpdated = GetTime();
 
     if(pwalletMain)
     {
         BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
         {
-            updateAdrenalineNode(QString::fromStdString(adrenaline.second.sAlias), QString::fromStdString(adrenaline.second.sAddress), QString::fromStdString(adrenaline.second.sMasternodePrivKey), QString::fromStdString(adrenaline.second.sCollateralAddress));
+            updateMyMasternodeInfo(QString::fromStdString(adrenaline.second.sAlias), QString::fromStdString(adrenaline.second.sAddress), QString::fromStdString(adrenaline.second.sMasternodePrivKey), QString::fromStdString(adrenaline.second.sCollateralAddress));
         }
     }
 }
 
 void MasternodeManager::updateNodeList()
 {
-    TRY_LOCK(cs_masternodes, lockMasternodes);
-    if(!lockMasternodes)
+    TRY_LOCK(cs_mnlist, fLockAcquired);
+    if(!fLockAcquired)
         return;
+
+    static int64_t nTimeListUpdated = GetTime();
+
+    // to prevent high cpu usage update only once in MASTERNODELIST_UPDATE_SECONDS seconds
+    int64_t nSecondsToWait = nTimeListUpdated - GetTime() + MASTERNODELIST_UPDATE_SECONDS;
+
+    if(nSecondsToWait > 0) return;
+
+    nTimeListUpdated = GetTime();
 
     ui->countLabel->setText("Updating...");
     ui->tableWidget->setSortingEnabled(false);
     ui->tableWidget->clearContents();
     ui->tableWidget->setRowCount(0);
+    std::vector<CMasternode> vMasternodes = vecMasternodes;
 
-    BOOST_FOREACH(CMasternode& mn, vecMasternodes)
+    BOOST_FOREACH(CMasternode& mn, vMasternodes)
     {
         // populate list
-        // Address, Rank, Active, Active Seconds, Last Seen, Pub Key
-        QTableWidgetItem *activeItem = new QTableWidgetItem(QString::number(mn.IsEnabled()));
+        // Address, Rank, Status, Active Seconds, Last Seen, Pub Key
         QTableWidgetItem *addressItem = new QTableWidgetItem(QString::fromStdString(mn.addr.ToString()));
         QTableWidgetItem *protocolItem = new QTableWidgetItem(QString::number(mn.protocolVersion));
+        QTableWidgetItem *statusItem = new QTableWidgetItem(QString::fromStdString(mn.GetStatus()));
         QTableWidgetItem *activeSecondsItem = new QTableWidgetItem(seconds_to_DHMS((qint64)(mn.lastTimeSeen - mn.now)));
-        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat(mn.lastTimeSeen)));
-
-        CScript pubkey;
-        pubkey =GetScriptForDestination(mn.pubkey.GetID());
-        CTxDestination address1;
-        ExtractDestination(pubkey, address1);
-        CBitcoinAddress address2(address1);
-        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(address2.ToString()));
+        QTableWidgetItem *lastSeenItem = new QTableWidgetItem(QString::fromStdString(DateTimeStrFormat("%Y-%m-%d %H:%M", mn.lastTimeSeen)));
+        QTableWidgetItem *pubkeyItem = new QTableWidgetItem(QString::fromStdString(CBitcoinAddress(mn.pubkey.GetID()).ToString()));
 
         ui->tableWidget->insertRow(0);
         ui->tableWidget->setItem(0, 0, addressItem);
         ui->tableWidget->setItem(0, 1, protocolItem);
-        ui->tableWidget->setItem(0, 2, activeItem);
+        ui->tableWidget->setItem(0, 2, statusItem);
         ui->tableWidget->setItem(0, 3, activeSecondsItem);
         ui->tableWidget->setItem(0, 4, lastSeenItem);
         ui->tableWidget->setItem(0, 5, pubkeyItem);
@@ -207,7 +228,9 @@ void MasternodeManager::setClientModel(ClientModel *model)
         updateMyNodeList();
         connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateMyNodeList()));
 
-        updateNodeList();
+        // updateNodeList();
+
+        // try to update list when masternode count changes
         connect(clientModel, SIGNAL(strMasternodesChanged(QString)), this, SLOT(updateNodeList()));
     }
 }
@@ -295,7 +318,7 @@ void MasternodeManager::on_removeButton_clicked()
         ui->tableWidget_2->setRowCount(0);
         BOOST_FOREACH(PAIRTYPE(std::string, CAdrenalineNodeConfig) adrenaline, pwalletMain->mapMyAdrenalineNodes)
         {
-            updateAdrenalineNode(QString::fromStdString(adrenaline.second.sAlias), QString::fromStdString(adrenaline.second.sAddress), QString::fromStdString(adrenaline.second.sMasternodePrivKey), QString::fromStdString(adrenaline.second.sCollateralAddress));
+            updateMyMasternodeInfo(QString::fromStdString(adrenaline.second.sAlias), QString::fromStdString(adrenaline.second.sAddress), QString::fromStdString(adrenaline.second.sMasternodePrivKey), QString::fromStdString(adrenaline.second.sCollateralAddress));
         }
     }
 }

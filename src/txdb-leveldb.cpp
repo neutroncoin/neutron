@@ -24,6 +24,8 @@
 using namespace std;
 using namespace boost;
 
+extern std::atomic<bool> fRequestShutdown;
+
 leveldb::DB *txdb; // global pointer for LevelDB object instance
 
 static leveldb::Options GetOptions() {

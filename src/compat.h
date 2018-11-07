@@ -3,7 +3,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 #ifndef _BITCOIN_COMPAT_H
-#define _BITCOIN_COMPAT_H 1
+#define _BITCOIN_COMPAT_H
 
 #ifdef WIN32
 #define _WIN32_WINNT 0x0501
@@ -11,7 +11,8 @@
 #ifndef NOMINMAX
 #define NOMINMAX
 #endif
-#include <winsock2.h>
+#include <winsock2.h>     // Must be included before mswsock.h and windows.h
+
 #include <mswsock.h>
 #include <ws2tcpip.h>
 #else
@@ -22,11 +23,11 @@
 #include <netdb.h>
 #include <net/if.h>
 #include <netinet/in.h>
+#include <netinet/tcp.h>
 #include <ifaddrs.h>
 
 typedef u_int SOCKET;
 #endif
-
 
 #ifdef WIN32
 #define MSG_NOSIGNAL        0
@@ -47,20 +48,6 @@ typedef int socklen_t;
 #define SOCKET_ERROR        -1
 #endif
 
-inline int myclosesocket(SOCKET& hSocket)
-{
-    if (hSocket == INVALID_SOCKET)
-        return WSAENOTSOCK;
-#ifdef WIN32
-    int ret = closesocket(hSocket);
-#else
-    int ret = close(hSocket);
-#endif
-    hSocket = INVALID_SOCKET;
-    return ret;
-}
-#define closesocket(s)      myclosesocket(s)
-
 bool static inline IsSelectableSocket(SOCKET s) {
 #ifdef WIN32
     return true;
@@ -69,4 +56,4 @@ bool static inline IsSelectableSocket(SOCKET s) {
 #endif
 }
 
-#endif
+#endif // BITCOIN_COMPAT_H

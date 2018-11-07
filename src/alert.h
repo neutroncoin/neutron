@@ -6,6 +6,8 @@
 #ifndef _BITCOINALERT_H_
 #define _BITCOINALERT_H_ 1
 
+#include "serialize.h"
+
 #include <set>
 #include <string>
 

@@ -154,7 +154,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
 
         // make sure it's still unspent
-        //  - this is checked later by .check() in many places and by ThreadCheckDarkSendPool()
+        //  - this is checked later by .check() in many places and by ThreadCheckDarkSend()
 
 
         CTransaction tx = CTransaction();
@@ -593,22 +593,22 @@ void CMasternode::Check()
 
 
     //once spent, stop doing the checks
-    if(enabled==MASTERNODE_VIN_SPENT) return;
+    if(nActiveState==MASTERNODE_VIN_SPENT) return;
 
     //Only accept p2p port for mainnet and testnet
     if (addr.GetPort() != GetDefaultPort()) {
-        enabled = MASTERNODE_POS_ERROR;
+        nActiveState = MASTERNODE_POS_ERROR;
         return;
     }
 
 
     if(!UpdatedWithin(MASTERNODE_REMOVAL_SECONDS)){
-        enabled = MASTERNODE_REMOVE;
+        nActiveState = MASTERNODE_REMOVE;
         return;
     }
 
     if(!UpdatedWithin(MASTERNODE_EXPIRATION_SECONDS)){
-        enabled = MASTERNODE_EXPIRED;
+        nActiveState = MASTERNODE_EXPIRED;
         return;
     }
 
@@ -621,12 +621,35 @@ void CMasternode::Check()
         //if(!AcceptableInputs(mempool, state, tx)){
         bool pfMissingInputs = false;
         if(!AcceptableInputs(mempool, tx, false, &pfMissingInputs)){
-            enabled = MASTERNODE_VIN_SPENT;
+            nActiveState = MASTERNODE_VIN_SPENT;
             return;
         }
     }
 
-    enabled = MASTERNODE_ENABLED; // OK
+    nActiveState = MASTERNODE_ENABLED; // OK
+}
+
+std::string CMasternode::StateToString(int nStateIn)
+{
+    switch(nStateIn) {
+        case MASTERNODE_ENABLED:                return "ENABLED";
+        case MASTERNODE_EXPIRED:                return "EXPIRED";
+        case MASTERNODE_VIN_SPENT:              return "VIN_SPENT";
+        case MASTERNODE_REMOVE:                 return "REMOVE";
+        case MASTERNODE_POS_ERROR:              return "POS_ERROR";
+        default:                                return "UNKNOWN";
+    }
+}
+
+std::string CMasternode::GetStateString() const
+{
+    return StateToString(nActiveState);
+}
+
+std::string CMasternode::GetStatus() const
+{
+    // TODO: return smth a bit more human readable here
+    return GetStateString();
 }
 
 bool CMasternodePayments::CheckSignature(CMasternodePaymentWinner& winner)
@@ -915,8 +938,8 @@ void CMasternodeMan::CheckAndRemove()
         //remove inactive and outdated
         vector<CMasternode>::iterator it = vecMasternodes.begin();
         while (it != vecMasternodes.end()) {
-            if((*it).enabled == CMasternode::MASTERNODE_REMOVE || (*it).enabled == CMasternode::MASTERNODE_VIN_SPENT){
-                LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).enabled);
+            if((*it).nActiveState == CMasternode::MASTERNODE_REMOVE || (*it).nActiveState == CMasternode::MASTERNODE_VIN_SPENT){
+                LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).nActiveState);
                 it = vecMasternodes.erase(it);
             } else {
                 ++it;

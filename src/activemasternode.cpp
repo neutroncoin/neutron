@@ -10,7 +10,7 @@
 //
 // Bootup the masternode, look for a 25000 NTRN input and register on the network
 //
-void CActiveMasternode::ManageStatus()
+void CActiveMasternode::ManageStatus(CConnman& connman)
 {
     std::string errorMessage;
 
@@ -45,7 +45,7 @@ void CActiveMasternode::ManageStatus()
         LogPrintf("CActiveMasternode::ManageStatus() - Checking inbound connection to '%s'\n", service.ToString().c_str());
 
 
-        if(!ConnectNode((CAddress)service, service.ToString().c_str())){
+        if(!connman.ConnectNode((CAddress)service, service.ToString().c_str())){
             notCapableReason = "Could not connect to " + service.ToString();
             status = MASTERNODE_NOT_CAPABLE;
             LogPrintf("CActiveMasternode::ManageStatus() - not capable: %s\n", notCapableReason.c_str());

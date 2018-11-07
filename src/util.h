@@ -8,6 +8,8 @@
 
 #include "tinyformat.h"
 #include "uint256.h"
+#include "allocators.h"
+#include "utiltime.h"
 
 #ifndef WIN32
 #include <sys/types.h>
@@ -34,7 +36,6 @@
 #include <openssl/rand.h>
 #include <openssl/bn.h>
 
-#include "netbase.h" // for AddTimeData
 
 // to obtain PRId64 on some old systems
 #define __STDC_FORMAT_MACROS 1
@@ -139,7 +140,6 @@ extern bool fDebug;
 extern bool fDebugNet;
 extern bool fPrintToConsole;
 extern bool fPrintToDebugger;
-extern bool fRequestShutdown;
 extern bool fShutdown;
 extern bool fDaemon;
 extern bool fServer;
@@ -204,6 +204,7 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map
 #ifdef WIN32
 boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 #endif
+int RaiseFileDescriptorLimit(int nMinFD);
 void ShrinkDebugFile();
 void runCommand(std::string strCommand);
 
@@ -256,6 +257,14 @@ inline bool IsSwitchChar(char c)
     return c == '-';
 #endif
 }
+
+/**
+ * Return true if the given argument has been manually set
+ *
+ * @param strArg Argument to get (e.g. "-foo")
+ * @return true if the argument has been set
+ */
+bool IsArgSet(const std::string& strArg);
 
 /**
  * Return string argument or default value
