@@ -66,7 +66,9 @@ uint256 hashBestChain = 0;
 CBlockIndex* pindexBest = NULL;
 int64_t nTimeBestReceived = 0;
 
-#define FORCESPORK_HEIGHT 1460000
+#define ENFORCE_MN_PAYMENT_HEIGHT  1100000
+#define ENFORCE_DEV_PAYMENT_HEIGHT 1200000
+#define ENFORCE_MNWINNERS_HEIGHT   1462000 // Approx. 11/28/2018
 bool fSporkByForce = false;
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
@@ -1488,7 +1490,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     }
 
     // enable mandatory checks
-    if (!fSporkByForce && (pindex->nHeight > FORCESPORK_HEIGHT)) {
+    if (!fSporkByForce && (pindex->nHeight >= ENFORCE_MNWINNERS_HEIGHT)) {
         LogPrintf("\033[31mfSporkByForce enabled\e[0m\n");
         fSporkByForce = true;
     }
@@ -1532,16 +1534,16 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             bool fCorrectNodePaid = false;
             bool fValidPayment = false;
 
-            // diagnosis (cleaned up for readability)
             if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)) {
-
                 for (const CTxOut out : vtx[1].vout) {
                     if(out.nValue == nRequiredMnPmt) {
                         fMasternodePaid = true;
                         blockPayee = out.scriptPubKey;
                     }
-                    if (out.scriptPubKey == payee)
+                    if (out.scriptPubKey == payee) {
                         fCorrectNodePaid = true;
+                    }
+                    // verify correct payment addr and amount
                     if (out.nValue == nRequiredMnPmt && out.scriptPubKey == payee) {
                         fValidPayment = true;
                         break;
@@ -1554,29 +1556,28 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 
                 // case: expected masternode address not paid
                 if (!fCorrectNodePaid) {
-
                     CTxDestination dest;
                     bool fPrintAddress = ExtractDestination(payee, dest);
                     CBitcoinAddress addressMN(dest);
 
-                    if (fSporkByForce)
+                    if (fSporkByForce) {
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
                                    hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
-                    else
+                    } else {
                         LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n\n",
                                    hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
+                    }
                 } else {
-
                     LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n\n", hasBlockPayee ? paidMN.ToString() : "");
                 }
 
                 // case: expected masternode amount incorrect/none
                 if (!fMasternodePaid) {
-
-                    if (fSporkByForce)
+                    if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
-                    else
+                    } else {
                         LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n\n");
+                    }
                 }
 
             } else {
@@ -1589,15 +1590,14 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             bool fMasternodeSynced = mnodeman.CountEnabled() >= 3;
 
             if (fMasternodeSynced) {
-
-                if (!fValidPayment && fMasternodeSynced && fSporkByForce)
+                if (!fValidPayment && fMasternodeSynced && fSporkByForce) {
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+                }
 
-                if (!fValidPayment)
+                if (!fValidPayment) {
                     LogPrintf("ConnectBlock() : Masternode payment missing or is not valid - NOT ENFORCED\n");
-
+                }
             } else {
-
                 LogPrintf("ConnectBlock() : Masternode list not yet synced - CountEnabled=%d\n", mnodeman.CountEnabled());
             }
 
@@ -1608,21 +1608,23 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             // check coinstake tx for dev payment
             for (const CTxOut out : vtx[1].vout)
             {
-                if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev)
+                if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev) {
                     fValidDevPmt = true;
+                }
             }
 
             if (!fValidDevPmt) {
-                if (fSporkByForce)
+                if (pindex->nHeight >= ENFORCE_DEV_PAYMENT_HEIGHT) {
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Block fails to pay dev payment of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
-                else
+                } else {
                     LogPrintf("ConnectBlock() : Block does not pay %s dev payment - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
+                }
             }
 
             if (fDebug) LogPrintf("ConnectBlock() : Stake pays dev payment\n");
 
         } else {
-            LogPrintf("ConnectBlock() : IBD:  skipping masternode and developer payment checks %d\n", pindexBest->nHeight+1);
+            LogPrintf("ConnectBlock() : Initial block download: skipping masternode and developer payment checks %d\n", pindexBest->nHeight+1);
         }
     }
 
