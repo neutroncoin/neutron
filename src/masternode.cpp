@@ -636,14 +636,18 @@ bool CMasternodePayments::CheckSignature(CMasternodePaymentWinner& winner)
     std::string strPubKey = !fTestNet ? strMainPubKey: strTestPubKey;
     CPubKey pubkey(ParseHex(strPubKey));
 
+    if (fDebug)
+       LogPrintf("CheckSignature debug - strMessage: %s, strPubKey: %s\n", strMessage, strPubKey);
+
     std::string errorMessage = "";
-    if(!darkSendSigner.VerifyMessage(pubkey, winner.vchSig, strMessage, errorMessage)){
-        if(!errorMessage.empty()) {
+    if(!darkSendSigner.VerifyMessage(pubkey, winner.vchSig, strMessage, errorMessage)) {
+      if (fDebug) {
+        if(!errorMessage.empty())
             LogPrintf("CMasternodePayments::CheckSignature -- VerifyMessage() failed, error: %s\n", errorMessage);
-        } else {
+        else
             LogPrintf("CMasternodePayments::CheckSignature -- VerifyMessage() failed\n");
-        }
-        return false;
+      }
+      return false;
     }
 
     return true;

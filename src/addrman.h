@@ -419,7 +419,7 @@ public:
             fRet |= Add_(addr, source, nTimePenalty);
             Check();
         }
-        if (fRet)
+        if (fDebug && fRet)
             LogPrintf("Added %s from %s: %i tried, %i new\n", addr.ToStringIPPort().c_str(), source.ToString().c_str(), nTried, nNew);
         return fRet;
     }
@@ -435,7 +435,7 @@ public:
                 nAdd += Add_(*it, source, nTimePenalty) ? 1 : 0;
             Check();
         }
-        if (nAdd)
+        if (fDebug && nAdd)
             LogPrintf("Added %i addresses from %s: %i tried, %i new\n", nAdd, source.ToString().c_str(), nTried, nNew);
         return nAdd > 0;
     }
