@@ -16,6 +16,8 @@
 using namespace std;
 using namespace boost;
 
+int64_t nMaxTipAge = DEFAULT_MAX_TIP_AGE;
+
 static filesystem::path BlockFilePath(unsigned int nFile)
 {
     string strBlockFn = strprintf("blk%04u.dat", nFile);
@@ -76,8 +78,12 @@ bool IsInitialBlockDownload()
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
 
-    if (pindexBest == NULL || nBestHeight < Checkpoints::GetTotalBlocksEstimate())
+    if (pindexBest == NULL)
         return true;
+    if (nBestHeight < Checkpoints::GetTotalBlocksEstimate())
+        return true;
+
+    /* TODO: NTRN - look into verifying chain work */
 
     static int64_t nLastUpdate;
     static CBlockIndex* pindexLastBest;
@@ -85,7 +91,18 @@ bool IsInitialBlockDownload()
         pindexLastBest = pindexBest;
         nLastUpdate = GetTime();
     }
-    if (GetTime() - nLastUpdate < 15 && pindexBest->GetBlockTime() < GetTime() - 8 * 60 * 60)
+
+    if (fDebug) {
+        if (GetTime() - nLastUpdate < 15 == false) {
+            LogPrintf("[InitialBlockDownload] Update check FALSE: (%d < 15)\n", GetTime()-nLastUpdate);
+        }
+        LogPrintf("[InitialBlockDownload] (%s && %s)\n", GetTime()-nLastUpdate<15, pindexBest->GetBlockTime()<GetTime()-nMaxTipAge);
+    }
+
+    if (GetTime() - nLastUpdate < 15 && pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
+        return true;
+
+    if (pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
 
     LogPrintf("Leaving InitialBlockDownload (latching to false)\n");

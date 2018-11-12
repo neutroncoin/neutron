@@ -1564,11 +1564,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
                                    hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
                     } else {
-                        LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n\n",
+                        LogPrintf("\n");
+                        LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n",
                                    hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
                     }
                 } else {
-                    LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n\n", hasBlockPayee ? paidMN.ToString() : "");
+                    LogPrintf("\n");
+                    LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                 }
 
                 // case: expected masternode amount incorrect/none
@@ -1576,7 +1578,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
                     } else {
-                        LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n\n");
+                        LogPrintf("\n");
+                        LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n");
                     }
                 }
 
