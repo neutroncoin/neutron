@@ -179,7 +179,7 @@ univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
 # RPC commands
 OBJS += rpc/rpcmasternode.o
 rpc/rpcmasternode.o: rpc/rpcmasternode.cpp
-        $(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 # auto-generated dependencies:
 -include obj/*.P
