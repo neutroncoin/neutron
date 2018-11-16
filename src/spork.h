@@ -38,7 +38,7 @@ using namespace boost;
     - This would result in old clients getting confused about which spork is for what
 */
 #define SPORK_START                                           10001
-#define SPORK_END                                             10007
+#define SPORK_END                                             10008
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10001
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT                 10002
@@ -47,6 +47,7 @@ using namespace boost;
 #define SPORK_5_ENFORCE_NEW_PROTOCOL_V200                     10005 // DEPRECATED at v2.0.2
 #define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT              10006 // DEPRECATED at v2.0.2
 #define SPORK_7_PROTOCOL_V201_ENFORCEMENT                     10007 // DEPRECATED at v2.0.2
+#define SPORK_8_PROTOCOL_V210_ENFORCEMENT                     10008
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       4070908800 // OFF
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         4070908800 // OFF
@@ -55,6 +56,7 @@ using namespace boost;
 #define SPORK_5_ENFORCE_NEW_PROTOCOL_V200_DEFAULT             4070908800 // OFF
 #define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT_DEFAULT      4070908800 // OFF
 #define SPORK_7_PROTOCOL_V201_ENFORCEMENT_DEFAULT             4070908800 // OFF
+#define SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT             4070908800 // OFF
 
 extern std::map<uint256, CSporkMessage> mapSporks;
 extern CSporkManager sporkManager;

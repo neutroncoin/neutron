@@ -3693,8 +3693,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
 int ActiveProtocol()
 {
-    // Allowed: 60017
-    // Banned: 60016 and below
+    // Allowed: 60018
+    // Banned: 60017 and below
 
     // if (sporkManager.IsSporkActive(SPORK_7_PROTOCOL_V201_ENFORCEMENT)) {
     //     // v2.0.1 - 60017
@@ -3704,8 +3704,13 @@ int ActiveProtocol()
     // // v2.0.0 - 60016
     // return MIN_PEER_PROTO_VERSION_AFTER_V200_ENFORCEMENT;
 
-    // v2.0.2+ - 60017
-    return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
+    if (sporkManager.IsSporkActive(SPORK_8_PROTOCOL_V210_ENFORCEMENT)) {
+        // v2.1.0 - 60018
+        return MIN_PEER_PROTO_VERSION_AFTER_V210_ENFORCEMENT;
+    } else {
+        // v2.0.2 to v2.0.5 - 60017
+        return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
+    }
 }
 
 // requires LOCK(cs_vRecvMsg)
