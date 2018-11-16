@@ -159,6 +159,7 @@ OBJS= \
 
 all: neutrond
 
+# LevelDB library
 LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
@@ -167,12 +168,18 @@ leveldb/libleveldb.a:
 	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..;
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
+# UniValue library
 LIBS += -L$(CURDIR)/univalue/libunivalue.la
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
 OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/*.o
 univalue/libunivalue.la:
 	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
+
+# RPC commands
+OBJS += rpc/rpcmasternode.o
+rpc/rpcmasternode.o: rpc/rpcmasternode.cpp
+        $(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 # auto-generated dependencies:
 -include obj/*.P
