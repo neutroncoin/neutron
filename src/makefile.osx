@@ -158,6 +158,7 @@ leveldb/libleveldb.a:
 obj/txdb-leveldb.o: leveldb/libleveldb.a
 
 # UniValue library
+LIBS += -L$(CURDIR)/univalue/libunivalue.la
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
 OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/libunivalue_la-univalue_get.o univalue/lib/libunivalue_la-univalue_read.o univalue/lib/libunivalue_la-univalue_write.o
 univalue/libunivalue.la:

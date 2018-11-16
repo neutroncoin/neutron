@@ -171,7 +171,7 @@ obj/txdb-leveldb.o: leveldb/libleveldb.a
 # UniValue library
 LIBS += -L$(CURDIR)/univalue/libunivalue.la
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
-OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/*.o
+OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/libunivalue_la-univalue_get.o univalue/lib/libunivalue_la-univalue_read.o univalue/lib/libunivalue_la-univalue_write.o
 univalue/libunivalue.la:
 	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
