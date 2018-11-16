@@ -556,8 +556,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         return InitError(_("Not enough file descriptors available."));
     nMaxConnections = std::min(nFD - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS, nMaxConnections);
 
-    if (nMaxConnections < nUserMaxConnections)
-        InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
+    if (nMaxConnections < nUserMaxConnections) {
+        // InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
+        LogPrintf("Reducing -maxconnections from %d to %d, because of system limitations.", nUserMaxConnections, nMaxConnections);
+    }
 
     // ********************************************************* Step 3: parameter-to-internal-flags
 
