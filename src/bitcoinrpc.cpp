@@ -426,7 +426,7 @@ static const CRPCCommand vRPCCommands[] =
     // TODO: NTRN - Add masternodelist
     { "masternode",             &masternode,             true,       true },
     { "spork",                  &spork,                  true,       false },
-    { "getminingreport",         &getminingreport,       false,      false},
+    { "getminingreport",        &getminingreport,        false,      false},
 
     /* Wallet */
     { "addmultisigaddress",     &addmultisigaddress,     false,      false },
