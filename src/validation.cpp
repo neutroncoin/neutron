@@ -93,7 +93,7 @@ bool IsInitialBlockDownload()
     }
 
     if (fDebug) {
-        if (GetTime() - nLastUpdate < 15 == false) {
+        if ((GetTime() - nLastUpdate < 15) == false) {
             LogPrintf("[InitialBlockDownload] Update check FALSE: (%d < 15)\n", GetTime()-nLastUpdate);
         }
         LogPrintf("[InitialBlockDownload] (%s && %s)\n", GetTime()-nLastUpdate<15, pindexBest->GetBlockTime()<GetTime()-nMaxTipAge);
