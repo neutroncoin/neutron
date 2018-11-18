@@ -154,7 +154,6 @@ void PrepareShutdown()
     /// module was initialized.
     RenameThread("Neutron-shutoff");
 
-    static bool fExit;
     fShutdown = true;
     nTransactionsUpdated++;
     // CTxDB().Close();
@@ -169,7 +168,6 @@ void PrepareShutdown()
     NewThread(ExitTimeout, NULL);
     MilliSleep(50);
     LogPrintf("Neutron exited\n\n");
-    fExit = true;
 }
 
 void Shutdown()
