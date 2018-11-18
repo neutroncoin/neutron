@@ -85,6 +85,7 @@ OBJS= \
     obj/script.o \
     obj/sync.o \
     obj/threadinterrupt.o \
+    obj/ui_interface.o \
     obj/util.o \
     obj/wallet.o \
     obj/walletdb.o \

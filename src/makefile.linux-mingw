@@ -108,6 +108,7 @@ OBJS= \
     obj/threadinterrupt.o \
     obj/timedata.o \
     obj/txmempool.o \
+    obj/ui_interface.o \
     obj/util.o \
     obj/utilmoneystr.o \
     obj/utilstrencodings.o \

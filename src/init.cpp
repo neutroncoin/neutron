@@ -39,7 +39,6 @@ using namespace boost;
 #define PACKAGE_NAME "Neutron"
 
 CWallet* pwalletMain;
-CClientUIInterface uiInterface;
 bool fConfChange;
 bool fEnforceCanonical;
 unsigned int nNodeLifespan;
@@ -300,20 +299,6 @@ int main(int argc, char* argv[])
     return 1;
 }
 #endif
-
-bool static InitError(const std::string &str)
-{
-    LogPrintf("%s\n", str.c_str());
-    uiInterface.InitMessage(str);
-    uiInterface.ThreadSafeMessageBox(str, _("Neutron"), CClientUIInterface::OK | CClientUIInterface::MODAL);
-    return false;
-}
-
-bool static InitWarning(const std::string &str)
-{
-    uiInterface.ThreadSafeMessageBox(str, _("Neutron"), CClientUIInterface::OK | CClientUIInterface::ICON_EXCLAMATION | CClientUIInterface::MODAL);
-    return true;
-}
 
 
 bool static Bind(const CService &addr, bool fError = true) {

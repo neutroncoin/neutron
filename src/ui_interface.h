@@ -9,9 +9,8 @@
 #include <boost/signals2/last_value.hpp>
 #include <boost/signals2/signal.hpp>
 
-#include <string>
-
 #include <stdint.h>
+#include <string>
 
 class CAdrenalineNodeConfig;
 class CBasicKeyStore;
@@ -123,16 +122,18 @@ public:
     boost::signals2::signal<void(const std::string& title, int nProgress)> ShowProgress;
 };
 
-extern CClientUIInterface uiInterface;
-
 /**
  * Translation function: Call Translate signal on UI interface, which returns a boost::optional result.
  * If no translation slot is registered, nothing is returned, and simply return the input.
  */
-inline std::string _(const char* psz)
-{
-    boost::optional<std::string> rv = uiInterface.Translate(psz);
-    return rv ? (*rv) : psz;
-}
+std::string _(const char* psz);
 
-#endif
+/** Show warning message **/
+void InitWarning(const std::string& str);
+
+/** Show error message **/
+bool InitError(const std::string& str);
+
+extern CClientUIInterface uiInterface;
+
+#endif // BITCOIN_UI_INTERFACE_H
