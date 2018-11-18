@@ -36,6 +36,8 @@
 using namespace std;
 using namespace boost;
 
+#define PACKAGE_NAME "Neutron"
+
 CWallet* pwalletMain;
 CClientUIInterface uiInterface;
 bool fConfChange;
@@ -256,6 +258,11 @@ bool AppInit(int argc, char* argv[])
             exit(ret);
         }
 
+        if (!LockDataDirectory(true)) {
+            // Detailed error printed inside LockDataDirectory
+            return false;
+        }
+
         fRet = AppInit2(threadGroup, scheduler);
     }
     catch (std::exception& e) {
@@ -317,6 +324,29 @@ bool static Bind(const CService &addr, bool fError = true) {
         if (fError)
             return InitError(strError);
         return false;
+    }
+    return true;
+}
+
+static bool LockDataDirectory(bool probeOnly)
+{
+    std::string strDataDir = GetDataDir().string();
+
+    // Make sure only a single Neutron Core process is using the data directory.
+    boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
+    FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
+    if (file) fclose(file);
+
+    try {
+        static boost::interprocess::file_lock lock(pathLockFile.string().c_str());
+        if (!lock.try_lock()) {
+            return InitError(strprintf(_("Cannot obtain a lock on data directory %s. %s is probably already running."), strDataDir, _(PACKAGE_NAME)));
+        }
+        if (probeOnly) {
+            lock.unlock();
+        }
+    } catch(const boost::interprocess::interprocess_exception& e) {
+        return InitError(strprintf(_("Cannot obtain a lock on data directory %s. %s is probably already running.") + " %s.", strDataDir, _(PACKAGE_NAME), e.what()));
     }
     return true;
 }
@@ -627,35 +657,30 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (strWalletFileName != boost::filesystem::basename(strWalletFileName) + boost::filesystem::extension(strWalletFileName))
         return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFileName.c_str(), strDataDir.c_str()));
 
-    // Make sure only a single Bitcoin process is using the data directory.
-    boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
-    FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
-    if (file) fclose(file);
-    static boost::interprocess::file_lock lock(pathLockFile.string().c_str());
-    if (!lock.try_lock())
-        return InitError(strprintf(_("Cannot obtain a lock on data directory %s.\nNeutron is probably already running."), strDataDir.c_str()));
+    if (!LockDataDirectory(true)) {
+        // Detailed error printed inside LockDataDirectory
+        return false;
+    }
 
-#if !defined(WIN32) && !defined(QT_GUI)
     if (fDaemon)
     {
+#if !defined(WIN32) && !defined(QT_GUI)
+        fprintf(stdout, "Neutron server starting\n");
+
         // Daemonize
-        pid_t pid = fork();
-        if (pid < 0)
-        {
-            fprintf(stderr, "Error: fork() returned %d errno %d\n", pid, errno);
+        if (daemon(1, 0)) { // don't chdir (1), do close FDs (0)
+            LogPrintf("Error: daemon() failed: %s\n", strerror(errno));
             return false;
         }
-        if (pid > 0)
-        {
-            CreatePidFile(GetPidFile(), pid);
-            return true;
-        }
 
-        pid_t sid = setsid();
-        if (sid < 0)
-            fprintf(stderr, "Error: setsid() returned %d errno %d\n", sid, errno);
-    }
+        CreatePidFile(GetPidFile(), getpid());
 #endif
+    }
+
+    if (!LockDataDirectory(false)) {
+        // Detailed error printed inside LockDataDirectory
+        return false;
+    }
 
     if (GetBoolArg("-shrinkdebugfile", !fDebug))
         ShrinkDebugFile();
@@ -681,9 +706,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             return InitError(_("Unable to sign masternode payment winner, wrong key?"));
 
     }
-
-    if (fDaemon)
-        fprintf(stdout, "Neutron server starting\n");
 
     int64_t nStart;
 
@@ -1137,11 +1159,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
      // Add wallet transactions that aren't already in a block to mapTransactions
     pwalletMain->ReacceptWalletTransactions();
 
+
 #if !defined(QT_GUI)
-    // Loop until process is exit()ed from shutdown() function,
-    // called from ThreadRPCServer thread when a "stop" command is received.
-    while (1)
-        MilliSleep(5000);
+    // // Loop until process is exit()ed from shutdown() function,
+    // // called from ThreadRPCServer thread when a "stop" command is received.
+    // while (1)
+    //     MilliSleep(5000);
 #endif
 
     return true;
