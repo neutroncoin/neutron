@@ -2179,6 +2179,15 @@ public:
     }
     ~CNetCleanup()
     {
+        // Close sockets
+        BOOST_FOREACH(CNode* pnode, vNodes)
+            if (pnode->hSocket != INVALID_SOCKET)
+                CloseSocket(pnode->hSocket);
+        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket)
+            if (hListenSocket != INVALID_SOCKET)
+                if (CloseSocket(hListenSocket) == SOCKET_ERROR)
+                    LogPrintf("CloseSocket(hListenSocket) failed with error %d\n", WSAGetLastError());
+
 #ifdef WIN32
         // Shutdown Windows Sockets
         WSACleanup();
@@ -2186,14 +2195,6 @@ public:
     }
 }
 instance_of_cnetcleanup;
-
-void CExplicitNetCleanup::callCleanup()
-{
-    // Explicit call to destructor of CNetCleanup because it's not implicitly called
-    // when the wallet is restarted from within the wallet itself.
-    CNetCleanup *tmp = new CNetCleanup();
-    delete tmp; // Stroustrup's gonna kill me for that
-}
 
 int64_t PoissonNextSend(int64_t nNow, int average_interval_seconds) {
     return nNow + (int64_t)(log1p(GetRand(1ULL << 48) * -0.0000000000000035527136788 /* -1/2^48 */) * average_interval_seconds * -1000000.0 + 0.5);

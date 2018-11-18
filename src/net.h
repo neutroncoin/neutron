@@ -1084,12 +1084,6 @@ public:
     void copyStats(CNodeStats &stats);
 };
 
-class CExplicitNetCleanup
-{
-public:
-    static void callCleanup();
-};
-
 class CTransaction;
 void RelayTransaction(const CTransaction& tx, const uint256& hash);
 void RelayTransaction(const CTransaction& tx, const uint256& hash, const CDataStream& ss);
