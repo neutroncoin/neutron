@@ -64,6 +64,7 @@ OBJS= \
     obj/checkpoints.o \
     obj/netaddress.o \
     obj/netbase.o \
+    obj/addrdb.o \
     obj/addrman.o \
     obj/crypter.o \
     obj/key.o \

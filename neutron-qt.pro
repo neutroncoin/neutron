@@ -172,6 +172,7 @@ windows:QMAKE_CXXFLAGS_WARN_ON += -Wno-cpp -Wno-maybe-uninitialized
 DEPENDPATH += src src/json src/qt
 
 HEADERS += src/activemasternode.h \
+    src/addrdb.h \
     src/addrman.h \
     src/alert.h \
     src/allocators.h \
@@ -277,6 +278,7 @@ HEADERS += src/activemasternode.h \
     src/rpc/register.h
 
 SOURCES += src/activemasternode.cpp \
+    src/addrdb.cpp \
     src/addrman.cpp \
     src/alert.cpp \
     src/bitcoinrpc.cpp \
@@ -319,6 +321,7 @@ SOURCES += src/activemasternode.cpp \
     src/threadinterrupt.cpp \
     src/timedata.cpp \
     src/txmempool.cpp \
+    src/ui_interface.cpp \
     src/util.cpp \
     src/utilmoneystr.cpp \
     src/utilstrencodings.cpp \

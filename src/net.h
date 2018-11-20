@@ -6,6 +6,7 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include "addrdb.h"
 #include "addrman.h"
 #include "key.h"
 #include "keystore.h"
@@ -19,6 +20,7 @@
 #include "streams.h"
 #include "threadinterrupt.h"
 #include "timedata.h"
+#include "ui_interface.h"
 #include "utiltime.h"
 
 #include <deque>
@@ -551,7 +553,7 @@ private:
     int nMaxAddnode;
     int nMaxFeeler;
     // std::atomic<int> nBestHeight;
-    // CClientUIInterface* clientInterface;
+    CClientUIInterface* clientInterface;
 
     /** SipHasher seeds for deterministic randomness */
     const uint64_t nSeed0, nSeed1;
@@ -1096,17 +1098,6 @@ void RelayDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned 
 void SendDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned char> vchSig, const int64_t nNow, const bool stop);
 void RelayDarkSendCompletedTransaction(const int sessionID, const bool error, const std::string errorMessage);
 void RelayDarkSendMasterNodeContestant();
-
-/** Access to the (IP) address database (peers.dat) */
-class CAddrDB
-{
-private:
-    boost::filesystem::path pathAddr;
-public:
-    CAddrDB();
-    bool Write(const CAddrMan& addr);
-    bool Read(CAddrMan& addr);
-};
 
 
 

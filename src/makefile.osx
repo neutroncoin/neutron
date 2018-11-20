@@ -84,6 +84,7 @@ CFLAGS += -stdlib=libc++ -std=c++11 -Wall -Wextra -Wno-unused-local-typedefs -Wf
 
 OBJS= \
     obj/activemasternode.o \
+    obj/addrdb.o \
     obj/addrman.o \
     obj/alert.o \
     obj/bitcoinrpc.o \

@@ -108,6 +108,7 @@ xLDFLAGS=$(LDHARDENING) $(LDFLAGS)
 
 OBJS= \
     obj/activemasternode.o \
+    obj/addrdb.o \
     obj/addrman.o \
     obj/alert.o \
     obj/bitcoinrpc.o \
