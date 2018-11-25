@@ -12,9 +12,12 @@
 #include <map>
 #include <boost/filesystem/path.hpp>
 
-// class CSubNet;
+class CSubNet;
 class CAddrMan;
 // class CDataStream;
+
+
+typedef std::map<CSubNet, int64_t> banmap_t;
 
 /** Access to the (IP) address database (peers.dat) */
 class CAddrDB

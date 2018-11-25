@@ -67,8 +67,6 @@ static const unsigned int DEFAULT_MAX_PEER_CONNECTIONS = 125;
 inline unsigned int ReceiveFloodSize() { return 1000*GetArg("-maxreceivebuffer", 5*1000); }
 inline unsigned int SendBufferSize() { return 1000*GetArg("-maxsendbuffer", 1*1000); }
 
-typedef std::map<CSubNet, int64_t> banmap_t;
-
 bool RecvLine(SOCKET hSocket, std::string& strLine);
 bool GetMyExternalIP(CNetAddr& ipRet);
 void AddressCurrentlyConnected(const CService& addr);
