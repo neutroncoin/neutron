@@ -9,6 +9,7 @@
 #include "checkpoints.h"
 #include "timedata.h"
 #include "tinyformat.h"
+#include "script/standard.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

@@ -3,6 +3,7 @@
 #include "darksend.h"
 //#include "primitives/transaction.h"
 #include "main.h"
+#include "script/standard.h"
 #include "util.h"
 #include "addrman.h"
 #include <boost/lexical_cast.hpp>

@@ -275,7 +275,8 @@ HEADERS += src/activemasternode.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
     src/qt/walletmodel.h \
-    src/rpc/register.h
+    src/rpc/register.h \
+    src/script/standard.h
 
 SOURCES += src/activemasternode.cpp \
     src/addrdb.cpp \
@@ -371,7 +372,8 @@ SOURCES += src/activemasternode.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
     src/qt/walletmodel.cpp \
-    src/rpc/rpcmasternode.cpp
+    src/rpc/rpcmasternode.cpp \
+    src/script/standard.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc

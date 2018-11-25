@@ -84,6 +84,7 @@ OBJS= \
     obj/rpcrawtransaction.o \
     obj/scheduler.o \
     obj/script.o \
+    obj/standard.o \
     obj/sync.o \
     obj/threadinterrupt.o \
     obj/ui_interface.o \
