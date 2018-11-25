@@ -31,4 +31,15 @@ public:
     // bool Read(CAddrMan& addr, CDataStream& ssPeers);
 };
 
+/** Access to the banlist database (banlist.dat) */
+class CBanDB
+{
+private:
+    boost::filesystem::path pathBanlist;
+public:
+    CBanDB();
+    bool Write(const banmap_t& banSet);
+    bool Read(banmap_t& banSet);
+};
+
 #endif // BITCOIN_ADDRDB_H

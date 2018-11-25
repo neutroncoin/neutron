@@ -381,6 +381,16 @@ public:
     short exceptions()           { return exceptmask; }
     short exceptions(short mask) { short prev = exceptmask; exceptmask = mask; setstate(0, "CAutoFile"); return prev; }
 
+    /** Get wrapped FILE* without transfer of ownership.
+     * @note Ownership of the FILE* will remain with this class. Use this only if the scope of the
+     * CAutoFile outlives use of the passed pointer.
+     */
+    FILE* Get() const { return file; }
+
+    /** Return true if the wrapped FILE* is NULL, false otherwise.
+     */
+    bool IsNull() const { return (file == NULL); }
+
     void SetType(int n)          { nType = n; }
     int GetType()                { return nType; }
     void SetVersion(int n)       { nVersion = n; }
