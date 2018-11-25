@@ -10,6 +10,7 @@
 #include "noui.h"
 #include "init.h"
 #include "rpc/register.h"
+#include "script/standard.h"
 #include "scheduler.h"
 #include "util.h"
 #include "utiltime.h"

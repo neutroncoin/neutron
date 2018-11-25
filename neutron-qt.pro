@@ -235,6 +235,7 @@ HEADERS += src/activemasternode.h \
     src/json/json_spirit_writer_template.h \
     src/json/json_spirit_writer.h \
     src/primitives/block.h \
+    src/primitives/transaction.h \
     src/qt/aboutdialog.h \
     src/qt/addeditadrenalinenode.h \
     src/qt/addressbookpage.h \
@@ -275,7 +276,8 @@ HEADERS += src/activemasternode.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
     src/qt/walletmodel.h \
-    src/rpc/register.h
+    src/rpc/register.h \
+    src/script/standard.h
 
 SOURCES += src/activemasternode.cpp \
     src/addrdb.cpp \
@@ -330,6 +332,7 @@ SOURCES += src/activemasternode.cpp \
     src/wallet.cpp \
     src/walletdb.cpp \
     src/primitives/block.cpp \
+    src/primitives/transaction.cpp \
     src/qt/aboutdialog.cpp \
     src/qt/addeditadrenalinenode.cpp \
     src/qt/addressbookpage.cpp \
@@ -371,7 +374,8 @@ SOURCES += src/activemasternode.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
     src/qt/walletmodel.cpp \
-    src/rpc/rpcmasternode.cpp
+    src/rpc/rpcmasternode.cpp \
+    src/script/standard.cpp
 
 RESOURCES += \
     src/qt/bitcoin.qrc

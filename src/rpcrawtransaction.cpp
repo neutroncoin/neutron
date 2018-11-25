@@ -12,6 +12,7 @@
 #include "main.h"
 #include "net.h"
 #include "wallet.h"
+#include "script/standard.h"
 
 #include "univalue.h"
 

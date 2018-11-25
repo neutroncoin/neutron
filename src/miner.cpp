@@ -8,6 +8,7 @@
 #include "miner.h"
 #include "kernel.h"
 #include "utiltime.h"
+#include "script/standard.h"
 
 using namespace std;
 
