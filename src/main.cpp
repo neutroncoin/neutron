@@ -3037,7 +3037,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             LogPrintf("%s : peer=%d (%s) using obsolete version %i; disconnecting\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE, strprintf("Version must be %d or greater", ActiveProtocol()));
             pfrom->fDisconnect = true;
-            pfrom->Misbehaving(50);
+            pfrom->Misbehaving(100);
             return false;
         }
 
