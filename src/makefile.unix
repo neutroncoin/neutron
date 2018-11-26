@@ -146,7 +146,6 @@ OBJS= \
     obj/scrypt-x86.o \
     obj/scrypt-x86_64.o \
     obj/spork.o \
-    obj/standard.o \
     obj/sync.o \
     obj/threadinterrupt.o \
     obj/timedata.o \
@@ -182,6 +181,10 @@ univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
 # RPC commands
 OBJS += rpc/rpcmasternode.o
 rpc/rpcmasternode.o: rpc/rpcmasternode.cpp
+	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+
+OBJS += script/standard.o
+script/standard.o: script/standard.cpp
 	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 # auto-generated dependencies:
