@@ -6,29 +6,15 @@
 #ifndef SPORK_H
 #define SPORK_H
 
-#include "bignum.h"
-#include "sync.h"
-#include "net.h"
-#include "key.h"
-
-#include "util.h"
-#include "script.h"
 #include "base58.h"
+#include "key.h"
 #include "main.h"
-
-using namespace std;
-using namespace boost;
-
-class CSporkMessage;
-class CSporkManager;
+#include "net.h"
+#include "sync.h"
+#include "util.h"
 
 #include "bignum.h"
-#include "net.h"
-#include "key.h"
-#include "util.h"
-#include "protocol.h"
-#include "darksend.h"
-#include <boost/lexical_cast.hpp>
+#include "script.h"
 
 using namespace std;
 using namespace boost;
@@ -57,6 +43,9 @@ using namespace boost;
 #define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT_DEFAULT      4070908800 // OFF
 #define SPORK_7_PROTOCOL_V201_ENFORCEMENT_DEFAULT             4070908800 // OFF
 #define SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT             4070908800 // OFF
+
+class CSporkMessage;
+class CSporkManager;
 
 extern std::map<uint256, CSporkMessage> mapSporks;
 extern CSporkManager sporkManager;
