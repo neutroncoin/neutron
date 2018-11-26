@@ -409,6 +409,26 @@ CNode* CConnman::ConnectNode(CAddress addrConnect, const char *pszDest, bool dar
     return NULL;
 }
 
+void CConnman::DumpBanlist()
+{
+    SweepBanned(); // clean unused entries (if bantime has expired)
+
+    if (!BannedSetIsDirty())
+        return;
+
+    int64_t nStart = GetTimeMillis();
+
+    CBanDB bandb;
+    banmap_t banmap;
+    SetBannedSetDirty(false);
+    GetBanned(banmap);
+    if (!bandb.Write(banmap))
+        SetBannedSetDirty(true);
+
+    LogPrintf("Flushed %d banned node ips/subnets to banlist.dat  %dms\n",
+        banmap.size(), GetTimeMillis() - nStart);
+}
+
 void CNode::CloseSocketDisconnect()
 {
     fDisconnect = true;
@@ -478,8 +498,14 @@ void CNode::PushVersion()
 
 void CConnman::ClearBanned()
 {
-    LOCK(cs_setBanned);
-    setBanned.clear();
+    {
+        LOCK(cs_setBanned);
+        setBanned.clear();
+        setBannedIsDirty = true;
+    }
+    DumpBanlist(); //store banlist to disk
+    // if(clientInterface)
+    //     clientInterface->BannedListChanged();
 }
 
 bool CConnman::IsBanned(CNetAddr ip)
@@ -536,7 +562,8 @@ void CConnman::Ban(const CSubNet& subNet, int64_t bantimeoffset) {
         else
             return;
     }
-
+    // if(clientInterface)
+    //     clientInterface->BannedListChanged();
     {
         LOCK(cs_vNodes);
         BOOST_FOREACH(CNode* pnode, vNodes) {
@@ -556,7 +583,11 @@ bool CConnman::Unban(const CSubNet &subNet) {
         LOCK(cs_setBanned);
         if (!setBanned.erase(subNet))
             return false;
+        setBannedIsDirty = true;
     }
+    // if(clientInterface)
+    //     clientInterface->BannedListChanged();
+    DumpBanlist(); //store banlist to disk immediately
     return true;
 }
 
@@ -1339,6 +1370,7 @@ void CConnman::DumpAddresses()
 void CConnman::DumpData()
 {
     DumpAddresses();
+    DumpBanlist();
 }
 
 void CConnman::ThreadOpenConnections()
@@ -1974,20 +2006,40 @@ bool CConnman::Start(CScheduler& scheduler, Options connOptions)
     nMaxFeeler = connOptions.nMaxFeeler;
 
     clientInterface = &uiInterface;
+
     if (clientInterface)
         uiInterface.InitMessage(_("Loading addresses..."));
     // Load addresses for peers.dat
     int64_t nStart = GetTimeMillis();
     {
         CAddrDB adb;
-        if (!adb.Read(addrman))
+        if (adb.Read(addrman))
+            LogPrintf("Loaded %i addresses from peers.dat  %dms\n", addrman.size(), GetTimeMillis() - nStart);
+        else {
+            // addrman.Clear(); // Addrman can be in an inconsistent state after failure, reset it
             LogPrintf("Invalid or missing peers.dat; recreating\n");
+            DumpAddresses();
+        }
     }
 
-    // TODO: NTRN - possibly implement banlist
+    if (clientInterface)
+        clientInterface->InitMessage(_("Loading banlist..."));
+    // Load addresses from banlist.dat
+    nStart = GetTimeMillis();
+    CBanDB bandb;
+    banmap_t banmap;
+    if (bandb.Read(banmap)) {
+        SetBanned(banmap); // thread save setter
+        SetBannedSetDirty(false); // no need to write down, just read data
+        SweepBanned(); // sweep out unused entries
 
-    LogPrintf("Loaded %i addresses from peers.dat  %dms\n",
-           addrman.size(), GetTimeMillis() - nStart);
+        LogPrintf("Loaded %d banned node ips/subnets from banlist.dat  %dms\n",
+            banmap.size(), GetTimeMillis() - nStart);
+    } else {
+        LogPrintf("Invalid or missing banlist.dat; recreating\n");
+        SetBannedSetDirty(true); // force write
+        DumpBanlist();
+    }
 
     uiInterface.InitMessage(_("Starting network threads..."));
 

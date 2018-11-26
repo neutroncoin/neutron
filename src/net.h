@@ -490,7 +490,7 @@ private:
     void SweepBanned();
     void DumpAddresses();
     void DumpData();
-    // void DumpBanlist();
+    void DumpBanlist();
 
     // // Network stats
     // void RecordBytesRecv(uint64_t bytes);
