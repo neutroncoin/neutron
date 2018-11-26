@@ -68,7 +68,7 @@ int64_t nTimeBestReceived = 0;
 
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000
 #define ENFORCE_DEV_PAYMENT_HEIGHT 1200000
-#define ENFORCE_MNWINNERS_HEIGHT   1467400 // Approx. 12/03/2018
+#define ENFORCE_MNWINNERS_HEIGHT   1474500 // Approx. 12/10/2018
 bool fSporkByForce = false;
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
