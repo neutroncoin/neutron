@@ -516,9 +516,9 @@ bool CConnman::IsBanned(CNetAddr ip)
         for (banmap_t::iterator it = setBanned.begin(); it != setBanned.end(); it++)
         {
             CSubNet subNet = (*it).first;
-            int64_t t = (*it).second;
+            CBanEntry banEntry = (*it).second;
 
-            if(subNet.Match(ip) && GetTime() < t)
+            if(subNet.Match(ip) && GetTime() < banEntry.nBanUntil)
                 fResult = true;
         }
     }
@@ -533,30 +533,33 @@ bool CConnman::IsBanned(CSubNet subnet)
         banmap_t::iterator i = setBanned.find(subnet);
         if (i != setBanned.end())
         {
-            int64_t t = (*i).second;
-            if (GetTime() < t)
+            CBanEntry banEntry = (*i).second;
+            if (GetTime() < banEntry.nBanUntil)
                 fResult = true;
         }
     }
     return fResult;
 }
 
-void CConnman::Ban(const CNetAddr& addr, int64_t bantimeoffset) {
+void CConnman::Ban(const CNetAddr& addr, const BanReason &banReason, int64_t bantimeoffset, bool sinceUnixEpoch) {
     CSubNet subNet(addr);
-    Ban(subNet, bantimeoffset);
+    Ban(subNet, banReason, bantimeoffset, sinceUnixEpoch);
 }
 
-void CConnman::Ban(const CSubNet& subNet, int64_t bantimeoffset) {
+void CConnman::Ban(const CSubNet& subNet, const BanReason &banReason, int64_t bantimeoffset, bool sinceUnixEpoch) {
+    CBanEntry banEntry(GetTime());
+    banEntry.banReason = banReason;
     if (bantimeoffset <= 0)
     {
-        bantimeoffset = GetArg("-bantime", 60*60*24);  // Default 24-hour ban
+        bantimeoffset = GetArg("-bantime", DEFAULT_MISBEHAVING_BANTIME);
+        sinceUnixEpoch = false;
     }
-    int64_t nBanUntil = GetTime()+bantimeoffset;
+    banEntry.nBanUntil = (sinceUnixEpoch ? 0 : GetTime() )+bantimeoffset;
 
     {
         LOCK(cs_setBanned);
-        if (setBanned[subNet] < nBanUntil) {
-            setBanned[subNet] = nBanUntil;
+        if (setBanned[subNet].nBanUntil < banEntry.nBanUntil) {
+            setBanned[subNet] = banEntry;
             setBannedIsDirty = true;
         }
         else
@@ -571,6 +574,8 @@ void CConnman::Ban(const CSubNet& subNet, int64_t bantimeoffset) {
                 pnode->CloseSocketDisconnect();
         }
     }
+    if(banReason == BanReasonManuallyAdded)
+        DumpBanlist(); //store banlist to disk immediately if user requested ban
 }
 
 bool CConnman::Unban(const CNetAddr &addr) {
@@ -613,12 +618,12 @@ void CConnman::SweepBanned()
     while(it != setBanned.end())
     {
         CSubNet subNet = (*it).first;
-        int64_t nBanUntil = (*it).second;
-        if(now > nBanUntil)
+        CBanEntry banEntry = (*it).second;
+        if(now > banEntry.nBanUntil)
         {
             setBanned.erase(it++);
             setBannedIsDirty = true;
-            LogPrintf("%s: Removed banned node ip/addr from banlist.dat: %s\n", __func__, subNet.ToString());
+            LogPrintf("%s: Removed banned node ip/subnet from banlist.dat: %s\n", __func__, subNet.ToString());
         }
         else
             ++it;
@@ -650,7 +655,7 @@ bool CNode::Misbehaving(int howmuch)
     {
         LogPrintf("Misbehaving: %s (%d -> %d) DISCONNECTING\n", addr.ToString().c_str(), nMisbehavior-howmuch, nMisbehavior);
         {
-            g_connman->Ban(addr, 0);
+            g_connman->Ban(addr, BanReasonNodeMisbehaving);
         }
         return true;
     } else

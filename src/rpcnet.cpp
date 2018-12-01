@@ -211,13 +211,14 @@ UniValue listbanned(const UniValue& params, bool fHelp)
     UniValue bannedAddresses(UniValue::VARR);
     for (banmap_t::iterator it = banMap.begin(); it != banMap.end(); it++)
     {
-        UniValue obj(UniValue::VOBJ);
+        CBanEntry banEntry = (*it).second;
+        UniValue rec(UniValue::VOBJ);
+        rec.push_back(Pair("address", (*it).first.ToString()));
+        rec.push_back(Pair("banned_until", banEntry.nBanUntil));
+        rec.push_back(Pair("ban_created", banEntry.nCreateTime));
+        rec.push_back(Pair("ban_reason", banEntry.banReasonToString()));
 
-        int64_t t = (*it).second;
-        obj.push_back(Pair("address", (*it).first.ToString()));
-        obj.push_back(Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", t).c_str()));
-
-        bannedAddresses.push_back(obj);
+        bannedAddresses.push_back(rec);
     }
 
     return bannedAddresses;
