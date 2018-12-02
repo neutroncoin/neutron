@@ -187,6 +187,12 @@ public:
     UniValue execute(const JSONRPCRequest &request) const;
 
     /**
+    * Returns a list of registered commands
+    * @returns List of registered commands.
+    */
+    std::vector<std::string> listCommands() const;
+
+    /**
      * Appends a CRPCCommand to the dispatch table.
      * Returns false if RPC server is already running (dump concurrency protection).
      * Commands cannot be overwritten (returns false).

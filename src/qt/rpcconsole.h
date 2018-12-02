@@ -2,6 +2,7 @@
 #define BITCOIN_QT_RPCCONSOLE_H
 
 #include <QDialog>
+#include <QCompleter>
 #include <QTimer>
 
 namespace Ui {
@@ -17,6 +18,11 @@ class RPCConsole: public QDialog
 public:
     explicit RPCConsole(QWidget *parent = 0);
     ~RPCConsole();
+
+    static bool RPCParseCommandLine(std::string &strResult, const std::string &strCommand, bool fExecute, std::string * const pstrFilteredOut = NULL);
+    static bool RPCExecuteCommandLine(std::string &strResult, const std::string &strCommand, std::string * const pstrFilteredOut = NULL) {
+        return RPCParseCommandLine(strResult, strCommand, true, pstrFilteredOut);
+    }
 
     void setClientModel(ClientModel *model);
 
@@ -74,7 +80,9 @@ private:
     ClientModel *clientModel;
     QStringList history;
     int historyPtr;
+    QString cmdBeforeBrowsing;
     QTimer *timer;
+    QCompleter *autoCompleter;
 
     void startExecutor();
 
