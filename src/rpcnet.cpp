@@ -2,6 +2,8 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+
+#include "netbase.h"
 #include "net.h"
 #include "bitcoinrpc.h"
 #include "alert.h"
@@ -11,8 +13,6 @@
 #include "spork.h"
 
 #include "univalue.h"
-
-using namespace std;
 
 UniValue getconnectioncount(const UniValue& params, bool fHelp)
 {
@@ -161,36 +161,47 @@ UniValue setban(const UniValue& params, bool fHelp)
                             + HelpExampleRpc("setban", "\"192.168.0.6\", \"add\" 86400")
                             );
 
-    // NTRN TODO - need to finish implementing this function
-    throw runtime_error(
-            "Not implemented yet\n");
+    if(!g_connman)
+        throw JSONRPCError(RPC_CLIENT_P2P_DISABLED, "Error: Peer-to-peer functionality missing or disabled");
 
+    CSubNet subNet;
+    CNetAddr netAddr;
+    bool isSubnet = false;
 
-   // CSubNet subNet;
-   // CNetAddr netAddr;
-   // bool isSubnet = false;
+    if (params[0].get_str().find("/") != std::string::npos)
+        isSubnet = true;
 
-   // if (params[0].get_str().find("/") != string::npos)
-   //     isSubnet = true;
+    if (!isSubnet) {
+        CNetAddr resolved;
+        LookupHost(params[0].get_str().c_str(), resolved, false);
+        netAddr = resolved;
+    }
+    else
+        LookupSubNet(params[0].get_str().c_str(), subNet);
 
-   // if (!isSubnet)
-   //     netAddr = CNetAddr(params[0].get_str());
-   // else
-   //     subNet = CSubNet(params[0].get_str());
+    if (! (isSubnet ? subNet.IsValid() : netAddr.IsValid()) )
+        throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Invalid IP/Subnet");
 
-   // if (! (isSubnet ? subNet.IsValid() : netAddr.IsValid()) )
-   //     throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: Invalid IP/Subnet");
+    if (strCommand == "add")
+    {
+        if (isSubnet ? g_connman->IsBanned(subNet) : g_connman->IsBanned(netAddr))
+            throw JSONRPCError(RPC_CLIENT_NODE_ALREADY_ADDED, "Error: IP/Subnet already banned");
 
-   // if (strCommand == "add")
-   // {
-   //     // TODO
-   // }
-   // else if(strCommand == "remove")
-   // {
-   //     // TODO
-   // }
+        int64_t banTime = 0; //use standard bantime if not specified
+        if (params.size() >= 3 && !params[2].isNull())
+            banTime = params[2].get_int64();
 
+        bool absolute = false;
+        if (params.size() == 4 && params[3].isTrue())
+            absolute = true;
 
+        isSubnet ? g_connman->Ban(subNet, BanReasonManuallyAdded, banTime, absolute) : g_connman->Ban(netAddr, BanReasonManuallyAdded, banTime, absolute);
+    }
+    else if(strCommand == "remove")
+    {
+        if (!( isSubnet ? g_connman->Unban(subNet) : g_connman->Unban(netAddr) ))
+            throw JSONRPCError(RPC_MISC_ERROR, "Error: Unban failed");
+    }
     return NullUniValue;
 }
 
@@ -214,8 +225,8 @@ UniValue listbanned(const UniValue& params, bool fHelp)
         CBanEntry banEntry = (*it).second;
         UniValue rec(UniValue::VOBJ);
         rec.push_back(Pair("address", (*it).first.ToString()));
-        rec.push_back(Pair("banned_until", banEntry.nBanUntil));
-        rec.push_back(Pair("ban_created", banEntry.nCreateTime));
+        rec.push_back(Pair("banned_until", DateTimeStrFormat("%Y-%m-%d %H:%M:%S UTC", banEntry.nBanUntil)));
+        rec.push_back(Pair("ban_created", DateTimeStrFormat("%Y-%m-%d %H:%M:%S UTC", banEntry.nCreateTime)));
         rec.push_back(Pair("ban_reason", banEntry.banReasonToString()));
 
         bannedAddresses.push_back(rec);
