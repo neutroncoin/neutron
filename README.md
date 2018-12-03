@@ -65,4 +65,4 @@ Now, for the regular PoS rewards schedule:
 	Block 13500 and Up = Regular 7% Annual PoS
 
 
-For more information about Neutron, please contact bitlabzinc@gmail.com
+For more information about Neutron, visit www.neutroncoin.com
