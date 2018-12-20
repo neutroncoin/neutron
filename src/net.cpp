@@ -1329,7 +1329,7 @@ void CConnman::ThreadDNSAddressSeed()
                     vector<CAddress> vAdd;
                     if (LookupHost(seed.host.c_str(), vaddr, 0, true))
                     {
-                        if (fDebug) LogPrintf("ThreadDNSAddressSeed - Found %d addresses from %s\n", vaddr.size(), seed.host);
+                        LogPrintf("ThreadDNSAddressSeed - Found %d addresses from %s\n", vaddr.size(), seed.host);
                         BOOST_FOREACH(CNetAddr& ip, vaddr)
                         {
                             int nOneDay = 24*3600;
