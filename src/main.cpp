@@ -1590,7 +1590,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             }
 
             // once winners list obtained
-            bool fMasternodeSynced = mnodeman.CountEnabled() >= 3;
+            bool fMasternodeSynced = mnodeman.CountEnabled() >= 100;
 
             if (fMasternodeSynced) {
                 if (!fValidPayment && fMasternodeSynced && fEnforceMnWinner) {
