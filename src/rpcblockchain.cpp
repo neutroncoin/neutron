@@ -9,6 +9,7 @@
 #include "bitcoinrpc.h"
 #include "wallet.h"
 #include "txmempool.h"
+#include "txdb-leveldb.h"
 
 using namespace std;
 
@@ -339,4 +340,72 @@ UniValue getblockversionstats(const UniValue& params, bool fHelp) {
     results.push_back(Pair("percent", dPercent));
 
     return results;
+}
+
+UniValue invalidateblock(const UniValue& params, bool fHelp) {
+    if (fHelp || params.size() != 1)
+        throw runtime_error(
+                "invalidateblock <block #>\n"
+                        "Reorganize chain back to the block # specified\n");
+
+    int nHeight = params[0].get_int();
+
+
+    if (nHeight == 0) {
+        UniValue result(UniValue::VOBJ);
+        result.push_back(Pair("IsInitialBlockDownload", IsInitialBlockDownload()));
+        return result;
+    }
+
+    if (pindexBest->nHeight < nHeight) {
+        throw runtime_error("Specified block number is in the future.");
+    }
+
+
+    CBlockIndex* pindexTarget = NULL;
+
+    for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
+    {
+        if (fDebug) LogPrintf("invalidateblock : *** processing block %d\n", pindex->nHeight);
+
+        // if (fRequestShutdown || pindex->nHeight < nBestHeight-nCheckDepth)
+        //     break;
+
+        CBlock block;
+        if (!block.ReadFromDisk(pindex))
+            throw runtime_error("block.ReadFromDisk failed");
+
+        if (pindex->nHeight == nHeight) {
+            pindexTarget = pindex;
+            break;
+        } else if (pindex->nHeight < nHeight) {
+            break;
+        }
+    }
+
+    if (pindexTarget == NULL) {
+        throw runtime_error("Block not found");
+    }
+
+
+    if (fDebug) LogPrintf("invalidateblock : *** stopped on block %d\n", pindexTarget->nHeight);
+
+    // Reorg back to the fork
+    LogPrintf("invalidateblock : *** moving best chain pointer back to block %d\n", pindexTarget->nHeight);
+    CBlock block;
+    if (!block.ReadFromDisk(pindexTarget))
+        throw runtime_error("block.ReadFromDisk failed");
+
+    if (fDebug) LogPrintf("invalidateblock : *** calling SetBestChain...\n");
+
+    CTxDB txdb;
+    block.SetBestChain(txdb, pindexTarget);
+
+    return true;
+}
+
+UniValue reconsiderblock(const UniValue& params, bool fHelp)
+{
+    // NTRN TODO - implement this function
+    throw runtime_error("Not implemented yet\n");
 }

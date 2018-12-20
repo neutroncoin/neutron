@@ -479,6 +479,7 @@ static const CRPCCommand vRPCCommands[] =
     { "resendtx",               &resendtx,               false,      true },
     { "sendalert",              &sendalert,              false,      false },
     { "validatepubkey",         &validatepubkey,         true,       false },
+    { "invalidateblock",        &invalidateblock,        true,       false },
 };
 
 CRPCTable::CRPCTable()
@@ -1394,6 +1395,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "getblockbynumber", 1, "txinfo" },
     { "getblockversionstats", 0, "version" },
     { "getblockversionstats", 1, "blocks_to_count" },
+    { "invalidateblock", 0, "height" },
     { "getsuperblockbudget", 0, "index" },
     { "waitforblockheight", 0, "height" },
     { "waitforblockheight", 1, "timeout" },
