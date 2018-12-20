@@ -571,7 +571,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     if (nMaxConnections < nUserMaxConnections) {
         // InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
-        LogPrintf("Reducing -maxconnections from %d to %d, because of system limitations.", nUserMaxConnections, nMaxConnections);
+        LogPrintf("[AppInit2] Reducing -maxconnections from %d to %d, because of system limitations.", nUserMaxConnections, nMaxConnections);
     }
 
     // ********************************************************* Step 3: parameter-to-internal-flags
@@ -654,7 +654,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
         // Daemonize
         if (daemon(1, 0)) { // don't chdir (1), do close FDs (0)
-            LogPrintf("Error: daemon() failed: %s\n", strerror(errno));
+            LogPrintf("[AppInit2] Error: daemon() failed: %s\n", strerror(errno));
             return false;
         }
 
@@ -669,14 +669,14 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     if (GetBoolArg("-shrinkdebugfile", !fDebug))
         ShrinkDebugFile();
-    LogPrintf("Neutron version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
-    LogPrintf("Using OpenSSL version %s\n", SSLeay_version(SSLEAY_VERSION));
-    LogPrintf("Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
-    LogPrintf("Using Boost version %s\n", BOOST_VERSION_NUM.c_str());
+    LogPrintf("[AppInit2] Neutron version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
+    LogPrintf("[AppInit2] Using OpenSSL version %s\n", SSLeay_version(SSLEAY_VERSION));
+    LogPrintf("[AppInit2] Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
+    LogPrintf("[AppInit2] Using Boost version %s\n", BOOST_VERSION_NUM.c_str());
     if (!fLogTimestamps)
-        LogPrintf("Startup time: %s\n", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
-    LogPrintf("Default data directory %s\n", GetDefaultDataDir().string().c_str());
-    LogPrintf("Used data directory %s\n", strDataDir.c_str());
+        LogPrintf("[AppInit2] Startup time: %s\n", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+    LogPrintf("[AppInit2] Default data directory %s\n", GetDefaultDataDir().string().c_str());
+    LogPrintf("[AppInit2] Used data directory %s\n", strDataDir.c_str());
     std::ostringstream strErrors;
 
     if (mapArgs.count("-sporkkey"))
@@ -868,10 +868,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // As the program has not fully started yet, Shutdown() is possibly overkill.
     if (fRequestShutdown)
     {
-        LogPrintf("Shutdown requested. Exiting.\n");
+        LogPrintf("[AppInit2] Shutdown requested. Exiting.\n");
         return false;
     }
-    LogPrintf(" block index %15dms\n", GetTimeMillis() - nStart);
+    LogPrintf("[AppInit2]  block index %15dms\n", GetTimeMillis() - nStart);
 
     if (GetBoolArg("-printblockindex") || GetBoolArg("-printblocktree"))
     {
@@ -898,7 +898,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             }
         }
         if (nFound == 0)
-            LogPrintf("No blocks matching %s were found\n", strMatch.c_str());
+            LogPrintf("[AppInit2] No blocks matching %s were found\n", strMatch.c_str());
         return false;
     }
 
@@ -925,7 +925,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         else if (nLoadWalletRet == DB_NEED_REWRITE)
         {
             strErrors << _("Wallet needed to be rewritten: restart Neutron to complete") << "\n";
-            LogPrintf("%s", strErrors.str().c_str());
+            LogPrintf("[AppInit2] %s", strErrors.str().c_str());
             return InitError(strErrors.str());
         }
         else
@@ -937,12 +937,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         int nMaxVersion = GetArg("-upgradewallet", 0);
         if (nMaxVersion == 0) // the -upgradewallet without argument case
         {
-            LogPrintf("Performing wallet upgrade to %i\n", FEATURE_LATEST);
+            LogPrintf("[AppInit2] Performing wallet upgrade to %i\n", FEATURE_LATEST);
             nMaxVersion = CLIENT_VERSION;
             pwalletMain->SetMinVersion(FEATURE_LATEST); // permanently upgrade the wallet immediately
         }
         else
-            LogPrintf("Allowing wallet upgrade up to %i\n", nMaxVersion);
+            LogPrintf("[AppInit2] Allowing wallet upgrade up to %i\n", nMaxVersion);
         if (nMaxVersion < pwalletMain->GetVersion())
             strErrors << _("Cannot downgrade wallet") << "\n";
         pwalletMain->SetMaxVersion(nMaxVersion);
@@ -961,8 +961,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
     }
 
-    LogPrintf("%s", strErrors.str().c_str());
-    LogPrintf(" wallet      %15dms\n", GetTimeMillis() - nStart);
+    LogPrintf("[AppInit2] %s", strErrors.str().c_str());
+    LogPrintf("[AppInit2]  wallet      %15dms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);
 
@@ -979,10 +979,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
     {
         uiInterface.InitMessage(_("Rescanning..."));
-        LogPrintf("Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+        LogPrintf("[AppInit2] Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
-        LogPrintf(" rescan      %15dms\n", GetTimeMillis() - nStart);
+        LogPrintf("[AppInit2]  rescan      %15dms\n", GetTimeMillis() - nStart);
     }
 
     // ********************************************************* Step 9: import blocks
@@ -1023,10 +1023,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     fMasterNode = GetBoolArg("-masternode", false);
     if(fMasterNode) {
-        LogPrintf("IS NEUTRON MASTER NODE\n");
+        LogPrintf("[AppInit2] IS NEUTRON MASTER NODE\n");
         strMasterNodeAddr = GetArg("-masternodeaddr", "");
 
-        LogPrintf(" addr %s\n", strMasterNodeAddr.c_str());
+        LogPrintf("[AppInit2]  addr %s\n", strMasterNodeAddr.c_str());
 
         if(!strMasterNodeAddr.empty()){
             CService addrTest = CService(strMasterNodeAddr);
@@ -1079,11 +1079,13 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     //lite mode disables all Masternode and Darksend related functionality
     fLiteMode = GetBoolArg("-litemode", false);
+
+    LogPrintf("[AppInit2] fLiteMode: %d\n", fLiteMode);
+
     if(fMasterNode && fLiteMode){
         return InitError("You can not start a masternode in litemode");
     }
 
-    LogPrintf("fLiteMode %d\n", fLiteMode);
     // LogPrintf("Darksend rounds %d\n", nDarksendRounds);
     // LogPrintf("Anonymize Neutron Amount %d\n", nAnonymizeNeutronAmount);
 
@@ -1114,11 +1116,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     RandAddSeedPerfmon();
 
     //// debug print
-    LogPrintf("mapBlockIndex.size() = %u\n",   mapBlockIndex.size());
-    LogPrintf("nBestHeight = %d\n",            nBestHeight);
-    LogPrintf("setKeyPool.size() = %u\n",      pwalletMain->setKeyPool.size());
-    LogPrintf("mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
-    LogPrintf("mapAddressBook.size() = %u\n",  pwalletMain->mapAddressBook.size());
+    LogPrintf("[AppInit2] mapBlockIndex.size() = %u\n",   mapBlockIndex.size());
+    LogPrintf("[AppInit2] nBestHeight = %d\n",            nBestHeight);
+    LogPrintf("[AppInit2] setKeyPool.size() = %u\n",      pwalletMain->setKeyPool.size());
+    LogPrintf("[AppInit2] mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
+    LogPrintf("[AppInit2] mapAddressBook.size() = %u\n",  pwalletMain->mapAddressBook.size());
 
     CConnman::Options connOptions;
     connOptions.nMaxConnections = nMaxConnections;
