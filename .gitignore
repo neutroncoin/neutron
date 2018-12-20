@@ -28,7 +28,7 @@ neutron-qt_test
 qrc_*.cpp
 
 # Qt creator
-*.pro.user
+*.pro.user*
 
 # Mac specific
 .DS_Store
