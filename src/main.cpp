@@ -69,7 +69,7 @@ int64_t nTimeBestReceived = 0;
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000
 #define ENFORCE_DEV_PAYMENT_HEIGHT 1200000
 #define ENFORCE_MNWINNERS_HEIGHT   1482200 // Approx. 12/15/2018
-bool fSporkByForce = false;
+bool fEnforceMnWinner = false;
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
 
@@ -1490,9 +1490,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     }
 
     // enable mandatory checks
-    if (!fSporkByForce && (pindex->nHeight >= ENFORCE_MNWINNERS_HEIGHT)) {
-        LogPrintf("\033[31mfSporkByForce enabled\e[0m\n");
-        fSporkByForce = true;
+    if (!fEnforceMnWinner && (pindex->nHeight >= ENFORCE_MNWINNERS_HEIGHT)) {
+        if (fDebug) LogPrintf("\033[31mfEnforceMnWinner enabled\e[0m\n");
+        fEnforceMnWinner = true;
     }
 
     if (IsProofOfWork())
@@ -1560,7 +1560,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     bool fPrintAddress = ExtractDestination(payee, dest);
                     CBitcoinAddress addressMN(dest);
 
-                    if (fSporkByForce) {
+                    if (fEnforceMnWinner) {
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
                                    hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
                     } else {
@@ -1593,7 +1593,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             bool fMasternodeSynced = mnodeman.CountEnabled() >= 3;
 
             if (fMasternodeSynced) {
-                if (!fValidPayment && fMasternodeSynced && fSporkByForce) {
+                if (!fValidPayment && fMasternodeSynced && fEnforceMnWinner) {
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
                 }
 
