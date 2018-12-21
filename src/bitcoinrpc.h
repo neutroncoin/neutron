@@ -261,6 +261,7 @@ extern UniValue gethashespersec(const UniValue& params, bool fHelp);
 
 // in rpcwallet.cpp
 extern UniValue getinfo(const UniValue& params, bool fHelp);
+extern UniValue getdebuginfo(const UniValue& params, bool fHelp);
 extern UniValue getnewpubkey(const UniValue& params, bool fHelp);
 extern UniValue getnewaddress(const UniValue& params, bool fHelp);
 extern UniValue getaccountaddress(const UniValue& params, bool fHelp);

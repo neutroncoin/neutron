@@ -377,6 +377,7 @@ static const CRPCCommand vRPCCommands[] =
   //  ------------------------  -----------------------  ----------  --------
     /* Overall control/query calls */
     { "getinfo",                &getinfo,                true,       false },
+    { "getdebuginfo",           &getdebuginfo,           true,       false },
     { "help",                   &help,                   true,       true },
     { "stop",                   &stop,                   true,       true },
 

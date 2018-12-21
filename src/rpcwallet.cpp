@@ -10,6 +10,7 @@
 #include "netbase.h"
 #include "base58.h"
 #include "utiltime.h"
+#include "masternode.h"
 
 #include "univalue.h"
 
@@ -113,6 +114,24 @@ UniValue getinfo(const UniValue& params, bool fHelp)
     return obj;
 }
 
+UniValue getdebuginfo(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getdebuginfo\n"
+            "Returns an object containing various debug and state info.");
+
+    UniValue obj(UniValue::VOBJ), debugObj(UniValue::VOBJ);
+
+    debugObj.push_back(Pair("ibd",           IsInitialBlockDownload()));
+    debugObj.push_back(Pair("mn_enabled", mnodeman.CountEnabled()));
+    debugObj.push_back(Pair("estimated_blocks", Checkpoints::GetTotalBlocksEstimate()));
+
+    obj = getinfo(params, fHelp);
+    obj.push_back(Pair("debug", debugObj));
+
+    return obj;
+}
 
 UniValue getnewpubkey(const UniValue& params, bool fHelp)
 {
