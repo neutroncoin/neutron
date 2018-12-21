@@ -2151,36 +2151,38 @@ void CConnman::Stop()
 
     // fShutdown = true;
 
+    LogPrintf("CConnman::Stop() 1 threadMessageHandler\n");
     // if (threadMessageHandler.joinable())
     //     threadMessageHandler.join();
-    LogPrintf("CConnman::Stop() 1 threadOpenConnections\n");
+    LogPrintf("CConnman::Stop() 2 threadOpenConnections\n");
     if (threadOpenConnections.joinable())
         threadOpenConnections.join();
-    LogPrintf("CConnman::Stop() 2 threadOpenAddedConnections\n");
+    LogPrintf("CConnman::Stop() 3 threadOpenAddedConnections\n");
     if (threadOpenAddedConnections.joinable())
         threadOpenAddedConnections.join();
-    LogPrintf("CConnman::Stop() 3 threadDNSAddressSeed\n");
+    LogPrintf("CConnman::Stop() 4 threadDNSAddressSeed\n");
     if (threadDNSAddressSeed.joinable())
         threadDNSAddressSeed.join();
-    LogPrintf("CConnman::Stop() 4 threadSocketHandler\n");
+    LogPrintf("CConnman::Stop() 5 threadSocketHandler\n");
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
 
-    LogPrintf("CConnman::Stop() 5 DumpData\n");
+    LogPrintf("CConnman::Stop() 6 DumpData\n");
     if (fAddressesInitialized)
     {
         DumpData();
         fAddressesInitialized = false;
     }
 
-    LogPrintf("CConnman::Stop() 6 CloseSockets\n");
+    LogPrintf("CConnman::Stop() 7 CloseSockets\n");
     // Close sockets
     for (CNode* pnode : vNodes)
         pnode->CloseSocketDisconnect();
-    // for (ListenSocket& hListenSocket : vhListenSocket)
-    //     if (hListenSocket.socket != INVALID_SOCKET)
-    //         if (!CloseSocket(hListenSocket.socket))
-    //             LogPrintf("CloseSocket(hListenSocket) failed with error %s\n", NetworkErrorString(WSAGetLastError()));
+    for (SOCKET hListenSocket : vhListenSocket)
+        if (hListenSocket != INVALID_SOCKET)
+            if (!CloseSocket(hListenSocket))
+                LogPrintf("CloseSocket(hListenSocket) failed with error %d\n", WSAGetLastError());
+
 
     // clean up some globals (to help leak detection)
     // for (CNode *pnode : vNodes) {
@@ -2238,15 +2240,6 @@ public:
     }
     ~CNetCleanup()
     {
-        // Close sockets
-        BOOST_FOREACH(CNode* pnode, vNodes)
-            if (pnode->hSocket != INVALID_SOCKET)
-                CloseSocket(pnode->hSocket);
-        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket)
-            if (hListenSocket != INVALID_SOCKET)
-                if (CloseSocket(hListenSocket) == SOCKET_ERROR)
-                    LogPrintf("CloseSocket(hListenSocket) failed with error %d\n", WSAGetLastError());
-
 #ifdef WIN32
         // Shutdown Windows Sockets
         WSACleanup();
