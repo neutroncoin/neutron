@@ -1311,7 +1311,7 @@ bool CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
 
 UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 {
-    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
+    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "") {
         LogPrintf(
             "You must set rpcpassword=<password> in the configuration file:\n%s\n"
               "If the file does not exist, create it with owner-readable-only file permissions.",
@@ -1320,6 +1320,7 @@ UniValue CallRPC(const std::string& strMethod, const UniValue& params)
             _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
               "If the file does not exist, create it with owner-readable-only file permissions."),
                 GetConfigFile().string().c_str()));
+    }
 
     // Connect to localhost
     bool fUseSSL = GetBoolArg("-rpcssl");
