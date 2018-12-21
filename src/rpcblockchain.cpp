@@ -350,13 +350,6 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
 
     int nHeight = params[0].get_int();
 
-
-    if (nHeight == 0) {
-        UniValue result(UniValue::VOBJ);
-        result.push_back(Pair("IsInitialBlockDownload", IsInitialBlockDownload()));
-        return result;
-    }
-
     if (pindexBest->nHeight < nHeight) {
         throw runtime_error("Specified block number is in the future.");
     }
