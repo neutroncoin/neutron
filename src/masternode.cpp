@@ -362,7 +362,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         int nFirstBlock = pindexBest->nHeight - (mnodeman.CountEnabled()*1.25);
         if (winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > pindexBest->nHeight+20) {
-            LogPrintf("mnw - winner out of range - nFirstBlock=%d, nBlockHeight=%d, nHeight=%d\n", nFirstBlock, winner.nBlockHeight, pindexBest->nHeight);
+            if(fDebug) LogPrintf("mnw - winner out of range - nFirstBlock=%d, nBlockHeight=%d, nHeight=%d\n", nFirstBlock, winner.nBlockHeight, pindexBest->nHeight);
             return;
         }
 
