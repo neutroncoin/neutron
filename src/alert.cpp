@@ -20,13 +20,9 @@ using namespace std;
 map<uint256, CAlert> mapAlerts;
 CCriticalSection cs_mapAlerts;
 
-static const char* pszMainKey = "049857d78072261d442fc3a0ea0d17c9a1f261d17807c83ae4d5b71c22a114d6e52353b7ab7c85a31cb9c45b4fe06a8e1aa63defdcd2e6d3c9c602f69e2f3b3aa5";
-
-// TestNet alerts pubKey
-static const char* pszTestKey = "049857d78072261d442fc3a0ea0d17c9a1f261d17807c83ae4d5b71c22a114d6e52353b7ab7c85a31cb9c45b4fe06a8e1aa63defdcd2e6d3c9c602f69e2f3b3aa5";
-
-// TestNet alerts private key
-// "308201130201010420b665cff1884e53da26376fd1b433812c9a5a8a4d5221533b15b9629789bb7e42a081a53081a2020101302c06072a8648ce3d0101022100fffffffffffffffffffffffffffffffffffffffffffffffffffffffefffffc2f300604010004010704410479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8022100fffffffffffffffffffffffffffffffebaaedce6af48a03bbfd25e8cd0364141020101a1440342000471dc165db490094d35cde15b1f5d755fa6ad6f2b5ed0f340e3f17f57389c3c2af113a8cbcc885bde73305a553b5640c83021128008ddf882e856336269080496"
+// alerts pubKey
+static const char* pszMainKey = "04de575026b1451322588b66574215e722b5dce51e60fd2afd67426d51ec5e66f2427428f3caca6da281ac708032918638d821c962599198dcefb0bf39aabe4a80";
+static const char* pszTestKey = "049b4f9133f72540217462a8d8ba23751d657f3838ebbbe61956bdda6f298c5e4bcbcec1a1500ed7dd56eef4a6177ae7342431b389a5005babe66dc6d79dbf8e64";
 
 void CUnsignedAlert::SetNull()
 {
@@ -85,7 +81,7 @@ std::string CUnsignedAlert::ToString() const
 
 void CUnsignedAlert::print() const
 {
-    printf("%s", ToString().c_str());
+    LogPrintf("%s", ToString().c_str());
 }
 
 void CAlert::SetNull()
@@ -211,13 +207,13 @@ bool CAlert::ProcessAlert(bool fThread)
             const CAlert& alert = (*mi).second;
             if (Cancels(alert))
             {
-                printf("cancelling alert %d\n", alert.nID);
+                LogPrintf("cancelling alert %d\n", alert.nID);
                 uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);
                 mapAlerts.erase(mi++);
             }
             else if (!alert.IsInEffect())
             {
-                printf("expiring alert %d\n", alert.nID);
+                LogPrintf("expiring alert %d\n", alert.nID);
                 uiInterface.NotifyAlertChanged((*mi).first, CT_DELETED);
                 mapAlerts.erase(mi++);
             }
@@ -231,7 +227,7 @@ bool CAlert::ProcessAlert(bool fThread)
             const CAlert& alert = item.second;
             if (alert.Cancels(*this))
             {
-                printf("alert already cancelled by %d\n", alert.nID);
+                LogPrintf("alert already cancelled by %d\n", alert.nID);
                 return false;
             }
         }
@@ -269,6 +265,6 @@ bool CAlert::ProcessAlert(bool fThread)
         }
     }
 
-    printf("accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());
+    LogPrintf("accepted alert %d, AppliesToMe()=%d\n", nID, AppliesToMe());
     return true;
 }
