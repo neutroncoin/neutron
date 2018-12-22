@@ -338,7 +338,8 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
     else if (strCommand == NetMsgType::MASTERNODEPAYMENTVOTE) { //Masternode Payments Declare Winner
         //this is required in litemode
         CMasternodePaymentWinner winner;
-        vRecv >> winner;
+        int a = 0;
+        vRecv >> winner >> a;
 
         if (pfrom->nVersion < ActiveProtocol()) {
             LogPrintf("%s : mnw -- peer=%d (%s) using obsolete version %i\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
@@ -880,9 +881,10 @@ void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
 
 void CMasternodePayments::Sync(CNode* node)
 {
+    int a = 0;
     BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
         if(winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
-            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner);
+            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner, a);
 }
 
 
