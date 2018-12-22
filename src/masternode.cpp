@@ -48,6 +48,7 @@ void ProcessMasternodeConnections(){
 void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
     if (fLiteMode and strCommand != NetMsgType::MASTERNODEPAYMENTVOTE) return; //disable all Darksend/Masternode related functionality
+
     if(IsInitialBlockDownload()) return;
 
     if (strCommand == NetMsgType::DSEE) { //DarkSend Election Entry
@@ -337,8 +338,13 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
     else if (strCommand == NetMsgType::MASTERNODEPAYMENTVOTE) { //Masternode Payments Declare Winner
         //this is required in litemode
         CMasternodePaymentWinner winner;
-        int a = 0;
-        vRecv >> winner >> a;
+        vRecv >> winner;
+
+        if (pfrom->nVersion < ActiveProtocol()) {
+            LogPrintf("%s : mnw -- peer=%d (%s) using obsolete version %i\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE, strprintf("Version must be %d or greater", ActiveProtocol()));
+            return;
+        }
 
         if(pindexBest == NULL) return;
 
@@ -353,8 +359,9 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
             return;
         }
 
-        if(winner.nBlockHeight < pindexBest->nHeight - 10 || winner.nBlockHeight > pindexBest->nHeight+20){
-            LogPrintf("mnw - winner out of range %s address=%s nBlockHeight=%d nHeight=%d\n", winner.vin.ToString(), address2.ToString(), winner.nBlockHeight, pindexBest->nHeight);
+        int nFirstBlock = pindexBest->nHeight - (mnodeman.CountEnabled()*1.25);
+        if (winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > pindexBest->nHeight+20) {
+            LogPrintf("mnw - winner out of range - nFirstBlock=%d, nBlockHeight=%d, nHeight=%d\n", nFirstBlock, winner.nBlockHeight, pindexBest->nHeight);
             return;
         }
 
@@ -835,7 +842,6 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     //     }
     // }
 
-    LogPrintf("CMasternodePayments::ProcessBlock -- AddWinningMasternode\n");
     if (AddWinningMasternode(winner)) {
         if (enabled) { // only if active masternode
             LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
@@ -874,10 +880,12 @@ void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
 
 void CMasternodePayments::Sync(CNode* node)
 {
-    int a = 0;
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    for (auto const& it : mapMasternodeBlocks) {
+        CMasternodePaymentWinner winner = it.second;
+
         if(winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
-            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner, a);
+            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner);
+    }
 }
 
 
