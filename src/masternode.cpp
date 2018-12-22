@@ -880,12 +880,9 @@ void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
 
 void CMasternodePayments::Sync(CNode* node)
 {
-    for (auto const& it : mapMasternodeBlocks) {
-        CMasternodePaymentWinner winner = it.second;
-
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
         if(winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
             node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner);
-    }
 }
 
 
