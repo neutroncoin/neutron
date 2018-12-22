@@ -52,6 +52,7 @@ using namespace std;
 
 class CMasternodePaymentWinner;
 
+extern CCriticalSection cs_mapMasternodeBlocks;
 extern CCriticalSection cs_masternodes;
 extern std::vector<CMasternode> vecMasternodes;
 extern CMasternodePayments masternodePayments;
@@ -250,6 +251,7 @@ class CMasternodePayments
 {
 private:
     std::vector<CMasternodePaymentWinner> vWinning;
+    std::map<int, CMasternodePaymentWinner> mapMasternodeBlocks;
     int nSyncedFromPeer;
     std::string strMasterPrivKey;
     std::string strTestPubKey;
