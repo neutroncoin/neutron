@@ -1791,23 +1791,24 @@ UniValue resendtx(const UniValue& params, bool fHelp)
 // ppcoin: make a public-private key pair
 UniValue makekeypair(const UniValue& params, bool fHelp)
 {
-    if (fHelp || params.size() > 1)
+    if (fHelp || params.size() > 0)
         throw runtime_error(
-            "makekeypair [prefix]\n"
-            "Make a public/private key pair.\n"
-            "[prefix] is optional preferred prefix for the public key.\n");
-
-    string strPrefix = "";
-    if (params.size() > 0)
-        strPrefix = params[0].get_str();
+            "makekeypair\n"
+            "Make a public/private key pair.\n");
 
     CKey key;
     key.MakeNewKey(false);
 
     CPrivKey vchPrivKey = key.GetPrivKey();
+
+    bool fComp = false;
+    CSecret secret = key.GetSecret(fComp);
+
     UniValue result(UniValue::VOBJ);
-    result.push_back(Pair("PrivateKey", HexStr<CPrivKey::iterator>(vchPrivKey.begin(), vchPrivKey.end())));
     result.push_back(Pair("PublicKey", HexStr(key.GetPubKey().Raw())));
+    result.push_back(Pair("PrivateKey", CBitcoinSecret(secret, fComp).ToString()));
+    result.push_back(Pair("PrivateKeyHex", HexStr<CPrivKey::iterator>(vchPrivKey.begin(), vchPrivKey.end())));
+
     return result;
 }
 
