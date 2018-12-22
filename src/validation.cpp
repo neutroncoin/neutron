@@ -93,22 +93,22 @@ bool IsInitialBlockDownload()
         nLastUpdate = GetTime();
     }
 
-    if (fDebug) {
-        if ((GetTime() - nLastUpdate < 15) == false) {
-            LogPrintf("[InitialBlockDownload] Update check FALSE: (%d < 15)\n", GetTime()-nLastUpdate);
-        }
-        LogPrintf("[InitialBlockDownload] (%s && %s)\n", GetTime()-nLastUpdate<15, pindexBest->GetBlockTime()<GetTime()-nMaxTipAge);
-    }
-
     if (GetTime() - nLastUpdate < 15 && pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
 
     if (pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
 
-    LogPrintf("Leaving InitialBlockDownload (latching to false)\n");
+    LogPrintf("[InitialBlockDownload] Leaving InitialBlockDownload (latching to false)\n");
     latchToFalse.store(true, std::memory_order_relaxed);
     return false;
 }
 
+//! Guess how far we are in the verification process at the given block index
+double GuessVerificationProgress(CBlockIndex *pindex)
+{
+    if (pindex == NULL || pindexBest == NULL)
+        return 0.0;
 
+    return (float)pindex->nHeight / (float)pindexBest->nHeight;
+}
