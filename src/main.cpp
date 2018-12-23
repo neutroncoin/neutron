@@ -1518,13 +1518,11 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 
         // Check block rewards
         if (!IsInitialBlockDownload()) {
-
             CAmount nRequiredMnPmt = GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward);
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
 
-            if (fDebug)
-               LogPrintf("ConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s, Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward), FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt), FormatMoney(nRequiredDevPmt));
+            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s, Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward), FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt), FormatMoney(nRequiredDevPmt));
 
             int nDoS_PMTs = sporkManager.GetSporkValue(SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE);
 
@@ -1534,71 +1532,64 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             bool fCorrectNodePaid = false;
             bool fValidPayment = false;
 
-            if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)) {
-                for (const CTxOut out : vtx[1].vout) {
-                    if(out.nValue == nRequiredMnPmt) {
-                        fMasternodePaid = true;
-                        blockPayee = out.scriptPubKey;
+            // once masternode list obtained
+            if (isMasternodeListSynced) {
+                if (masternodePayments.GetBlockPayee(pindex->nHeight, payee)) {
+                    for (const CTxOut out : vtx[1].vout) {
+                        if(out.nValue == nRequiredMnPmt) {
+                            fMasternodePaid = true;
+                            blockPayee = out.scriptPubKey;
+                        }
+                        if (out.scriptPubKey == payee) {
+                            fCorrectNodePaid = true;
+                        }
+                        // verify correct payment addr and amount
+                        if (out.nValue == nRequiredMnPmt && out.scriptPubKey == payee) {
+                            fValidPayment = true;
+                            break;
+                        }
                     }
-                    if (out.scriptPubKey == payee) {
-                        fCorrectNodePaid = true;
-                    }
-                    // verify correct payment addr and amount
-                    if (out.nValue == nRequiredMnPmt && out.scriptPubKey == payee) {
-                        fValidPayment = true;
-                        break;
-                    }
-                }
 
-                CTxDestination dest;
-                bool hasBlockPayee = ExtractDestination(blockPayee, dest);
-                CBitcoinAddress paidMN(dest);
-
-                // case: expected masternode address not paid
-                if (!fCorrectNodePaid) {
                     CTxDestination dest;
-                    bool fPrintAddress = ExtractDestination(payee, dest);
-                    CBitcoinAddress addressMN(dest);
+                    bool hasBlockPayee = ExtractDestination(blockPayee, dest);
+                    CBitcoinAddress paidMN(dest);
 
-                    if (fEnforceMnWinner) {
-                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
-                                   hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
+                    // case: expected masternode address not paid
+                    if (!fCorrectNodePaid) {
+                        CTxDestination dest;
+                        bool fPrintAddress = ExtractDestination(payee, dest);
+                        CBitcoinAddress addressMN(dest);
+
+                        if (fEnforceMnWinner) {
+                            return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
+                                       hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
+                        } else {
+                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n",
+                                       hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
+                        }
                     } else {
-                        LogPrintf("\n");
-                        LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n",
-                                   hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
+                        LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                     }
+
+                    // case: expected masternode amount incorrect/none
+                    if (!fMasternodePaid) {
+                        if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
+                            return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
+                        } else {
+                            LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n");
+                        }
+                    }
+
                 } else {
-                    LogPrintf("\n");
-                    LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
-                }
-
-                // case: expected masternode amount incorrect/none
-                if (!fMasternodePaid) {
-                    if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
-                        return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
-                    } else {
-                        LogPrintf("\n");
-                        LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n");
-                    }
-                }
-
-            } else {
-
-                // case: was not able to determine correct masternode payee
-                LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
-            }
-
-            // once winners list obtained
-            bool fMasternodeSynced = mnodeman.CountEnabled() >= 100;
-
-            if (fMasternodeSynced) {
-                if (!fValidPayment && fMasternodeSynced && fEnforceMnWinner) {
-                    return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+                    // case: was not able to determine correct masternode payee
+                    LogPrintf("ConnectBlock() : Did not find masternode payee for block %d\n", pindexBest->nHeight+1);
                 }
 
                 if (!fValidPayment) {
-                    LogPrintf("ConnectBlock() : Masternode payment missing or is not valid - NOT ENFORCED\n");
+                    if (fEnforceMnWinner)
+                        return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+                    else
+                        LogPrintf("ConnectBlock() : Masternode payment missing or is not valid - NOT ENFORCED\n");
                 }
             } else {
                 LogPrintf("ConnectBlock() : Masternode list not yet synced - CountEnabled=%d\n", mnodeman.CountEnabled());
@@ -1661,8 +1652,12 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     BOOST_FOREACH(CTransaction& tx, vtx)
         SyncWithWallets(tx, this, true);
 
-    if (!IsInitialBlockDownload())
+    if (!IsInitialBlockDownload()) {
         masternodePayments.ProcessBlock(pindex->nHeight + 1);
+        masternodePayments.ProcessBlock(pindex->nHeight + 2);
+        masternodePayments.ProcessBlock(pindex->nHeight + 3);
+        // masternodePayments.ProcessManyBlocks(pindex->nHeight);
+    }
 
     return true;
 }
