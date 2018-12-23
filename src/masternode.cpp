@@ -787,10 +787,10 @@ void CMasternodePayments::CleanPaymentList()
 
 bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
-    if (nBlockHeight <= pindexBest->nHeight) {
-        LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d <= %d\n", nBlockHeight, pindexBest->nHeight);
-        return false;
-    }
+    // if (nBlockHeight <= pindexBest->nHeight) {
+    //     LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d <= %d\n", nBlockHeight, pindexBest->nHeight);
+    //     return false;
+    // }
 
     CMasternodePaymentWinner winner;
     {
