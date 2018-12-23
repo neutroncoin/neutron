@@ -326,14 +326,19 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
     else if (strCommand == NetMsgType::MASTERNODEPAYMENTSYNC) { //Masternode Payments Request Sync
         if(pfrom->HasFulfilledRequest(NetMsgType::MASTERNODEPAYMENTSYNC)) {
             // Asking for the payments list multiple times in a short period of time is no good
-            LogPrintf("mnget - peer already asked me for the list, peer=%d\n", pfrom->id);
+            LogPrintf("mnget - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
             // TODO: maybe enable this later -- Misbehaving(pfrom->GetId(), 20);
             return;
         }
 
+        // Ignore such requests until we are fully synced.
+        // We could start processing this after masternode list is synced
+        // but this is a heavy one so it's better to finish sync first.
+        if (!isMasternodeListSynced) return;
+
         pfrom->FulfilledRequest(NetMsgType::MASTERNODEPAYMENTSYNC);
         masternodePayments.Sync(pfrom);
-        LogPrintf("mnget - Sent masternode winners to peer %s\n", pfrom->addr.ToString().c_str());
+        LogPrintf("mnget - Sent masternode winners to peer %s (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
     }
 
     else if (strCommand == NetMsgType::MASTERNODEPAYMENTVOTE) { //Masternode Payments Declare Winner
@@ -782,10 +787,10 @@ void CMasternodePayments::CleanPaymentList()
 
 bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
-    if (nBlockHeight <= pindexBest->nHeight) {
-        LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d\n", nBlockHeight);
-        return false;
-    }
+    // if (nBlockHeight <= pindexBest->nHeight) {
+    //     LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d <= %d\n", nBlockHeight, pindexBest->nHeight);
+    //     return false;
+    // }
 
     CMasternodePaymentWinner winner;
     {

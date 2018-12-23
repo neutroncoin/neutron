@@ -124,6 +124,7 @@ UniValue getdebuginfo(const UniValue& params, bool fHelp)
     UniValue obj(UniValue::VOBJ), debugObj(UniValue::VOBJ);
 
     debugObj.push_back(Pair("ibd",           IsInitialBlockDownload()));
+    debugObj.push_back(Pair("ims",           !isMasternodeListSynced));
     debugObj.push_back(Pair("mn_enabled", mnodeman.CountEnabled()));
     debugObj.push_back(Pair("estimated_blocks", Checkpoints::GetTotalBlocksEstimate()));
 

@@ -10,7 +10,7 @@
 #include <stdint.h>
 #include <string>
 
-static const int64_t DEFAULT_MAX_TIP_AGE = 120; // ~45 blocks behind -> 2 x fork detection time, was 24 * 60 * 60 in bitcoin
+static const int64_t DEFAULT_MAX_TIP_AGE = 1 * 60 * 60; // ~45 blocks behind -> 2 x fork detection time, was 24 * 60 * 60 in bitcoin
 
 extern int64_t nMaxTipAge;
 

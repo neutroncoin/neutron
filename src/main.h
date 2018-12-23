@@ -1435,5 +1435,6 @@ public:
 
 
 extern CTxMemPool mempool;
+extern bool isMasternodeListSynced;
 
 #endif

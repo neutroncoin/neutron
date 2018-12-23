@@ -530,6 +530,8 @@ int64_t nHPSTimerStart;
 
 void StakeMiner(CWallet *pwallet, bool fProofOfStake)
 {
+    if (fDebug) LogPrintf("StakeMiner: starting\n");
+
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
     // Make this thread recognisable as the mining thread
@@ -563,6 +565,14 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
                 return;
         }
 
+        while (!isMasternodeListSynced)
+        {
+            if (fDebug) LogPrintf("StakeMiner: waiting for mn list sync...\n");
+            MilliSleep(60000);
+            if (fShutdown)
+                return;
+        }
+
         if (fTryToSync)
         {
             fTryToSync = false;
@@ -572,6 +582,8 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
                 continue;
             }
         }
+
+        if (fDebug) LogPrintf("StakeMiner: begin staking\n");
 
         //
         // Create new block

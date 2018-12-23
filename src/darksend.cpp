@@ -42,7 +42,8 @@ map<uint256, CDarksendBroadcastTx> mapDarksendBroadcastTxes;
 CActiveMasternode activeMasternode;
 
 // count peers we've requested the list from
-int RequestedMasterNodeList = 0;
+int requestedMasterNodeList = 0;
+bool isMasternodeListSynced = false;
 
 /* *** BEGIN DARKSEND MAGIC  **********
     Copyright 2014, Darkcoin Developers
@@ -2124,6 +2125,8 @@ void ThreadCheckDarkSend(CConnman& connman)
 {
     if(fLiteMode) return; //disable all darksend/masternode related functionality
 
+    if (fDebug) LogPrintf("ThreadCheckDarkSend: Started\n");
+
     static bool fOneThread;
     if(fOneThread) return;
     fOneThread = true;
@@ -2132,6 +2135,9 @@ void ThreadCheckDarkSend(CConnman& connman)
     RenameThread("neutron-darksend");
 
     unsigned int nTick = 0;
+
+    bool waitMnSyncStarted = false;
+    int64_t nMnSyncWaitTime = GetTime();
 
     while (true)
     {
@@ -2159,15 +2165,15 @@ void ThreadCheckDarkSend(CConnman& connman)
                 }
             }
 
-            // if (fDebug) LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, RequestedMasterNodeList);
+            // if (fDebug) LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
 
             //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
-            // if(nTick % 25 == 0 && RequestedMasterNodeList < 3){
+            // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
             if(nTick % 5 == 0){
                 if(nTick % 8000 == 0){
                     LOCK(cs_vNodes);
                     BOOST_FOREACH (CNode* pnode, vNodes) {
-                        pnode->ClearFulfilledRequest("getspork");
+                        //pnode->ClearFulfilledRequest("getspork");
                         pnode->ClearFulfilledRequest("mnsync");
                         pnode->ClearFulfilledRequest("mnwsync");
                     }
@@ -2193,7 +2199,30 @@ void ThreadCheckDarkSend(CConnman& connman)
 
                     if (fDebug) LogPrintf("ThreadCheckDarkSend::Synced with peer=%s\n", pnode->id);
 
-                    // RequestedMasterNodeList++;
+                    requestedMasterNodeList++;
+
+                    MilliSleep(3000);
+                }
+
+                if (!isMasternodeListSynced) {
+                    if (!waitMnSyncStarted and (requestedMasterNodeList > 3 && mnodeman.CountEnabled() > 3)) {
+                        waitMnSyncStarted = true;
+                        nMnSyncWaitTime = GetTime() + 180;
+                        LogPrintf("ThreadCheckDarkSend - MNSYNC: Started waiting for mnsync");
+                    }
+
+                    LogPrintf("ThreadCheckDarkSend - MNSYNC: waiting... requested=%d, enabled=%d, time_remaining=%d\n", requestedMasterNodeList, mnodeman.CountEnabled(), nMnSyncWaitTime-GetTime());
+
+                    if (waitMnSyncStarted && (GetTime() >= nMnSyncWaitTime)) {
+                        LogPrintf("ThreadCheckDarkSend - MNSYNC: complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n", requestedMasterNodeList, mnodeman.CountEnabled());
+
+                        // calculate a few masternode winners first
+                        masternodePayments.ProcessBlock(pindexBest->nHeight);
+                        masternodePayments.ProcessBlock(pindexBest->nHeight + 1);
+                        masternodePayments.ProcessBlock(pindexBest->nHeight + 2);
+
+                        isMasternodeListSynced = true;
+                    }
                 }
             }
 
