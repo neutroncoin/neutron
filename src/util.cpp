@@ -240,8 +240,11 @@ int LogPrintStr(const std::string& str)
         }
 
         // Debug print useful for profiling
-        if (fLogTimestamps && fStartedNewLine)
-            ret += fprintf(fileout, "%s ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str());
+        if (fLogTimestamps && fStartedNewLine) {
+            struct timespec tsp;
+            clock_gettime( CLOCK_REALTIME,&tsp);
+            ret += fprintf(fileout, "%s.%-6lu ", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()).c_str(),(unsigned long) (tsp.tv_nsec / 1E3));
+        }
         if (!str.empty() && str[str.size() - 1] == '\n')
             fStartedNewLine = true;
         else
