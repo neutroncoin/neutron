@@ -2324,8 +2324,10 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     }
 
     // Store to disk
-    if (!pblock->AcceptBlock())
+    if (!pblock->AcceptBlock()){
+        pfrom->Misbehaving(5);
         return error("ProcessNewBlock() : AcceptBlock FAILED");
+        }
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;
