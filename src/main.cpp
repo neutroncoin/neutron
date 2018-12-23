@@ -1407,6 +1407,8 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 
 bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 {
+    AssertLockHeld(cs_main);
+
     // Check it again in case a previous version let a bad block in, but skip BlockSig checking
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
         return false;
@@ -1564,7 +1566,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                             return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
                                        hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
                         } else {
-                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s - NOT ENFORCED\n",
+                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s\n",
                                        hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
                         }
                     } else {
@@ -1576,7 +1578,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                         if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
                             return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
                         } else {
-                            LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount - NOT ENFORCED\n");
+                            LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount\n");
                         }
                     }
 
@@ -1589,7 +1591,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
                     if (fEnforceMnWinner)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
                     else
-                        LogPrintf("ConnectBlock() : Masternode payment missing or is not valid - NOT ENFORCED\n");
+                        LogPrintf("ConnectBlock() : Masternode payment missing or is not valid\n");
                 }
             } else {
                 LogPrintf("ConnectBlock() : Masternode list not yet synced - CountEnabled=%d\n", mnodeman.CountEnabled());
