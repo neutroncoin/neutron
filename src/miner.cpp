@@ -583,7 +583,7 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
             }
         }
 
-        if (fDebug) LogPrintf("StakeMiner: begin staking\n");
+        // if (fDebug) LogPrintf("StakeMiner: begin staking\n");
 
         //
         // Create new block
