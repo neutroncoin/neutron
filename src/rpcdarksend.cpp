@@ -462,7 +462,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
     {
         masternodePayments.ProcessManyBlocks(nBestHeight);
         UniValue obj(UniValue::VOBJ);
-        for(int nHeight = pindexBest->nHeight-10; nHeight < pindexBest->nHeight+10; nHeight++)
+        for(int nHeight = pindexBest->nHeight-150; nHeight < pindexBest->nHeight+10; nHeight++)
         {
             CScript payee;
             if(masternodePayments.GetBlockPayee(nHeight, payee)){
