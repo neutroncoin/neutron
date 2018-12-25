@@ -2173,7 +2173,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                 if(nTick % 8000 == 0){
                     LOCK(cs_vNodes);
                     BOOST_FOREACH (CNode* pnode, vNodes) {
-                        //pnode->ClearFulfilledRequest("getspork");
+                        pnode->ClearFulfilledRequest("getspork");
                         pnode->ClearFulfilledRequest("mnsync");
                         pnode->ClearFulfilledRequest("mnwsync");
                     }

@@ -2253,19 +2253,19 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // Check for duplicate
     uint256 hash = pblock->GetHash();
     if (mapBlockIndex.count(hash))
-        return error("ProcessNewBlock() : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+        return error("ProcessNewBlock : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
     if (mapOrphanBlocks.count(hash))
-        return error("ProcessNewBlock() : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+        return error("ProcessNewBlock : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
 
     // ppcoin: check proof-of-stake
     // Limited duplicity on stake: prevents block flood attack
     // Duplicate stake allowed only when there is orphan child block
     if (pblock->IsProofOfStake() && setStakeSeen.count(pblock->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
-        return error("ProcessNewBlock() : duplicate proof-of-stake (%s, %d) for block %s", pblock->GetProofOfStake().first.ToString().c_str(), pblock->GetProofOfStake().second, hash.ToString().c_str());
+        return error("ProcessNewBlock : duplicate proof-of-stake (%s, %d) for block %s", pblock->GetProofOfStake().first.ToString().c_str(), pblock->GetProofOfStake().second, hash.ToString().c_str());
 
     // Preliminary checks
     if (!pblock->CheckBlock())
-        return error("ProcessNewBlock() : CheckBlock FAILED");
+        return error("ProcessNewBlock : CheckBlock FAILED");
 
     CBlockIndex* pcheckpoint = Checkpoints::GetLastSyncCheckpoint();
     if (pcheckpoint && pblock->hashPrevBlock != hashBestChain && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
@@ -2285,7 +2285,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
-            return error("ProcessNewBlock() : block with too little %s", pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
+            return error("ProcessNewBlock : block with too little %s", pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
         }
     }
 
@@ -2296,7 +2296,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // If don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
-        //LogPrintf("ProcessNewBlock() : ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+        //LogPrintf("ProcessNewBlock : ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
         CBlock* pblock2 = new CBlock(*pblock);
         // ppcoin: check proof-of-stake
         if (pblock2->IsProofOfStake())
@@ -2304,7 +2304,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
             // Limited duplicity on stake: prevents block flood attack
             // Duplicate stake allowed only when there is orphan child block
             if (setStakeSeenOrphan.count(pblock2->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
-                return error("ProcessNewBlock() : duplicate proof-of-stake (%s, %d) for orphan block %s", pblock2->GetProofOfStake().first.ToString().c_str(), pblock2->GetProofOfStake().second, hash.ToString().c_str());
+                return error("ProcessNewBlock : duplicate proof-of-stake (%s, %d) for orphan block %s", pblock2->GetProofOfStake().first.ToString().c_str(), pblock2->GetProofOfStake().second, hash.ToString().c_str());
             else
                 setStakeSeenOrphan.insert(pblock2->GetProofOfStake());
         }
@@ -2324,10 +2324,11 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     }
 
     // Store to disk
-    if (!pblock->AcceptBlock()){
+    if (!pblock->AcceptBlock())
+    {
         pfrom->Misbehaving(5);
-        return error("ProcessNewBlock() : AcceptBlock FAILED");
-        }
+        return error("ProcessNewBlock : AcceptBlock FAILED");
+    }
 
     // Recursively process any orphan blocks that depended on this one
     vector<uint256> vWorkQueue;
