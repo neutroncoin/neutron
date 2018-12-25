@@ -286,7 +286,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 {
                     int64_t t = (*i).second;
                     if (GetTime() < t) {
-                        LogPrintf("dseg - peer already asked me for the list, peer=%d\n", pfrom->id);
+                        LogPrintf("dseg - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
                         pfrom->Misbehaving(34);
                         return;
                     }
@@ -945,12 +945,14 @@ void CMasternodeMan::Check()
 
 void CMasternodeMan::CheckAndRemove()
 {
-    LogPrintf("CMasternodeMan::CheckAndRemove\n");
+    LogPrintf("CMasternodeMan::CheckAndRemove started\n");
 
     {
         LOCK(cs_masternodes);
 
         Check();
+
+        LogPrintf("CMasternodeMan::CheckAndRemove remove masternodes\n");
 
         //remove inactive and outdated
         vector<CMasternode>::iterator it = vecMasternodes.begin();
@@ -970,6 +972,8 @@ void CMasternodeMan::CheckAndRemove()
         // no need for cm_main below
         LOCK(cs);
 
+        LogPrintf("CMasternodeMan::CheckAndRemove remove asked\n");
+
         // check who's asked for the Masternode list
         auto it1 = mAskedUsForMasternodeList.begin();
         while(it1 != mAskedUsForMasternodeList.end()){
@@ -980,6 +984,8 @@ void CMasternodeMan::CheckAndRemove()
             }
         }
     }
+
+    LogPrintf("CMasternodeMan::CheckAndRemove finished\n");
 }
 
 void CMasternodeMan::Clear()

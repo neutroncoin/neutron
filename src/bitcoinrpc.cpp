@@ -1256,6 +1256,8 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
         !pcmd->okSafeMode)
         throw JSONRPCError(RPC_FORBIDDEN_BY_SAFE_MODE, string("Safe mode: ") + strWarning);
 
+    LogPrintf("RPC: execute - %s\n", request.strMethod);
+
     try
     {
         // Execute
