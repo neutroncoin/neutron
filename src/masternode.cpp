@@ -9,7 +9,6 @@
 #include <boost/lexical_cast.hpp>
 
 
-CCriticalSection cs_mapMasternodeBlocks;
 CCriticalSection cs_masternodes;
 
 /** Masternode manager */
@@ -720,11 +719,11 @@ bool CMasternodePayments::Sign(CMasternodePaymentWinner& winner)
 
 bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 {
-    LOCK(cs_mapMasternodeBlocks);
-
-    if (mapMasternodeBlocks.count(nBlockHeight)) {
-        payee = mapMasternodeBlocks[nBlockHeight].payee;
-        return true;
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
+        if(winner.nBlockHeight == nBlockHeight) {
+            payee = winner.payee;
+            return true;
+        }
     }
 
     return false;
@@ -732,9 +731,11 @@ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 
 bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
 {
-    if (mapMasternodeBlocks.count(nBlockHeight)) {
-        vinOut = mapMasternodeBlocks[nBlockHeight].vin;
-        return true;
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
+        if(winner.nBlockHeight == nBlockHeight) {
+            vinOut = winner.vin;
+            return true;
+        }
     }
 
     return false;
@@ -744,25 +745,28 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
 {
     //check to see if there is already a winner set for this block.
     //if a winner is set, compare scores and update if new winner is higher score
-
-    {
-        LOCK(cs_mapMasternodeBlocks);
-
-        if (!mapMasternodeBlocks.count(winnerIn.nBlockHeight)) {
-            LogPrintf("CMasternodePayments::AddWinningMasternode() Adding winner block %d\n", winnerIn.nBlockHeight);
-            mapMasternodeBlocks[winnerIn.nBlockHeight] = winnerIn;
-            mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
-
-            return true;
-        } else {
-            // compare scores and update if new winner is higher score
-            if (mapMasternodeBlocks[winnerIn.nBlockHeight].score < winnerIn.score) {
-                LogPrintf("CMasternodePayments::AddWinningMasternode() ** Update winner block %d\n", winnerIn.nBlockHeight);
-                mapMasternodeBlocks[winnerIn.nBlockHeight] = winnerIn;
+    bool foundBlock = false;
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
+        if(winner.nBlockHeight == winnerIn.nBlockHeight) {
+            foundBlock = true;
+            if(winner.score < winnerIn.score){
+                winner.score = winnerIn.score;
+                winner.vin = winnerIn.vin;
+                winner.payee = winnerIn.payee;
+                winner.vchSig = winnerIn.vchSig;
 
                 return true;
             }
         }
+    }
+
+    // if it's not in the vector
+    if(!foundBlock){
+        LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
+        vWinning.push_back(winnerIn);
+        mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
+
+        return true;
     }
 
     return false;
@@ -775,23 +779,18 @@ void CMasternodePayments::CleanPaymentList()
 
     int nLimit = std::max(((int)vecMasternodes.size())*2, 1000);
 
-    for (auto const& it : mapMasternodeBlocks) {
-        CMasternodePaymentWinner winner = it.second;
-
-        if(pindexBest->nHeight - winner.nBlockHeight > nLimit) {
-            if(fDebug) LogPrintf("CMasternodePayments::CleanPaymentList - Removing old masternode payment - block %d\n", winner.nBlockHeight);
-            mapMasternodeBlocks.erase(winner.nBlockHeight);
+    vector<CMasternodePaymentWinner>::iterator it;
+    for(it=vWinning.begin();it<vWinning.end();it++){
+        if(pindexBest->nHeight - (*it).nBlockHeight > nLimit){
+            if(fDebug) LogPrintf("CMasternodePayments::CleanPaymentList - Removing old masternode payment - block %d\n", (*it).nBlockHeight);
+            vWinning.erase(it);
+            break;
         }
     }
 }
 
 bool CMasternodePayments::ProcessBlock(int nBlockHeight)
 {
-    // if (nBlockHeight <= pindexBest->nHeight) {
-    //     LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d <= %d\n", nBlockHeight, pindexBest->nHeight);
-    //     return false;
-    // }
-
     CMasternodePaymentWinner winner;
     {
         LOCK(cs_masternodes);
@@ -888,12 +887,9 @@ void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
 void CMasternodePayments::Sync(CNode* node)
 {
     int a = 0;
-    for (auto const& it : mapMasternodeBlocks) {
-        CMasternodePaymentWinner winner = it.second;
-
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
         if(winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
             node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner, a);
-    }
 }
 
 
