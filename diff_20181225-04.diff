@@ -1,0 +1,219 @@
+diff --git a/neutron-qt.pro b/neutron-qt.pro
+index e70b464..cf42e6f 100755
+--- a/neutron-qt.pro
++++ b/neutron-qt.pro
+@@ -1,3 +1,36 @@
++BDB_LIB_PATH=/usr/local/Cellar/berkeley-db\@4/4.8.30/lib
++BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db\@4/4.8.30/include
++
++BOOST_LIB_PATH=/usr/local/Cellar/boost@1.60/1.60.0/lib
++BOOST_INCLUDE_PATH=/usr/local/Cellar/boost@1.60/1.60.0/include
++#-----
++###BOOST_LIB_PATH=/usr/local/Cellar/boost/1.67.0_1/lib
++###BOOST_INCLUDE_PATH=/usr/local/Cellar/boost/1.67.0_1/include
++
++OPENSSL_LIB_PATH=/usr/local/Cellar/openssl/1.0.2o_1/lib
++OPENSSL_INCLUDE_PATH=/usr/local/Cellar/openssl/1.0.2o_1/include
++
++MINIUPNPC_LIB_PATH=/usr/local/Cellar/miniupnpc/1.9.20151008/lib
++MINIUPNPC_INCLUDE_PATH=/usr/local/Cellar/miniupnpc/1.9.20151008/include
++
++QRENCODE_LIB_PATH=/usr/local/Cellar/qrencode/3.4.4/lib
++QRENCODE_INCLUDE_PATH=/usr/local/Cellar/qrencode/3.4.4/include
++
++
++
++QMAKE_MAC_SDK = macosx10.14
++QMAKE_MAC_SDK.macosx.SDKVersion = 10.14
++
++
++DEFINES += DEBUG_LOCKCONTENTION
++
++#DEFINES += DEBUG_LOCKCONTENTION DEBUG_LOCKORDER
++#DEBUG_LOCKCONTENTION=1
++#DEBUG_LOCKORDER=1
++
++# DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE BOOST_NO_CXX11_SCOPED_ENUMS
++
++
+ TEMPLATE = app
+ TARGET = Neutron-qt
+ VERSION = 2.1.0
+diff --git a/src/masternode.cpp b/src/masternode.cpp
+index eafe77e..7918ea9 100644
+--- a/src/masternode.cpp
++++ b/src/masternode.cpp
+@@ -9,7 +9,6 @@
+ #include <boost/lexical_cast.hpp>
+ 
+ 
+-CCriticalSection cs_mapMasternodeBlocks;
+ CCriticalSection cs_masternodes;
+ 
+ /** Masternode manager */
+@@ -720,11 +719,11 @@ bool CMasternodePayments::Sign(CMasternodePaymentWinner& winner)
+ 
+ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
+ {
+-    LOCK(cs_mapMasternodeBlocks);
+-
+-    if (mapMasternodeBlocks.count(nBlockHeight)) {
+-        payee = mapMasternodeBlocks[nBlockHeight].payee;
+-        return true;
++    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
++        if(winner.nBlockHeight == nBlockHeight) {
++            payee = winner.payee;
++            return true;
++        }
+     }
+ 
+     return false;
+@@ -732,9 +731,11 @@ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
+ 
+ bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
+ {
+-    if (mapMasternodeBlocks.count(nBlockHeight)) {
+-        vinOut = mapMasternodeBlocks[nBlockHeight].vin;
+-        return true;
++    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
++        if(winner.nBlockHeight == nBlockHeight) {
++            vinOut = winner.vin;
++            return true;
++        }
+     }
+ 
+     return false;
+@@ -744,27 +745,30 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
+ {
+     //check to see if there is already a winner set for this block.
+     //if a winner is set, compare scores and update if new winner is higher score
+-
+-    {
+-        LOCK(cs_mapMasternodeBlocks);
+-
+-        if (!mapMasternodeBlocks.count(winnerIn.nBlockHeight)) {
+-            LogPrintf("CMasternodePayments::AddWinningMasternode() Adding winner block %d\n", winnerIn.nBlockHeight);
+-            mapMasternodeBlocks[winnerIn.nBlockHeight] = winnerIn;
+-            mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
+-
+-            return true;
+-        } else {
+-            // compare scores and update if new winner is higher score
+-            if (mapMasternodeBlocks[winnerIn.nBlockHeight].score < winnerIn.score) {
+-                LogPrintf("CMasternodePayments::AddWinningMasternode() ** Update winner block %d\n", winnerIn.nBlockHeight);
+-                mapMasternodeBlocks[winnerIn.nBlockHeight] = winnerIn;
++    bool foundBlock = false;
++    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
++        if(winner.nBlockHeight == winnerIn.nBlockHeight) {
++            foundBlock = true;
++            if(winner.score < winnerIn.score){
++                winner.score = winnerIn.score;
++                winner.vin = winnerIn.vin;
++                winner.payee = winnerIn.payee;
++                winner.vchSig = winnerIn.vchSig;
+ 
+                 return true;
+             }
+         }
+     }
+ 
++    // if it's not in the vector
++    if(!foundBlock){
++        LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
++        vWinning.push_back(winnerIn);
++        mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
++
++        return true;
++    }
++
+     return false;
+ }
+ 
+@@ -775,23 +779,18 @@ void CMasternodePayments::CleanPaymentList()
+ 
+     int nLimit = std::max(((int)vecMasternodes.size())*2, 1000);
+ 
+-    for (auto const& it : mapMasternodeBlocks) {
+-        CMasternodePaymentWinner winner = it.second;
+-
+-        if(pindexBest->nHeight - winner.nBlockHeight > nLimit) {
+-            if(fDebug) LogPrintf("CMasternodePayments::CleanPaymentList - Removing old masternode payment - block %d\n", winner.nBlockHeight);
+-            mapMasternodeBlocks.erase(winner.nBlockHeight);
++    vector<CMasternodePaymentWinner>::iterator it;
++    for(it=vWinning.begin();it<vWinning.end();it++){
++        if(pindexBest->nHeight - (*it).nBlockHeight > nLimit){
++            if(fDebug) LogPrintf("CMasternodePayments::CleanPaymentList - Removing old masternode payment - block %d\n", (*it).nBlockHeight);
++            vWinning.erase(it);
++            break;
+         }
+     }
+ }
+ 
+ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+ {
+-    // if (nBlockHeight <= pindexBest->nHeight) {
+-    //     LogPrintf("CMasternodePayments::ProcessBlock -- Ignoring stale block height %d <= %d\n", nBlockHeight, pindexBest->nHeight);
+-    //     return false;
+-    // }
+-
+     CMasternodePaymentWinner winner;
+     {
+         LOCK(cs_masternodes);
+@@ -888,12 +887,9 @@ void CMasternodePayments::Relay(CMasternodePaymentWinner& winner)
+ void CMasternodePayments::Sync(CNode* node)
+ {
+     int a = 0;
+-    for (auto const& it : mapMasternodeBlocks) {
+-        CMasternodePaymentWinner winner = it.second;
+-
++    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+         if(winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
+             node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner, a);
+-    }
+ }
+ 
+ 
+diff --git a/src/masternode.h b/src/masternode.h
+index 77aa7c7..a5a4845 100644
+--- a/src/masternode.h
++++ b/src/masternode.h
+@@ -52,7 +52,6 @@ using namespace std;
+ 
+ class CMasternodePaymentWinner;
+ 
+-extern CCriticalSection cs_mapMasternodeBlocks;
+ extern CCriticalSection cs_masternodes;
+ extern std::vector<CMasternode> vecMasternodes;
+ extern CMasternodePayments masternodePayments;
+@@ -251,7 +250,6 @@ class CMasternodePayments
+ {
+ private:
+     std::vector<CMasternodePaymentWinner> vWinning;
+-    std::map<int, CMasternodePaymentWinner> mapMasternodeBlocks;
+     int nSyncedFromPeer;
+     std::string strMasterPrivKey;
+     std::string strTestPubKey;
+diff --git a/src/rpcmining.cpp b/src/rpcmining.cpp
+index 9b6daaa..41181a3 100644
+--- a/src/rpcmining.cpp
++++ b/src/rpcmining.cpp
+@@ -518,6 +518,7 @@ UniValue submitblock(const UniValue& params, bool fHelp)
+         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
+     }
+ 
++    LOCK(cs_main);
+     bool fAccepted = ProcessNewBlock(NULL, &block);
+     if (!fAccepted)
+         return "rejected";
+diff --git a/src/rpcwallet.cpp b/src/rpcwallet.cpp
+index bf4b7ff..1dc151e 100644
+--- a/src/rpcwallet.cpp
++++ b/src/rpcwallet.cpp
+@@ -86,6 +86,7 @@ UniValue getinfo(const UniValue& params, bool fHelp)
+     GetProxy(NET_IPV4, proxy);
+ 
+     UniValue obj(UniValue::VOBJ), diff(UniValue::VOBJ);
++    obj.push_back(Pair("tag",           "20181225-03"));
+     obj.push_back(Pair("version",       FormatFullVersion()));
+     obj.push_back(Pair("protocolversion",(int)PROTOCOL_VERSION));
+     obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));

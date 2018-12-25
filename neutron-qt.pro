@@ -1,3 +1,36 @@
+BDB_LIB_PATH=/usr/local/Cellar/berkeley-db\@4/4.8.30/lib
+BDB_INCLUDE_PATH=/usr/local/Cellar/berkeley-db\@4/4.8.30/include
+
+BOOST_LIB_PATH=/usr/local/Cellar/boost@1.60/1.60.0/lib
+BOOST_INCLUDE_PATH=/usr/local/Cellar/boost@1.60/1.60.0/include
+#-----
+###BOOST_LIB_PATH=/usr/local/Cellar/boost/1.67.0_1/lib
+###BOOST_INCLUDE_PATH=/usr/local/Cellar/boost/1.67.0_1/include
+
+OPENSSL_LIB_PATH=/usr/local/Cellar/openssl/1.0.2o_1/lib
+OPENSSL_INCLUDE_PATH=/usr/local/Cellar/openssl/1.0.2o_1/include
+
+MINIUPNPC_LIB_PATH=/usr/local/Cellar/miniupnpc/1.9.20151008/lib
+MINIUPNPC_INCLUDE_PATH=/usr/local/Cellar/miniupnpc/1.9.20151008/include
+
+QRENCODE_LIB_PATH=/usr/local/Cellar/qrencode/3.4.4/lib
+QRENCODE_INCLUDE_PATH=/usr/local/Cellar/qrencode/3.4.4/include
+
+
+
+QMAKE_MAC_SDK = macosx10.14
+QMAKE_MAC_SDK.macosx.SDKVersion = 10.14
+
+
+DEFINES += DEBUG_LOCKCONTENTION
+
+#DEFINES += DEBUG_LOCKCONTENTION DEBUG_LOCKORDER
+#DEBUG_LOCKCONTENTION=1
+#DEBUG_LOCKORDER=1
+
+# DEFINES += QT_GUI BOOST_THREAD_USE_LIB BOOST_SPIRIT_THREADSAFE BOOST_NO_CXX11_SCOPED_ENUMS
+
+
 TEMPLATE = app
 TARGET = Neutron-qt
 VERSION = 2.1.0
