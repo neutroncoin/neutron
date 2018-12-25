@@ -518,7 +518,6 @@ UniValue submitblock(const UniValue& params, bool fHelp)
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
     }
 
-    LOCK(cs_main);
     bool fAccepted = ProcessNewBlock(NULL, &block);
     if (!fAccepted)
         return "rejected";

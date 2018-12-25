@@ -86,7 +86,6 @@ UniValue getinfo(const UniValue& params, bool fHelp)
     GetProxy(NET_IPV4, proxy);
 
     UniValue obj(UniValue::VOBJ), diff(UniValue::VOBJ);
-    obj.push_back(Pair("tag",           "20181225-03"));
     obj.push_back(Pair("version",       FormatFullVersion()));
     obj.push_back(Pair("protocolversion",(int)PROTOCOL_VERSION));
     obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
