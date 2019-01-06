@@ -45,48 +45,98 @@ void OptionsModel::Init()
     QSettings settings;
 
     // These are Qt-only settings:
-    nDisplayUnit = settings.value("nDisplayUnit", BitcoinUnits::BTC).toInt();
-    bDisplayAddresses = settings.value("bDisplayAddresses", false).toBool();
-    fMinimizeToTray = settings.value("fMinimizeToTray", false).toBool();
-    fMinimizeOnClose = settings.value("fMinimizeOnClose", false).toBool();
+
+    // Window
+    if (!settings.contains("fMinimizeToTray"))
+        settings.setValue("fMinimizeToTray", false);
+    fMinimizeToTray = settings.value("fMinimizeToTray").toBool();
+
+    if (!settings.contains("fMinimizeOnClose"))
+        settings.setValue("fMinimizeOnClose", false);
+    fMinimizeOnClose = settings.value("fMinimizeOnClose").toBool();
+
+    // Display
+    if (!settings.contains("nDisplayUnit"))
+        settings.setValue("nDisplayUnit", BitcoinUnits::BTC);
+    nDisplayUnit = settings.value("nDisplayUnit").toInt();
+
+    if (!settings.contains("bDisplayAddresses"))
+        settings.setValue("bDisplayAddresses", false);
+    bDisplayAddresses = settings.value("bDisplayAddresses").toBool();
+
+    if (!settings.contains("fCoinControlFeatures"))
+        settings.setValue("fCoinControlFeatures", false);
     fCoinControlFeatures = settings.value("fCoinControlFeatures", false).toBool();
-    nTransactionFee = settings.value("nTransactionFee").toLongLong();
-    nReserveBalance = settings.value("nReserveBalance").toLongLong();
-    language = settings.value("language", "").toString();
-    fUseDarkTheme = settings.value("fUseDarkTheme", false).toBool();
+
+    if (!settings.contains("nTransactionFee"))
+        settings.setValue("nTransactionFee", 0);
+    nTransactionFee = settings.value("nTransactionFee", "0").toLongLong();
+
+    if (!settings.contains("nReserveBalance"))
+        settings.setValue("nReserveBalance", 0);
+    nReserveBalance = settings.value("nReserveBalance", "0").toLongLong();
+
+    if (!settings.contains("fUseDarkTheme"))
+        settings.setValue("fUseDarkTheme", false);
+    fUseDarkTheme = settings.value("fUseDarkTheme").toBool();
 
     if (!settings.contains("nDarksendRounds"))
         settings.setValue("nDarksendRounds", 2);
+    if (!SoftSetArg("-darksendrounds", settings.value("nDarksendRounds").toString().toStdString()))
+        addOverriddenOption("-darksendrounds");
+    nDarksendRounds = settings.value("nDarksendRounds").toLongLong();
 
     if (!settings.contains("nAnonymizeNeutronAmount"))
         settings.setValue("nAnonymizeNeutronAmount", 1000);
-
-    nDarksendRounds = settings.value("nDarksendRounds").toLongLong();
+    if (!SoftSetArg("-anonymizeneutronamount", settings.value("nAnonymizeNeutronAmount").toString().toStdString()))
+        addOverriddenOption("-anonymizeneutronamount");
     nAnonymizeNeutronAmount = settings.value("nAnonymizeNeutronAmount").toLongLong();
 
-    // These are shared with core Bitcoin; we want
-    // command-line options to override the GUI settings:
-    if (settings.contains("fUseUPnP"))
-        SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool());
-
+    // Network
     if (!settings.contains("fUseUPnP"))
         settings.setValue("fUseUPnP", DEFAULT_UPNP);
     if (!SoftSetBoolArg("-upnp", settings.value("fUseUPnP").toBool()))
         addOverriddenOption("-upnp");
 
+    if (!settings.contains("fUseProxy"))
+        settings.setValue("fUseProxy", false);
+    if (!settings.contains("addrProxy"))
+        settings.setValue("addrProxy", "127.0.0.1:9050");
+    // Only try to set -proxy, if user has enabled fUseProxy
+    if (settings.value("fUseProxy").toBool() && !SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
+        addOverriddenOption("-proxy");
+    else if(!settings.value("fUseProxy").toBool() && !GetArg("-proxy", "").empty())
+        addOverriddenOption("-proxy");
+
+
     if (settings.contains("addrProxy") && settings.value("fUseProxy").toBool())
         SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString());
-    if (settings.contains("nSocksVersion") && settings.value("fUseProxy").toBool())
-        SoftSetArg("-socks", settings.value("nSocksVersion").toString().toStdString());
+
     if (settings.contains("detachDB"))
         SoftSetBoolArg("-detachdb", settings.value("detachDB").toBool());
-    if (!language.isEmpty())
-        SoftSetArg("-lang", language.toStdString());
-    if (settings.contains("nDarksendRounds"))
-        SoftSetArg("-darksendrounds", settings.value("nDarksendRounds").toString().toStdString());
-    if (settings.contains("nAnonymizeNeutronAmount"))
-        SoftSetArg("-anonymizeneutronamount", settings.value("nAnonymizeNeutronAmount").toString().toStdString());
- }
+
+    // Display
+    if (!settings.contains("language"))
+        settings.setValue("language", "");
+    if (!SoftSetArg("-lang", settings.value("language").toString().toStdString()))
+        addOverriddenOption("-lang");
+
+    language = settings.value("language").toString();
+}
+
+void OptionsModel::Reset()
+{
+    QSettings settings;
+
+    // Remove all entries from our QSettings object
+    settings.clear();
+
+    // NTRN TODO: fully implement resetSettings
+
+    // default setting for OptionsModel::StartAtStartup - disabled
+    if (GUIUtil::GetStartOnSystemStartup())
+        GUIUtil::SetStartOnSystemStartup(false);
+}
 
 int OptionsModel::rowCount(const QModelIndex & parent) const
 {

@@ -349,7 +349,6 @@ std::string HelpMessage()
         "  -dblogsize=<n>         " + _("Set database disk log size in megabytes (default: 100)") + "\n" +
         "  -timeout=<n>           " + _("Specify connection timeout in milliseconds (default: 5000)") + "\n" +
         "  -proxy=<ip:port>       " + _("Connect through socks proxy") + "\n" +
-        "  -socks=<n>             " + _("Select the version of socks proxy to use (4-5, default: 5)") + "\n" +
         "  -tor=<ip:port>         " + _("Use proxy to reach tor hidden services (default: same as -proxy)") + "\n"
         "  -dns                   " + _("Allow DNS lookups for -addnode, -seednode and -connect") + "\n" +
         "  -port=<port>           " + _("Listen for connections on <port> (default: 32001 or testnet: 25714)") + "\n" +
