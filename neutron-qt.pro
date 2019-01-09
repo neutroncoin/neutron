@@ -188,6 +188,7 @@ HEADERS += src/activemasternode.h \
     src/darksend.h \
     src/db.h \
     src/init.h \
+    src/ismine.h \
     src/kernel.h \
     src/key.h \
     src/keystore.h \
@@ -291,6 +292,7 @@ SOURCES += src/activemasternode.cpp \
     src/darksend.cpp \
     src/db.cpp \
     src/init.cpp \
+    src/ismine.cpp \
     src/kernel.cpp \
     src/key.cpp \
     src/keystore.cpp \

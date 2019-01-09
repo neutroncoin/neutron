@@ -77,6 +77,7 @@ OBJS= \
     obj/darksend.o \
     obj/db.o \
     obj/init.o \
+    obj/ismine.o \
     obj/kernel.o \
     obj/key.o \
     obj/keystore.o \

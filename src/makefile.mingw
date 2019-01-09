@@ -70,6 +70,7 @@ OBJS= \
     obj/key.o \
     obj/db.o \
     obj/init.o \
+    obj/ismine.o \
     obj/keystore.o \
     obj/main.o \
     obj/miner.o \

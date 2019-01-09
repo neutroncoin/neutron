@@ -12,6 +12,8 @@
 
 #include "primitives/block.h"
 
+#include "ismine.h"
+
 #include "main.h"
 #include "key.h"
 #include "keystore.h"
