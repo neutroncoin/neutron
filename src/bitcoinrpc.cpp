@@ -232,20 +232,33 @@ void RPCTypeCheckObj(const UniValue& o,
     }
 }
 
-int64_t AmountFromValue(const UniValue& value)
+static inline int64_t roundint64(double d)
 {
+    return (int64_t)(d > 0 ? d + 0.5 : d - 0.5);
+}
+
+CAmount AmountFromValue(const UniValue& value)
+{
+    if (!value.isNum())
+        throw JSONRPCError(RPC_TYPE_ERROR, "Amount is not a number");
+
     double dAmount = value.get_real();
     if (dAmount <= 0.0 || dAmount > MAX_MONEY)
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
-    int64_t nAmount = roundint64(dAmount * COIN);
+    CAmount nAmount = roundint64(dAmount * COIN);
     if (!MoneyRange(nAmount))
         throw JSONRPCError(RPC_TYPE_ERROR, "Invalid amount");
     return nAmount;
 }
 
-UniValue ValueFromAmount(int64_t amount)
+UniValue ValueFromAmount(const CAmount& amount)
 {
-    return (double)amount / (double)COIN;
+    bool sign = amount < 0;
+    int64_t n_abs = (sign ? -amount : amount);
+    int64_t quotient = n_abs / COIN;
+    int64_t remainder = n_abs % COIN;
+    return UniValue(UniValue::VNUM,
+            strprintf("%s%d.%08d", sign ? "-" : "", quotient, remainder));
 }
 
 std::string HexBits(unsigned int nBits)

@@ -203,8 +203,8 @@ public:
 extern CRPCTable tableRPC;
 
 extern int64_t nWalletUnlockTime;
-extern int64_t AmountFromValue(const UniValue& value);
-extern UniValue ValueFromAmount(int64_t amount);
+extern CAmount AmountFromValue(const UniValue& value);
+extern UniValue ValueFromAmount(const CAmount& amount);
 extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
 
 extern double GetPoWMHashPS();
