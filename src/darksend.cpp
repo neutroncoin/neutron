@@ -1983,6 +1983,14 @@ int CDarkSendPool::GetDenominationsByAmount(int64_t nAmount, int nDenomTarget){
     return 0;
 }
 
+bool CDarkSendPool::IsDenominatedAmount(int64_t nInputAmount)
+{
+    BOOST_FOREACH(int64_t d, darkSendDenominations)
+        if(nInputAmount == d)
+            return true;
+    return false;
+}
+
 bool CDarkSendSigner::IsVinAssociatedWithPubkey(CTxIn& vin, CPubKey& pubkey){
     CScript payee2;
     payee2= GetScriptForDestination(pubkey.GetID());

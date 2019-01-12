@@ -420,6 +420,8 @@ public:
     int GetDenominationsByAmount(int64_t nAmount, int nDenomTarget=0);
 
     int GetDenominationsByAmounts(std::vector<int64_t>& vecAmount);
+
+    static bool IsDenominatedAmount(int64_t nInputAmount);
 };
 
 

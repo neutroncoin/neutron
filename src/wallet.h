@@ -269,24 +269,7 @@ public:
     void GetAllReserveKeys(std::set<CKeyID>& setAddress) const;
 
     bool IsDenominated(const CTxIn &txin) const;
-
-    bool IsDenominated(const CTransaction& tx) const
-    {
-        /*
-            Return false if ANY inputs are non-denom
-        */
-        bool ret = true;
-        BOOST_FOREACH(const CTxIn& txin, tx.vin)
-        {
-            if(!IsDenominated(txin)) {
-                ret = false;
-            }
-        }
-        return ret;
-    }
-
-    bool IsDenominatedAmount(int64_t nInputAmount) const;
-
+    bool IsDenominated(const CTransaction& tx) const;
 
     std::set< std::set<CTxDestination> > GetAddressGroupings();
     std::map<CTxDestination, int64_t> GetAddressBalances();
