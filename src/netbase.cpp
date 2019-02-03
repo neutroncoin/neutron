@@ -176,11 +176,6 @@ bool Lookup(const char *pszName, CService& addr, int portDefault, bool fAllowLoo
     return true;
 }
 
-bool LookupNumeric(const char *pszName, CService& addr, int portDefault)
-{
-    return Lookup(pszName, addr, portDefault, false);
-}
-
 CService LookupNumeric(const char *pszName, int portDefault)
 {
     CService addr;

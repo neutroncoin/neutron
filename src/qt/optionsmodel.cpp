@@ -8,6 +8,10 @@
 
 bool fUseDarkTheme;
 
+const char *DEFAULT_GUI_PROXY_HOST = "127.0.0.1";
+
+static const QString GetDefaultProxyAddress();
+
 OptionsModel::OptionsModel(QObject *parent) : QAbstractListModel(parent)
 {
     Init();
@@ -18,31 +22,12 @@ void OptionsModel::addOverriddenOption(const std::string& option)
     strOverriddenByCommandLine += QString::fromStdString(option) + "=" + QString::fromStdString(mapArgs[option]) + " ";
 }
 
-bool static ApplyProxySettings()
-{
-    QSettings settings;
-    CService addrProxy(settings.value("addrProxy", "127.0.0.1:9050").toString().toStdString());
-    int nSocksVersion = 5;
-    if (!settings.value("fUseProxy", false).toBool()) {
-        addrProxy = CService();
-        nSocksVersion = 0;
-        return false;
-    }
-    if (nSocksVersion && !addrProxy.IsValid())
-        return false;
-    if (!IsLimited(NET_IPV4))
-        SetProxy(NET_IPV4, addrProxy);
-    if (nSocksVersion) {
-        if (!IsLimited(NET_IPV6))
-            SetProxy(NET_IPV6, addrProxy);
-        SetNameProxy(addrProxy);
-    }
-    return true;
-}
-
 void OptionsModel::Init()
 {
     QSettings settings;
+
+    // Ensure restart flag is unset on client startup
+    setRestartRequired(false);
 
     // These are Qt-only settings:
 
@@ -101,7 +86,7 @@ void OptionsModel::Init()
     if (!settings.contains("fUseProxy"))
         settings.setValue("fUseProxy", false);
     if (!settings.contains("addrProxy"))
-        settings.setValue("addrProxy", "127.0.0.1:9050");
+        settings.setValue("addrProxy", GetDefaultProxyAddress());
     // Only try to set -proxy, if user has enabled fUseProxy
     if (settings.value("fUseProxy").toBool() && !SoftSetArg("-proxy", settings.value("addrProxy").toString().toStdString()))
         addOverriddenOption("-proxy");
@@ -133,6 +118,9 @@ void OptionsModel::Reset()
 
     // NTRN TODO: fully implement resetSettings
 
+    // Set that this was reset
+    settings.setValue("fReset", true);
+
     // default setting for OptionsModel::StartAtStartup - disabled
     if (GUIUtil::GetStartOnSystemStartup())
         GUIUtil::SetStartOnSystemStartup(false);
@@ -141,6 +129,38 @@ void OptionsModel::Reset()
 int OptionsModel::rowCount(const QModelIndex & parent) const
 {
     return OptionIDRowCount;
+}
+
+struct ProxySetting {
+    bool is_set;
+    QString ip;
+    QString port;
+};
+
+static ProxySetting GetProxySetting(QSettings &settings, const QString &name)
+{
+    static const ProxySetting default_val = {false, DEFAULT_GUI_PROXY_HOST, QString("%1").arg(DEFAULT_GUI_PROXY_PORT)};
+    // Handle the case that the setting is not set at all
+    if (!settings.contains(name)) {
+        return default_val;
+    }
+    // contains IP at index 0 and port at index 1
+    QStringList ip_port = settings.value(name).toString().split(":", QString::SkipEmptyParts);
+    if (ip_port.size() == 2) {
+        return {true, ip_port.at(0), ip_port.at(1)};
+    } else { // Invalid: return default
+        return default_val;
+    }
+}
+
+static void SetProxySetting(QSettings &settings, const QString &name, const ProxySetting &ip_port)
+{
+    settings.setValue(name, ip_port.ip + ":" + ip_port.port);
+}
+
+static const QString GetDefaultProxyAddress()
+{
+    return QString("%1:%2").arg(DEFAULT_GUI_PROXY_HOST).arg(DEFAULT_GUI_PROXY_PORT);
 }
 
 QVariant OptionsModel::data(const QModelIndex & index, int role) const
@@ -162,22 +182,17 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
 #endif
         case MinimizeOnClose:
             return QVariant(fMinimizeOnClose);
+
+        // default proxy
         case ProxyUse:
             return settings.value("fUseProxy", false);
         case ProxyIP: {
-            proxyType proxy;
-            if (GetProxy(NET_IPV4, proxy))
-                return QVariant(QString::fromStdString(proxy.proxy.ToStringIP()));
-            else
-                return QVariant(QString::fromStdString("127.0.0.1"));
+            return GetProxySetting(settings, "addrProxy").ip;
         }
         case ProxyPort: {
-            proxyType proxy;
-            if (GetProxy(NET_IPV4, proxy))
-                return QVariant(proxy.proxy.GetPort());
-            else
-                return QVariant(9050);
+            return GetProxySetting(settings, "addrProxy").port;
         }
+
         case Fee:
             return QVariant((qint64) nTransactionFee);
         case ReserveBalance:
@@ -201,6 +216,7 @@ QVariant OptionsModel::data(const QModelIndex & index, int role) const
     return QVariant();
 }
 
+// write QSettings values
 bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, int role)
 {
     bool successful = true; /* set to false on parse error */
@@ -224,31 +240,29 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             fMinimizeOnClose = value.toBool();
             settings.setValue("fMinimizeOnClose", fMinimizeOnClose);
             break;
+
+        // default proxy
         case ProxyUse:
-            settings.setValue("fUseProxy", value.toBool());
-            ApplyProxySettings();
+            if (settings.value("fUseProxy") != value) {
+                settings.setValue("fUseProxy", value.toBool());
+                setRestartRequired(true);
+            }
             break;
         case ProxyIP: {
-            // contains current IP at index 0 and current port at index 1
-            QStringList strlIpPort = settings.value("addrProxy").toString().split(":", QString::SkipEmptyParts);
-            // if that key doesn't exist or has a changed IP
-            if (!settings.contains("addrProxy") || strlIpPort.at(0) != value.toString()) {
-                // construct new value from new IP and current port
-                QString strNewValue = value.toString() + ":" + strlIpPort.at(1);
-                settings.setValue("addrProxy", strNewValue);
-                successful = ApplyProxySettings();
+            auto ip_port = GetProxySetting(settings, "addrProxy");
+            if (!ip_port.is_set || ip_port.ip != value.toString()) {
+                ip_port.ip = value.toString();
+                SetProxySetting(settings, "addrProxy", ip_port);
+                setRestartRequired(true);
             }
         }
         break;
         case ProxyPort: {
-            // contains current IP at index 0 and current port at index 1
-            QStringList strlIpPort = settings.value("addrProxy").toString().split(":", QString::SkipEmptyParts);
-            // if that key doesn't exist or has a changed port
-            if (!settings.contains("addrProxy") || strlIpPort.at(1) != value.toString()) {
-                // construct new value from current IP and new port
-                QString strNewValue = strlIpPort.at(0) + ":" + value.toString();
-                settings.setValue("addrProxy", strNewValue);
-                successful = ApplyProxySettings();
+            auto ip_port = GetProxySetting(settings, "addrProxy");
+            if (!ip_port.is_set || ip_port.port != value.toString()) {
+                ip_port.port = value.toString();
+                SetProxySetting(settings, "addrProxy", ip_port);
+                setRestartRequired(true);
             }
         }
         break;
@@ -279,7 +293,10 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             }
             break;
         case Language:
-            settings.setValue("language", value);
+            if (settings.value("language") != value) {
+                settings.setValue("language", value);
+                setRestartRequired(true);
+            }
             break;
         case CoinControlFeatures: {
             fCoinControlFeatures = value.toBool();
@@ -298,8 +315,10 @@ bool OptionsModel::setData(const QModelIndex & index, const QVariant & value, in
             emit anonymizeNeutronAmountChanged(nAnonymizeNeutronAmount);
             break;
         case UseDarkTheme:
-            fUseDarkTheme = value.toBool();
-            settings.setValue("fUseDarkTheme", fUseDarkTheme);
+            if (settings.value("fUseDarkTheme") != value) {
+                settings.setValue("fUseDarkTheme", value);
+                setRestartRequired(true);
+            }
             break;
         default:
             break;
@@ -343,4 +362,16 @@ int OptionsModel::getDisplayUnit()
 bool OptionsModel::getDisplayAddresses()
 {
     return bDisplayAddresses;
+}
+
+void OptionsModel::setRestartRequired(bool fRequired)
+{
+    QSettings settings;
+    return settings.setValue("fRestartRequired", fRequired);
+}
+
+bool OptionsModel::isRestartRequired() const
+{
+    QSettings settings;
+    return settings.value("fRestartRequired", false).toBool();
 }

@@ -8,6 +8,8 @@
 extern bool fUseDarkTheme;
 
 
+static constexpr unsigned short DEFAULT_GUI_PROXY_PORT = 9050;
+
 /** Interface from Qt to configuration data structure for Bitcoin client.
    To Qt, the options are presented as a list with the different options
    laid out vertically.
@@ -22,24 +24,24 @@ public:
     explicit OptionsModel(QObject *parent = 0);
 
     enum OptionID {
-        StartAtStartup,    // bool
-        MinimizeToTray,    // bool
-        MapPortUPnP,       // bool
-        MinimizeOnClose,   // bool
-        ProxyUse,          // bool
-        ProxyIP,           // QString
-        ProxyPort,         // int
-        ProxySocksVersion, // DEPRECATED - int
-        Fee,               // qint64
-        ReserveBalance,    // qint64
-        DisplayUnit,       // BitcoinUnits::Unit
-        DisplayAddresses,  // bool
-        DetachDatabases,   // bool
-        Language,          // QString
-        CoinControlFeatures, // bool
-        DarksendRounds,    // int
+        StartAtStartup,         // bool
+        MinimizeToTray,         // bool
+        MapPortUPnP,            // bool
+        MinimizeOnClose,        // bool
+        ProxyUse,               // bool
+        ProxyIP,                // QString
+        ProxyPort,              // int
+        ProxySocksVersion,      // DEPRECATED - int
+        Fee,                    // qint64
+        ReserveBalance,         // qint64
+        DisplayUnit,            // BitcoinUnits::Unit
+        DisplayAddresses,       // bool
+        DetachDatabases,        // bool
+        Language,               // QString
+        CoinControlFeatures,    // bool
+        DarksendRounds,         // int
         anonymizeNeutronAmount, //int
-        UseDarkTheme,      // bool
+        UseDarkTheme,           // bool
         OptionIDRowCount,
     };
 
@@ -60,6 +62,10 @@ public:
     bool getCoinControlFeatures();
 
     QString getLanguage() { return language; }
+
+    /* Restart flag helper */
+    void setRestartRequired(bool fRequired);
+    bool isRestartRequired() const;
 
 private:
     int nDisplayUnit;
