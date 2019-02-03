@@ -256,7 +256,6 @@ HEADERS += src/activemasternode.h \
     src/qt/guiconstants.h \
     src/qt/loggerpage.h \
     src/qt/masternodemanager.h \
-    src/qt/monitoreddatamapper.h \
     src/qt/networkstyle.h \
     src/qt/notificator.h \
     src/qt/optionsdialog.h \
@@ -355,7 +354,6 @@ SOURCES += src/activemasternode.cpp \
     src/qt/guiutil.cpp \
     src/qt/loggerpage.cpp \
     src/qt/masternodemanager.cpp \
-    src/qt/monitoreddatamapper.cpp \
     src/qt/networkstyle.cpp \
     src/qt/notificator.cpp \
     src/qt/optionsdialog.cpp \
