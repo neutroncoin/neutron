@@ -148,9 +148,9 @@ void OptionsDialog::setMapper()
 
     /* Window */
 #ifndef Q_OS_MAC
-    if (QSystemTrayIcon::isSystemTrayAvailable()) {
+/*    if (QSystemTrayIcon::isSystemTrayAvailable()) {
         mapper->addMapping(ui->minimizeToTray, OptionsModel::MinimizeToTray);
-    }
+    }*/
     mapper->addMapping(ui->minimizeOnClose, OptionsModel::MinimizeOnClose);
 #endif
 
