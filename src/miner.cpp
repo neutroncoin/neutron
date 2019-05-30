@@ -531,7 +531,6 @@ int64_t nHPSTimerStart;
 void StakeMiner(CWallet *pwallet, bool fProofOfStake)
 {
     if (fDebug) LogPrintf("StakeMiner: starting\n");
-
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
     // Make this thread recognisable as the mining thread
@@ -540,8 +539,16 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
     // Each thread has its own key and counter
     CReserveKey reservekey(pwallet);
     unsigned int nExtraNonce = 0;
-
     bool fTryToSync = true;
+
+    //control the amount of times the client will check for mintable coins
+    static bool fMintableCoins = false;
+    static int nMintableLastCheck = 0;
+    if (fProofOfStake && (GetTime() - nMintableLastCheck > 5 * 60))
+    {
+        nMintableLastCheck = GetTime();
+        fMintableCoins = pwallet->MintableCoins();
+    }
 
     while (fGenerateBitcoins || fProofOfStake)
     {
@@ -571,6 +578,15 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
             MilliSleep(60000);
             if (fShutdown)
                 return;
+        }
+
+        while (!fMintableCoins)
+        {
+            if (fDebug) LogPrintf("StakeMiner: found no suitable inputs to stake...\n");
+            nLastCoinStakeSearchInterval = 0;
+            MilliSleep(5000);
+            if (!fGenerateBitcoins && !fProofOfStake)
+                continue;
         }
 
         if (fTryToSync)
