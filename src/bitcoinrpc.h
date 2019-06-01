@@ -300,6 +300,10 @@ extern UniValue repairwallet(const UniValue& params, bool fHelp);
 extern UniValue resendtx(const UniValue& params, bool fHelp);
 extern UniValue makekeypair(const UniValue& params, bool fHelp);
 extern UniValue getminingreport(const UniValue& params, bool fHelp);
+extern UniValue listlockunspent(const UniValue& params, bool fHelp);
+extern UniValue lockunspent(const UniValue& params, bool fHelp);
+
+
 
 // in rcprawtransaction.cpp
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp);
