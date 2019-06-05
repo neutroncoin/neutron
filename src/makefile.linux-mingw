@@ -148,7 +148,7 @@ obj/scrypt-x86_64.o: scrypt-x86_64.S
 	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 obj/scrypt-arm.o: scrypt-arm.S
-    $(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
 
 clean:
 	-rm -f obj/*.o
