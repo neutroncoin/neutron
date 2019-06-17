@@ -438,13 +438,18 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (strCommand == "current")
     {
-        int winner = GetCurrentMasterNode(1);
-        if(winner >= 0) {
-            return vecMasternodes[winner].addr.ToString().c_str();
-        }
+    masternodePayments.ProcessManyBlocks(nBestHeight);
+    CScript payee;
 
+    if(masternodePayments.GetBlockPayee(pindexBest->nHeight, payee)) {
+        CTxDestination address1;
+        ExtractDestination(payee, address1);
+        CBitcoinAddress address2(address1);
+        return address2.ToString();
+    } else {
         return "unknown";
     }
+}
 
     if (strCommand == "genkey")
     {
