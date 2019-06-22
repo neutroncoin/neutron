@@ -240,7 +240,7 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 std::string errorMessage = "";
                 if(!darkSendSigner.VerifyMessage(pmn->pubkey2, vchSig, strMessage, errorMessage)){
                     LogPrintf("dseep - Got bad masternode address signature %s \n", vin.ToString().c_str());
-                    pfrom->Misbehaving(33);
+                    pfrom->Misbehaving(100);
                     return;
                 }
 
@@ -285,9 +285,9 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
                 {
                     int64_t t = (*i).second;
                     if (GetTime() < t) {
-                        LogPrintf("dseg - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
-                        pfrom->Misbehaving(34);
-                        return;
+                       // LogPrintf("dseg - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
+                       // pfrom->Misbehaving(34);
+                       // return;
                     }
                 }
 
