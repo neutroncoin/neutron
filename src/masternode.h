@@ -20,7 +20,7 @@
 #include "timedata.h"
 #include "script.h"
 #include <boost/lexical_cast.hpp>
-
+#include "spork.h"
 
 class CMasternode;
 class CMasternodePayments;
@@ -259,8 +259,14 @@ private:
 public:
 
     CMasternodePayments() {
+      if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT)){
+        strMainPubKey = "0452218a26fde81130c8b4930c897c19d21c4bab6ad03f17f522376500b0b86ce547e3975fbe886bea7583a3b05c6f1bb4f303f141aa282da1cf35e9cb71bbf279";
+        strTestPubKey = "0452218a26fde81130c8b4930c897c19d21c4bab6ad03f17f522376500b0b86ce547e3975fbe886bea7583a3b05c6f1bb4f303f141aa282da1cf35e9cb71bbf279";
+        } else {
         strMainPubKey = "0435c38ffb14441df9894dca8741921d67a8130ff3c2fb81e2b0503b31722bae8f1a450865036c63044e0aa4708b205c575c7ddc18c73bd36641e20eceef8d095d";
         strTestPubKey = "0435c38ffb14441df9894dca8741921d67a8130ff3c2fb81e2b0503b31722bae8f1a450865036c63044e0aa4708b205c575c7ddc18c73bd36641e20eceef8d095d";
+      }
+
         enabled = false;
     }
 

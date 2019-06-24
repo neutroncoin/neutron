@@ -128,7 +128,7 @@ OverviewPage::OverviewPage(QWidget *parent) :
         ui->labelImmature->setStyleSheet(whiteLabelQSS);
         ui->labelTotal->setStyleSheet(whiteLabelQSS);
 
-        ui->NeutronLogo->setPixmap(QIcon(":/icons/neutronlogo_white").pixmap(315,225));
+        ui->NeutronLogo->setPixmap(QIcon("").pixmap(315,225));
     }
 }
 

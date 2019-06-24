@@ -67,6 +67,8 @@ static const int64_t MIN_TX_FEE =  1000000;
 static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
 static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
+static const string DEVELOPER_ADDRESS_MAINNET_V3 = "9iVqNgAHN4BWR8nEyaV3sMxa3ZPHcKc8NN";
+static const string DEVELOPER_ADDRESS_TESTNET_V3 = "mrNsqXKuw9n52z9bijLDn6DkReqRKnZPVj";
 static const string DEVELOPER_ADDRESS_MAINNET_V2 = "9mHXFeih5PspSKxXBVSX6qCojsy5xXbJDW";
 static const string DEVELOPER_ADDRESS_TESTNET_V2 = "mrNsqXKuw9n52z9bijLDn6DkReqRKnZPVj";
 static const string DEVELOPER_ADDRESS_MAINNET_V1 = "9VioFQf1GaDubNiKYXCwND1Lr4sdZJbe6L";
