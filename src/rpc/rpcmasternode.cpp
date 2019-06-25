@@ -152,10 +152,21 @@ UniValue masternodelist(const UniValue& params, bool fHelp)
     return obj;
 }
 
+UniValue masternodecount(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "masternodecount\n"
+            "Returns the synced number of MNs on the Network.");
+
+    return (int)vecMasternodes.size();;
+}
+
 static const CRPCCommand commands[] =
 { //  name                      actor (function)         okSafeMode  unlocked
   //  ------------------------  -----------------------  ----------  --------
     { "masternodelist",         &masternodelist,         true,       true },
+    { "masternodecount",        &masternodecount,        true,       true },
 };
 
 void RegisterMasternodeRPCCommands(CRPCTable &t)

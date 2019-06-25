@@ -31,6 +31,8 @@
 #include <miniupnpc/upnperrors.h>
 #endif
 
+#include <curl/curl.h>
+#include <regex>
 
 #include <math.h>
 
@@ -2501,4 +2503,55 @@ void CNode::EndMessage() UNLOCK_FUNCTION(cs_vSend)
         SocketSendData(this);
 
     LEAVE_CRITICAL_SECTION(cs_vSend);
+}
+
+static size_t handle_chunk(void *downloaded, size_t size, size_t nmemb, void *destination)
+{
+    ((std::string *) destination)->append((char *) downloaded);
+    return size * nmemb;
+}
+
+static std::list<ComparableVersion> parse_releases(std::string result)
+{
+    std::regex version_regex("<title>[-A-Za-z ]*([0-9]+\\.[0-9]+\\.[0-9]+(\\.[0-9]+)?)[-A-Za-z)( ]*</title>");
+    std::sregex_iterator iter(result.begin(), result.end(), version_regex);
+    std::sregex_iterator end;
+    std::list<ComparableVersion> versions;
+
+    while(iter != end)
+    {
+        versions.push_back(ComparableVersion((*iter)[1]));
+        ++iter;
+    }
+
+    versions.sort();
+    return versions;
+}
+
+std::string GetLatestRelease()
+{
+    CURL *curl;
+    CURLcode res;
+    curl = curl_easy_init();
+    std::string result;
+
+    if(curl)
+    {
+        curl_easy_setopt(curl, CURLOPT_URL, NTRNCORE_RELEASES_ATOM_LOCATION);
+        curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+        curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, handle_chunk);
+        curl_easy_setopt(curl, CURLOPT_WRITEDATA, &result);
+        res = curl_easy_perform(curl);
+
+        if(res != CURLE_OK)
+        {
+            LogPrintf("Download of Neutron core release list failed: %s\n", curl_easy_strerror(res));
+        }
+
+        curl_easy_cleanup(curl);
+    }
+
+    curl_global_cleanup();
+    std::list<ComparableVersion> versions = parse_releases(result);
+    return versions.empty() ? "unknown" : "v" + versions.back().ToString();
 }

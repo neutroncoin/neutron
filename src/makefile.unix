@@ -31,7 +31,8 @@ LIBS += \
    -l boost_chrono$(BOOST_LIB_SUFFIX) \
    -l db_cxx$(BDB_LIB_SUFFIX) \
    -l ssl \
-   -l crypto
+	 -l crypto \
+   -l curl
 
 ifndef ENABLE_WALLET
     override ENABLE_WALLET = 1

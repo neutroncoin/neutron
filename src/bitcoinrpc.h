@@ -241,6 +241,7 @@ extern UniValue spork(const UniValue& params, bool fHelp);
 extern UniValue getpoolinfo(const UniValue& params, bool fHelp);
 extern UniValue masternode(const UniValue& params, bool fHelp);
 extern UniValue masternodelist(const UniValue& params, bool fHelp);
+extern UniValue masternodecount(const UniValue& params, bool fHelp);
 
 // in rpcdump.cpp
 extern UniValue importprivkey(const UniValue& params, bool fHelp);

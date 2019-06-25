@@ -91,6 +91,7 @@ UniValue getinfo(const UniValue& params, bool fHelp)
 
     UniValue obj(UniValue::VOBJ), diff(UniValue::VOBJ);
     obj.push_back(Pair("version",       FormatFullVersion()));
+    obj.push_back(Pair("latest-version", GetLatestRelease()));
     obj.push_back(Pair("protocolversion",(int)PROTOCOL_VERSION));
     obj.push_back(Pair("walletversion", pwalletMain->GetVersion()));
     obj.push_back(Pair("balance",       ValueFromAmount(pwalletMain->GetBalance())));
