@@ -3694,7 +3694,7 @@ int ActiveProtocol()
     */
 
 
-    if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT_DEFAULT)){
+    if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT)){
     // v3.0.0+ - 60019
     return MIN_PEER_PROTO_VERSION_AFTER_V3_ENFORCEMENT;
   } else {
