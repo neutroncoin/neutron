@@ -48,7 +48,7 @@ struct ComparableVersion
         std::sscanf(version.c_str(), "%d.%d.%d.%d", &major, &minor, &revision, &build);
     }
 
-    bool operator < (const ComparableVersion& other)
+    bool operator < (const ComparableVersion& other) const
     {
         if (major < other.major)
             return true;
