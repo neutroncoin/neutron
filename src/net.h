@@ -45,7 +45,7 @@ extern int nBestHeight;
 
 
 /** Bootstap */
-#define NTRNCORE_RELEASES_ATOM_LOCATION "https://github.com/neutroncoin/neutron/releases.atom"
+//#define NTRNCORE_RELEASES_ATOM_LOCATION "https://github.com/neutroncoin/neutron/releases.atom"
 
 
 /** Run the feeler connection loop once every 2 minutes or 120 seconds. **/
@@ -1104,7 +1104,7 @@ void RelayDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned 
 void SendDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned char> vchSig, const int64_t nNow, const bool stop);
 void RelayDarkSendCompletedTransaction(const int sessionID, const bool error, const std::string errorMessage);
 void RelayDarkSendMasterNodeContestant();
-std::string GetLatestRelease();
+//std::string GetLatestRelease();
 
 
 
