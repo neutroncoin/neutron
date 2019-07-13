@@ -42,54 +42,54 @@ static const int BIP0031_VERSION = 60000;
 // "mempool" command, enhanced "getdata" behavior starts with this version:
 static const int MEMPOOL_GD_VERSION = 60002;
 
-//struct ComparableVersion
-//{
-//    int major = 0, minor = 0, revision = 0, build = 0;
-//
-//    ComparableVersion(std::string version)
-//    {
-//        std::sscanf(version.c_str(), "%d.%d.%d.%d", &major, &minor, &revision, &build);
-//    }
-//
-//    bool operator < (const ComparableVersion& other) const
-//    {
-//        if (major < other.major)
-//            return true;
-//        else if (minor < other.minor)
-//            return true;
-//        else if (revision < other.revision)
-//            return true;
-//        else if (build < other.build)
-//            return true;
-//        return false;
-//    }
-//
-//    bool operator == (const ComparableVersion& other)
-//    {
-//        return major == other.major
-//            && minor == other.minor
-//            && revision == other.revision
-//            && build == other.build;
-//    }
-//
-//    friend std::ostream& operator << (std::ostream& stream, const ComparableVersion& ver)
-//    {
-//        stream << ver.major;
-//        stream << '.';
-//        stream << ver.minor;
-//        stream << '.';
-//        stream << ver.revision;
-//        stream << '.';
-//        stream << ver.build;
-//        return stream;
-//    }
-//
-//    std::string ToString() const
-//    {
-//        std::stringstream s;
-//        s << major << "." << minor << "." << revision << "." << build;
-//        return s.str();
-//    }
-//};
+struct ComparableVersion
+{
+    int major = 0, minor = 0, revision = 0, build = 0;
+
+    ComparableVersion(std::string version)
+    {
+        std::sscanf(version.c_str(), "%d.%d.%d.%d", &major, &minor, &revision, &build);
+    }
+
+    bool operator < (const ComparableVersion& other) const
+    {
+        if (major < other.major)
+            return true;
+        else if (minor < other.minor)
+            return true;
+        else if (revision < other.revision)
+            return true;
+        else if (build < other.build)
+            return true;
+        return false;
+    }
+
+    bool operator == (const ComparableVersion& other)
+    {
+        return major == other.major
+            && minor == other.minor
+            && revision == other.revision
+            && build == other.build;
+    }
+
+    friend std::ostream& operator << (std::ostream& stream, const ComparableVersion& ver)
+    {
+        stream << ver.major;
+        stream << '.';
+        stream << ver.minor;
+        stream << '.';
+        stream << ver.revision;
+        stream << '.';
+        stream << ver.build;
+        return stream;
+    }
+
+    std::string ToString() const
+    {
+        std::stringstream s;
+        s << major << "." << minor << "." << revision << "." << build;
+        return s.str();
+    }
+};
 
 #endif
