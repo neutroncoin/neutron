@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2012 The Darkcoin developers
-// Copyright (c) 2015-2017 The NTRN developers
+// Copyright (c) 2015-2019 The NTRN developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -47,6 +47,10 @@ using namespace boost;
 #define SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT             1544940000 // OFF
 #define SPORK_9_PROTOCOL_V3_ENFORCEMENT_DEFAULT               4070908800 // OFF
 #define SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT_DEFAULT          4070908800 // OFF
+
+// Settings
+
+#define REJECT_OLD_SPORKKEY_TIME                              1564617599 // 2019-09-01 00:00 GMT
 
 class CSporkMessage;
 class CSporkManager;
@@ -112,17 +116,16 @@ private:
     std::map<int, CSporkMessage> mapSporksActive;
 
 public:
-    std::string strTestPubKey;
-    std::string strMainPubKey;
+    std::string strTestPubKeyNew;
+    std::string strMainPubKeyNew;
+    std::string strTestPubKeyOld;
+    std::string strMainPubKeyOld;
 
     CSporkManager() {
-        if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT)){
-        strMainPubKey = "042b98d4150746cc5ee1b5a991244f8a2b155630efbfa490fee76202912ed2d6e9b6e5c62d424b9f5878ee7aff68e9aa84d10821a33e99de27fed2d77f57247954";
-        strTestPubKey = "042b98d4150746cc5ee1b5a991244f8a2b155630efbfa490fee76202912ed2d6e9b6e5c62d424b9f5878ee7aff68e9aa84d10821a33e99de27fed2d77f57247954";
-        } else {
-        strMainPubKey = "04cc53cdd3e788d3ea9ca63468b9f2bcc2838af920d8e72985739e8ac4159d518d1a1597da13b1854d8331def51778aa6a01951cef7763fa4300341f34431bad49";
-        strTestPubKey = "042E0E340B40681EEFB7C67B7CBE968E3AB47F4A393E3626E13309CFDC5A1C5D5B9537CD3CEBA3B5B1656D2949355CADA0F5EE74C4EDCCBEF84BF80151EF3B0C0A";
-      }
+        strMainPubKeyNew = "042b98d4150746cc5ee1b5a991244f8a2b155630efbfa490fee76202912ed2d6e9b6e5c62d424b9f5878ee7aff68e9aa84d10821a33e99de27fed2d77f57247954";
+        strTestPubKeyNew = "042b98d4150746cc5ee1b5a991244f8a2b155630efbfa490fee76202912ed2d6e9b6e5c62d424b9f5878ee7aff68e9aa84d10821a33e99de27fed2d77f57247954";
+        strMainPubKeyOld = "04cc53cdd3e788d3ea9ca63468b9f2bcc2838af920d8e72985739e8ac4159d518d1a1597da13b1854d8331def51778aa6a01951cef7763fa4300341f34431bad49";
+        strTestPubKeyOld = "042E0E340B40681EEFB7C67B7CBE968E3AB47F4A393E3626E13309CFDC5A1C5D5B9537CD3CEBA3B5B1656D2949355CADA0F5EE74C4EDCCBEF84BF80151EF3B0C0A";
     }
 
     void ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);

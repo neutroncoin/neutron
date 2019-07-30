@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2012 The Darkcoin developers
-// Copyright (c) 2015-2016 The NTRN developers
+// Copyright (c) 2015-2019 The NTRN developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -228,12 +228,22 @@ bool CSporkMessage::CheckSignature()
     //note: need to investigate why this is failing
     std::string strError = "";
     std::string strMessage = boost::lexical_cast<std::string>(nSporkID) + boost::lexical_cast<std::string>(nValue) + boost::lexical_cast<std::string>(nTimeSigned);
-    std::string strPubKey = (!fTestNet ? sporkManager.strMainPubKey : sporkManager.strTestPubKey);
-    CPubKey pubkey(ParseHex(strPubKey));
+    std::string strPubKeyNew = (!fTestNet ? sporkManager.strMainPubKeyNew : sporkManager.strTestPubKeyNew);
+    CPubKey pubkeyNew(ParseHex(strPubKeyNew));
 
-    if(!darkSendSigner.VerifyMessage(pubkey, vchSig, strMessage, strError)) {
-        LogPrintf("CSporkMessage::CheckSignature -- VerifyMessage() failed, error: %s\n", strError);
-        return false;
+    if(!darkSendSigner.VerifyMessage(pubkeyNew, vchSig, strMessage, strError)) {
+        if (GetAdjustedTime() < REJECT_OLD_SPORKKEY_TIME) {
+            std::string strPubKeyOld = (!fTestNet ? sporkManager.strMainPubKeyOld : sporkManager.strTestPubKeyOld);
+            CPubKey pubkeyOld(ParseHex(strPubKeyOld));
+
+            if(!darkSendSigner.VerifyMessage(pubkeyOld, vchSig, strMessage, strError)) {
+                LogPrintf("CSporkMessage::CheckSignature -- VerifyMessage() failed (old key), error: %s\n", strError);
+                return false;
+            }
+        } else {
+            LogPrintf("CSporkMessage::CheckSignature -- VerifyMessage() failed (new key), error: %s\n", strError);
+            return false;
+        }
     }
 
     return true;
