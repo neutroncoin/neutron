@@ -50,7 +50,7 @@ using namespace boost;
 
 // Settings
 
-#define REJECT_OLD_SPORKKEY_TIME                              1564617599 // 2019-09-01 00:00 GMT
+#define REJECT_OLD_SPORKKEY_TIME                              1567330017 // 2019-09-01 00:00 GMT
 
 class CSporkMessage;
 class CSporkManager;
