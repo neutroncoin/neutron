@@ -24,18 +24,19 @@ using namespace boost;
     - This would result in old clients getting confused about which spork is for what
 */
 #define SPORK_START                                           10001
-#define SPORK_END                                             10010
+#define SPORK_END                                             10011
 
-#define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10001
-#define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT                 10002
-#define SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT                10003
+#define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10001 // DEPRECATED
+#define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT                 10002 // DEPRECATED
+#define SPORK_3_DEVELOPER_PAYMENTS_ENFORCEMENT                10003 // DEPRECATED
 #define SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE                 10004
 #define SPORK_5_ENFORCE_NEW_PROTOCOL_V200                     10005 // DEPRECATED at v2.0.2
 #define SPORK_6_UPDATED_DEV_PAYMENTS_ENFORCEMENT              10006 // DEPRECATED at v2.0.2
 #define SPORK_7_PROTOCOL_V201_ENFORCEMENT                     10007 // DEPRECATED at v2.0.2
-#define SPORK_8_PROTOCOL_V210_ENFORCEMENT                     10008
-#define SPORK_9_PROTOCOL_V3_ENFORCEMENT                       10009
-#define SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT                  10010
+#define SPORK_8_PROTOCOL_V210_ENFORCEMENT                     10008 // DEPRECATED
+#define SPORK_9_PROTOCOL_V3_ENFORCEMENT                       10009 // DEPRECATED V3.0.1
+#define SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT                  10010 // DEPRECATED V3.01
+#define SPORK_11_PROTOCOL_V301_ENFORCEMENT                    10011
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       1525030000 // OFF
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         4000000000 // OFF
@@ -47,6 +48,7 @@ using namespace boost;
 #define SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT             1544940000 // OFF
 #define SPORK_9_PROTOCOL_V3_ENFORCEMENT_DEFAULT               4070908800 // OFF
 #define SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT_DEFAULT          4070908800 // OFF
+#define SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT            1567330017 // 2019-09-01 00:00 GMT
 
 // Settings
 
