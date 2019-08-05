@@ -4007,16 +4007,16 @@ CScript GetDeveloperScript()
     // }
 
 
-     if (sporkManager.IsSporkActive(SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT)) {
-         // v3.0.0
-         strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V3 : DEVELOPER_ADDRESS_MAINNET_V3;
-     } else {
-         // v2.0.1
-         strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
-     }
+     //if (sporkManager.IsSporkActive(SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT)) {
+     //    // v3.0.0
+     //    strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V3 : DEVELOPER_ADDRESS_MAINNET_V3;
+     //} else {
+     //    // v2.0.1
+     //    strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V2 : DEVELOPER_ADDRESS_MAINNET_V2;
+     //}
 
-    // v3.0.0+ default
-    //strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V3 : DEVELOPER_ADDRESS_MAINNET_V3;
+     //v3.0.0+ default
+    strAddress = fTestNet ? DEVELOPER_ADDRESS_TESTNET_V3 : DEVELOPER_ADDRESS_MAINNET_V3;
 
     return GetScriptForDestination(CBitcoinAddress(strAddress).Get());
 }
