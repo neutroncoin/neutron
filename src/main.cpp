@@ -3689,18 +3689,19 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 int ActiveProtocol()
 {
     /*
-        Allowed: 60019
+        Allowed: 60019-60020 until spork-date
         Banned:  60018 or below
     */
-
-
-    if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT)){
+    
+    if (sporkManager.IsSporkActive(SPORK_11_PROTOCOL_V301_ENFORCEMENT)){
+    // v3.0.1+ - 60020
+    return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT;
+   } else {
     // v3.0.0+ - 60019
     return MIN_PEER_PROTO_VERSION_AFTER_V3_ENFORCEMENT;
-  } else {
+    }
     // v2.1.0+ - 60018
-     return MIN_PEER_PROTO_VERSION_AFTER_V210_ENFORCEMENT;
-   }
+    // return MIN_PEER_PROTO_VERSION_AFTER_V210_ENFORCEMENT;
 
     // // v2.0.2 to v2.0.5 - 60017
     // return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
