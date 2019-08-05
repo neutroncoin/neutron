@@ -110,6 +110,7 @@ bool CSporkManager::IsSporkActive(int nSporkID)
             case SPORK_8_PROTOCOL_V210_ENFORCEMENT:          r = SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT; break;
             case SPORK_9_PROTOCOL_V3_ENFORCEMENT:          r = SPORK_9_PROTOCOL_V3_ENFORCEMENT_DEFAULT; break;
             case SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT:   r = SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT_DEFAULT; break;
+            case SPORK_11_PROTOCOL_V301_ENFORCEMENT:          r = SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT; break;
             default:
                 LogPrintf("CSporkManager::IsSporkActive -- Unknown Spork ID %d\n", nSporkID);
                 r = 4070908800ULL; // 2099-1-1 i.e. off by default
@@ -138,6 +139,7 @@ int64_t CSporkManager::GetSporkValue(int nSporkID)
         if(nSporkID == SPORK_8_PROTOCOL_V210_ENFORCEMENT) r = SPORK_8_PROTOCOL_V210_ENFORCEMENT_DEFAULT;
         if(nSporkID == SPORK_9_PROTOCOL_V3_ENFORCEMENT) r = SPORK_9_PROTOCOL_V3_ENFORCEMENT_DEFAULT;
         if(nSporkID == SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT) r = SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT_DEFAULT;
+        if(nSporkID == SPORK_11_PROTOCOL_V301_ENFORCEMENT) r = SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT;
 
         if(r == -1 && fDebug) LogPrintf("GetSpork::Unknown Spork %d\n", nSporkID);
     }
@@ -157,6 +159,7 @@ int CSporkManager::GetSporkIDByName(std::string strName)
     if(strName == "SPORK_8_PROTOCOL_V210_ENFORCEMENT") return SPORK_8_PROTOCOL_V210_ENFORCEMENT;
     if(strName == "SPORK_9_PROTOCOL_V3_ENFORCEMENT") return SPORK_9_PROTOCOL_V3_ENFORCEMENT;
     if(strName == "SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT") return SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT;
+    if(strName == "SPORK_11_PROTOCOL_V301_ENFORCEMENT") return SPORK_11_PROTOCOL_V301_ENFORCEMENT;
 
     LogPrint("spork", "CSporkManager::GetSporkIDByName -- Unknown Spork name '%s'\n", strName);
 
@@ -175,6 +178,7 @@ std::string CSporkManager::GetSporkNameByID(int id)
     if(id == SPORK_8_PROTOCOL_V210_ENFORCEMENT) return "SPORK_8_PROTOCOL_V210_ENFORCEMENT";
     if(id == SPORK_9_PROTOCOL_V3_ENFORCEMENT) return "SPORK_9_PROTOCOL_V3_ENFORCEMENT";
     if(id == SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT) return "SPORK_10_V3_DEV_PAYMENTS_ENFORCEMENT";
+    if(id == SPORK_11_PROTOCOL_V301_ENFORCEMENT) return "SPORK_11_PROTOCOL_V301_ENFORCEMENT";
 
     LogPrint("spork", "CSporkManager::GetSporkNameByID -- Unknown Spork id '%s'\n", id);
 
