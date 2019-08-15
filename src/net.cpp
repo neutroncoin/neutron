@@ -106,6 +106,13 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
+    BOOST_FOREACH(CNode* pnode, vNodes){
+    if (fDebug) LogPrintf("*************************************Getting Sporks Now*************************************\n");
+       pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
+    if (pnode->HasFulfilledRequest("getspork")) continue;
+       pnode->FulfilledRequest("getspork");
+}
+
     PushMessage(NetMsgType::GETBLOCKS, CBlockLocator(pindexBegin), hashEnd);
 }
 
