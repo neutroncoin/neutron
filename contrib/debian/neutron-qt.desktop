@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=Neutron
+Comment=Neutron P2P Cryptocurrency
+Comment[fr]=Neutron, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=Neutron, eşten eşe kriptografik sanal para birimi
+Exec=/usr/bin/neutron-qt
+Terminal=false
+Type=Application
+Icon=/usr/share/pixmaps/bitcoin80.xpm
+MimeType=x-scheme-handler/neutron;
+Categories=Office;

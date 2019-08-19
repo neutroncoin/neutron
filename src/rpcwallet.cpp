@@ -1889,7 +1889,7 @@ UniValue repairwallet(const UniValue& params, bool fHelp)
     return result;
 }
 
-// NovaCoin: resend unconfirmed wallet transactions
+// Neutron: resend unconfirmed wallet transactions
 UniValue resendtx(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)

@@ -2087,7 +2087,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
         if (!CheckCoinStakeTimestamp(GetBlockTime(), (int64_t)vtx[1].nTime))
             return DoS(50, error("CheckBlock() : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", GetBlockTime(), vtx[1].nTime));
 
-        // NovaCoin: check proof-of-stake block signature
+        // Neutron: check proof-of-stake block signature
         if (fCheckSig && !CheckBlockSignature())
             return DoS(100, error("CheckBlock() : bad proof-of-stake block signature"));
     }
@@ -2409,7 +2409,7 @@ bool CBlock::SignBlock_POW(const CKeyStore& keystore)
     LogPrintf("Sign failed\n");
     return false;
 }
-// novacoin: attempt to generate suitable proof-of-stake
+// neutron: attempt to generate suitable proof-of-stake
 bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
 {
     // if we are trying to sign
@@ -3692,7 +3692,7 @@ int ActiveProtocol()
         Allowed: 60019-60020 until spork-date
         Banned:  60018 or below
     */
-    
+
     if (sporkManager.IsSporkActive(SPORK_11_PROTOCOL_V301_ENFORCEMENT)){
     // v3.0.1+ - 60020
     return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT;
