@@ -79,8 +79,6 @@ bool fLiteMode = false;
 int nDarksendRounds = 2;
 int nAnonymizeNeutronAmount = 500;
 int nLiquidityProvider = 0;
-/** Spork enforcement enabled time */
-int64_t enforceMasternodePaymentsTime = 4085657524;
 bool fSucessfullyLoaded = false;
 bool fEnableDarksend = false;
 /** All denominations used by darksend */
