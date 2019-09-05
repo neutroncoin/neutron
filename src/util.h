@@ -125,7 +125,6 @@ extern int nDarksendRounds;
 extern int nAnonymizeNeutronAmount;
 extern int nLiquidityProvider;
 extern bool fEnableDarksend;
-extern int64_t enforceMasternodePaymentsTime;
 extern std::string strMasterNodeAddr;
 extern int keysLoaded;
 extern bool fSucessfullyLoaded;
