@@ -1490,11 +1490,14 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
     }
 
-    // // enable mandatory checks
-    // if (!fEnforceMnWinner && (pindex->nHeight >= ENFORCE_MNWINNERS_HEIGHT)) {
-    //     if (fDebug) LogPrintf("\033[31mfEnforceMnWinner enabled\e[0m\n");
-    //     fEnforceMnWinner = true;
-    // }
+    // enable mandatory checks
+if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
+    fEnforceMnWinner = true;
+
+    if (fDebug) {
+        LogPrintf("fEnforceMnWinner enabled\n");
+    }
+}
 
     if (IsProofOfWork())
     {
