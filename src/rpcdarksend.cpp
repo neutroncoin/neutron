@@ -485,7 +485,7 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if(strCommand == "enforce")
     {
-        return (uint64_t)enforceMasternodePaymentsTime;
+      return UniValue(sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT));
     }
 
     if(strCommand == "connect")
