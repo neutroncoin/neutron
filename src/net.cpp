@@ -920,6 +920,7 @@ void CConnman::ThreadSocketHandler2()
             nPrevNodeCount = vNodes.size();
             uiInterface.NotifyNumConnectionsChanged(vNodes.size());
         }
+
         //
         // Find which sockets have data to receive
         //
@@ -1305,7 +1306,10 @@ struct CDNSSeedData {
 std::vector<CDNSSeedData> vSeeds;
 
 const std::vector<CDNSSeedData>& DNSSeeds() {
-    vSeeds.push_back(CDNSSeedData("cryptotools", "ntrn.seed.cryptotools.pw"));
+    vSeeds.push_back(CDNSSeedData("seed", "seed.neutroncoin.com"));
+    vSeeds.push_back(CDNSSeedData("seed1", "seed1.neutroncoin.com"));
+    vSeeds.push_back(CDNSSeedData("seed2", "seed2.neutroncoin.com"));
+    vSeeds.push_back(CDNSSeedData("seed3", "seed3.neutroncoin.com"));
     return vSeeds;
 }
 
