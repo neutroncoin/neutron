@@ -1,9 +1,11 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2017 The Neutron developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "checkpoints.h"
 #include "main.h"
 #include "utiltime.h"
 #include "bitcoinrpc.h"
@@ -29,9 +31,7 @@ double GetDifficulty(const CBlockIndex* blockindex)
     }
 
     int nShift = (blockindex->nBits >> 24) & 0xff;
-
-    double dDiff =
-        (double)0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
+    double dDiff = (double) 0x0000ffff / (double)(blockindex->nBits & 0x00ffffff);
 
     while (nShift < 29)
     {
@@ -105,6 +105,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fP
     result.push_back(Pair("hash", block.GetHash().GetHex()));
     CMerkleTx txGen(block.vtx[0]);
     txGen.SetMerkleBranch(&block);
+
     result.push_back(Pair("confirmations", (int)txGen.GetDepthInMainChain()));
     result.push_back(Pair("size", (int)::GetSerializeSize(block, SER_NETWORK, PROTOCOL_VERSION)));
     result.push_back(Pair("height", blockindex->nHeight));
@@ -117,8 +118,10 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fP
     result.push_back(Pair("difficulty", GetDifficulty(blockindex)));
     result.push_back(Pair("blocktrust", leftTrim(blockindex->GetBlockTrust().GetHex(), '0')));
     result.push_back(Pair("chaintrust", leftTrim(blockindex->nChainTrust.GetHex(), '0')));
+
     if (blockindex->pprev)
         result.push_back(Pair("previousblockhash", blockindex->pprev->GetBlockHash().GetHex()));
+
     if (blockindex->pnext)
         result.push_back(Pair("nextblockhash", blockindex->pnext->GetBlockHash().GetHex()));
 
@@ -128,6 +131,7 @@ UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fP
     result.push_back(Pair("modifier", strprintf("%016" PRIx64, blockindex->nStakeModifier)));
     result.push_back(Pair("modifierchecksum", strprintf("%08x", blockindex->nStakeModifierChecksum)));
     UniValue txinfo(UniValue::VARR);
+
     BOOST_FOREACH (const CTransaction& tx, block.vtx)
     {
         if (fPrintTransactionDetail)
@@ -183,6 +187,7 @@ UniValue getdifficulty(const UniValue& params, bool fHelp)
     obj.push_back(Pair("proof-of-work",        GetDifficulty()));
     obj.push_back(Pair("proof-of-stake",       GetDifficulty(GetLastBlockIndex(pindexBest, true))));
     obj.push_back(Pair("search-interval",      (int)nLastCoinStakeSearchInterval));
+
     return obj;
 }
 
@@ -209,8 +214,8 @@ UniValue getrawmempool(const UniValue& params, bool fHelp)
 
     vector<uint256> vtxid;
     mempool.queryHashes(vtxid);
-
     UniValue a(UniValue::VARR);
+
     BOOST_FOREACH(const uint256& hash, vtxid)
         a.push_back(hash.ToString());
 
@@ -225,6 +230,7 @@ UniValue getblockhash(const UniValue& params, bool fHelp)
             "Returns hash of block in best-block-chain at <index>.");
 
     int nHeight = params[0].get_int();
+
     if (nHeight < 0 || nHeight > nBestHeight)
         throw runtime_error("Block number out of range.");
 
@@ -262,11 +268,13 @@ UniValue getblockbynumber(const UniValue& params, bool fHelp)
             "Returns details of a block with given block-number.");
 
     int nHeight = params[0].get_int();
+
     if (nHeight < 0 || nHeight > nBestHeight)
         throw runtime_error("Block number out of range.");
 
     CBlock block;
     CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
+
     while (pblockindex->nHeight > nHeight)
         pblockindex = pblockindex->pprev;
 
@@ -274,7 +282,6 @@ UniValue getblockbynumber(const UniValue& params, bool fHelp)
 
     pblockindex = mapBlockIndex[hash];
     block.ReadFromDisk(pblockindex, true);
-
     return blockToJSON(block, pblockindex, params.size() > 1 ? params[1].get_bool() : false);
 }
 
@@ -321,6 +328,7 @@ UniValue getblockversionstats(const UniValue& params, bool fHelp) {
 
     int nTotal = 0;
     CBlockIndex* pindex = FindBlockByHeight(nBestHeight - nBlocks + 1);
+
     while (true) {
         if (pindex->nVersion == nVersion)
             ++nTotal;
@@ -333,12 +341,12 @@ UniValue getblockversionstats(const UniValue& params, bool fHelp) {
 
     UniValue results(UniValue::VOBJ);
     results.push_back(Pair("total_with_version", nTotal));
-
     double dPercent = 0;
+
     if (nBlocks)
         dPercent = static_cast<double>(nTotal) / static_cast<double>(nBlocks) * 100;
-    results.push_back(Pair("percent", dPercent));
 
+    results.push_back(Pair("percent", dPercent));
     return results;
 }
 

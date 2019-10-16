@@ -66,11 +66,11 @@ FILE* AppendBlockFile(unsigned int& nFileRet)
     }
 }
 
-
 bool IsInitialBlockDownload()
 {
     // Once this function has returned false, it must remain false.
     static std::atomic<bool> latchToFalse{false};
+
     // Optimization: pre-test latch before taking the lock.
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
@@ -81,6 +81,7 @@ bool IsInitialBlockDownload()
 
     if (pindexBest == NULL)
         return true;
+
     if (nBestHeight < Checkpoints::GetTotalBlocksEstimate())
         return true;
 
@@ -88,6 +89,7 @@ bool IsInitialBlockDownload()
 
     static int64_t nLastUpdate;
     static CBlockIndex* pindexLastBest;
+
     if (pindexBest != pindexLastBest) {
         pindexLastBest = pindexBest;
         nLastUpdate = GetTime();

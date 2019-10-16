@@ -80,7 +80,6 @@ map<CInv, int64_t> mapAlreadyAskedFor;
 
 static deque<string> vOneShots;
 CCriticalSection cs_vOneShots;
-
 set<CNetAddr> setservAddNodeAddresses;
 CCriticalSection cs_setservAddNodeAddresses;
 
@@ -151,6 +150,7 @@ bool GetLocal(CService& addr, const CNetAddr *paddrPeer)
             }
         }
     }
+
     return nBestScore >= 0;
 }
 
@@ -331,17 +331,10 @@ bool IsReachable(const CNetAddr& addr)
     return vfReachable[net] && !vfLimited[net];
 }
 
-
 void AddressCurrentlyConnected(const CService& addr)
 {
     addrman.Connected(addr);
 }
-
-
-
-
-
-
 
 CNode* FindNode(const CNetAddr& ip)
 {
@@ -499,7 +492,6 @@ void CNode::Cleanup()
 {
 }
 
-
 void CNode::PushVersion()
 {
     int64_t nTime = (fInbound ? GetAdjustedTime() : GetTime());
@@ -516,8 +508,6 @@ void CNode::PushVersion()
                 nLocalHostNonce, FormatSubVersion(CLIENT_NAME, CLIENT_VERSION, std::vector<string>()), nBestHeight, true);
 }
 
-
-
 void CConnman::ClearBanned()
 {
     {
@@ -525,7 +515,9 @@ void CConnman::ClearBanned()
         setBanned.clear();
         setBannedIsDirty = true;
     }
+
     DumpBanlist(); //store banlist to disk
+
     // if(clientInterface)
     //     clientInterface->BannedListChanged();
 }
@@ -786,14 +778,9 @@ int CNetMessage::readData(const char *pch, unsigned int nBytes)
     return nCopy;
 }
 
-
-
-
-
 // NTRN TODO - implement: void CConnman::AcceptConnection
 // NTRN TODO - implement: void CConnman::AcceptConnection
 // NTRN TODO - implement: void CConnman::AcceptConnection
-
 
 // requires LOCK(cs_vSend)
 void SocketSendData(CNode *pnode)
@@ -933,8 +920,6 @@ void CConnman::ThreadSocketHandler2()
             nPrevNodeCount = vNodes.size();
             uiInterface.NotifyNumConnectionsChanged(vNodes.size());
         }
-
-
         //
         // Find which sockets have data to receive
         //
@@ -1834,11 +1819,6 @@ void ThreadMessageHandler2(void* parg)
     }
 }
 
-
-
-
-
-
 bool BindListenPort(const CService &addrBind, string& strError)
 {
     strError = "";
@@ -2051,10 +2031,12 @@ bool CConnman::Start(CScheduler& scheduler, Options connOptions)
 
     if (clientInterface)
         clientInterface->InitMessage(_("Loading banlist..."));
+
     // Load addresses from banlist.dat
     nStart = GetTimeMillis();
     CBanDB bandb;
     banmap_t banmap;
+
     if (bandb.Read(banmap)) {
         SetBanned(banmap); // thread save setter
         SetBannedSetDirty(false); // no need to write down, just read data
