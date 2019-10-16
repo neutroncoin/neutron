@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -2298,7 +2300,9 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // If don't already have its previous block, shunt it off to holding area until we get it
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
-        //LogPrintf("ProcessNewBlock : ORPHAN BLOCK, prev=%s\n", pblock->hashPrevBlock.ToString().substr(0,20).c_str());
+        if (fDebug)
+            LogPrintf("Missing orphan block with hash %s\n", pblock->hashPrevBlock.ToString().c_str());
+
         CBlock* pblock2 = new CBlock(*pblock);
         // ppcoin: check proof-of-stake
         if (pblock2->IsProofOfStake())
@@ -2316,6 +2320,10 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         // Ask this guy to fill in what we're missing
         if (pfrom)
         {
+            if (fDebug)
+                LogPrintf("Asking for missing blocks between index %d to hash %s\n",
+                          pindexBest->nHeight, GetOrphanRoot(pblock2).ToString().c_str());
+
             pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(pblock2));
             // ppcoin: getblocks may not obtain the ancestor block rejected
             // earlier by duplicate-stake check so we ask for it again directly
@@ -2329,7 +2337,9 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     if (!pblock->AcceptBlock())
     {
         pfrom->Misbehaving(5);
-        return error("ProcessNewBlock : AcceptBlock FAILED");
+
+        return error("ProcessNewBlock : AcceptBlock for %s with parent %s FAILED",
+                     hash.ToString().c_str(), pblock->hashPrevBlock.ToString().c_str());
     }
 
     // Recursively process any orphan blocks that depended on this one
@@ -3270,10 +3280,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
             if (fShutdown)
                 return true;
-            pfrom->AddInventoryKnown(inv);
 
+            pfrom->AddInventoryKnown(inv);
             bool fAlreadyHave = AlreadyHave(txdb, inv);
-            if (fDebug) LogPrintf("  got inv: %s  %s peer=%d\n", inv.ToString(), fAlreadyHave ? "have" : "new", pfrom->GetId());
+
+            if (fDebug)
+                LogPrintf("got inv: %s  %s peer=%d\n",
+                          inv.hash.ToString().c_str(), fAlreadyHave ? "have" : "new", pfrom->GetId());
 
             if (!fAlreadyHave)
                 pfrom->AskFor(inv);
@@ -3522,7 +3535,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         uint256 hashBlock = block.GetHash();
 
         if (fDebug)
-            LogPrintf("received block %s\n", hashBlock.ToString().substr(0,20).c_str());
+            LogPrintf("received block %s\n", block.GetHash().ToString().c_str());
 
         CInv inv(MSG_BLOCK, hashBlock);
         pfrom->AddInventoryKnown(inv);

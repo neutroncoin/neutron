@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -103,15 +105,26 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     // Filter out duplicate requests
     if (pindexBegin == pindexLastGetBlocksBegin && hashEnd == hashLastGetBlocksEnd)
         return;
+
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    BOOST_FOREACH(CNode* pnode, vNodes){
-    if (fDebug) LogPrintf("*************************************Getting Sporks Now*************************************\n");
-       pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
-    if (pnode->HasFulfilledRequest("getspork")) continue;
-       pnode->FulfilledRequest("getspork");
-}
+    BOOST_FOREACH(CNode* pnode, vNodes)
+    {
+        pnode->PushMessage(NetMsgType::GETSPORKS);
+
+        if (pnode->HasFulfilledRequest("getspork"))
+            continue;
+
+        pnode->FulfilledRequest("getspork");
+    }
+
+    if (fDebug)
+    {
+        LogPrintf("Getting blocks from index at [%d] with hash %s [isInitialBlockDownload = %d]\n",
+                  pindexBegin->nHeight, pindexBegin->phashBlock->ToString().c_str(),
+                  IsInitialBlockDownload());
+    }
 
     PushMessage(NetMsgType::GETBLOCKS, CBlockLocator(pindexBegin), hashEnd);
 }
@@ -2441,8 +2454,10 @@ void CNode::AskFor(const CInv& inv)
     // We're using mapAskFor as a priority queue,
     // the key is the earliest time the request can be sent
     int64_t& nRequestTime = mapAlreadyAskedFor[inv];
+
     if (fDebugNet)
-        LogPrintf("askfor %s   %d (%s)\n", inv.ToString().c_str(), nRequestTime, DateTimeStrFormat("%H:%M:%S", nRequestTime/1000000).c_str());
+        LogPrintf("askfor [blockHash = %s] %d (%s)\n", inv.hash.ToString().c_str(), nRequestTime,
+                  DateTimeStrFormat("%H:%M:%S", nRequestTime/1000000).c_str());
 
     // Make sure not to reuse time indexes to keep things in the same order
     int64_t nNow = (GetTime() - 1) * 1000000;
