@@ -141,6 +141,7 @@ bool CheckDiskSpace(uint64_t nAdditionalBytes=0);
 bool LoadExternalBlockFile(FILE* fileIn);
 bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
+void PrintBlockInfo();
 CBlockIndex* FindBlockByHeight(int nHeight);
 /** See whether the protocol update is enforced for connected nodes */
 int ActiveProtocol();

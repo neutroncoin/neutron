@@ -2720,6 +2720,12 @@ void PrintBlockTree()
     }
 }
 
+void PrintBlockInfo()
+{
+    LogPrintf("Blockchain information: [blocks = %d], [checkpoint-block-estimate = %d]\n",
+              mapBlockIndex.size(), Checkpoints::GetTotalBlocksEstimate());
+}
+
 bool LoadExternalBlockFile(FILE* fileIn)
 {
     int64_t nStart = GetTimeMillis();

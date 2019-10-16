@@ -877,6 +877,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         PrintBlockTree();
         return false;
     }
+    else
+    {
+        PrintBlockInfo();
+    }
 
     if (mapArgs.count("-printblock"))
     {
