@@ -367,12 +367,14 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
 
     for (CBlockIndex* pindex = pindexBest; pindex && pindex->pprev; pindex = pindex->pprev)
     {
-        if (fDebug) LogPrintf("invalidateblock : *** processing block %d\n", pindex->nHeight);
+        if (fDebug)
+            LogPrintf("invalidateblock : *** processing block %d\n", pindex->nHeight);
 
         // if (fRequestShutdown || pindex->nHeight < nBestHeight-nCheckDepth)
         //     break;
 
         CBlock block;
+
         if (!block.ReadFromDisk(pindex))
             throw runtime_error("block.ReadFromDisk failed");
 
@@ -388,20 +390,22 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
         throw runtime_error("Block not found");
     }
 
-
-    if (fDebug) LogPrintf("invalidateblock : *** stopped on block %d\n", pindexTarget->nHeight);
+    if (fDebug)
+        LogPrintf("invalidateblock : *** stopped on block %d\n", pindexTarget->nHeight);
 
     // Reorg back to the fork
     LogPrintf("invalidateblock : *** moving best chain pointer back to block %d\n", pindexTarget->nHeight);
     CBlock block;
+
     if (!block.ReadFromDisk(pindexTarget))
         throw runtime_error("block.ReadFromDisk failed");
 
-    if (fDebug) LogPrintf("invalidateblock : *** calling SetBestChain...\n");
+    if (fDebug)
+        LogPrintf("invalidateblock : *** calling SetBestChain...\n");
 
     CTxDB txdb;
     block.SetBestChain(txdb, pindexTarget);
-
+    Checkpoints::ResetSyncCheckpoint();
     return true;
 }
 
