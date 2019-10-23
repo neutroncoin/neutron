@@ -1398,7 +1398,12 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
 {
     // Check it again in case a previous version let a bad block in, but skip BlockSig checking
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
+    {
+        if (fDebug)
+            LogPrintf("ConnectBlock() : block check failed\n");
+
         return false;
+    }
 
     // issue here: it doesn't know the version
     unsigned int nTxPos;
