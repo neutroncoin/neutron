@@ -2420,11 +2420,12 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         mapOrphanBlocksByPrev.erase(hashPrev);
     }
 
-    //LogPrintf("ProcessNewBlock: ACCEPTED\n");
-
     // ppcoin: if responsible for sync-checkpoint send it
     if (pfrom && !CSyncCheckpoint::strMasterPrivKey.empty())
         Checkpoints::SendSyncCheckpoint(Checkpoints::AutoSelectSyncCheckpoint());
+
+    if (fDebug)
+        LogPrintf("ProcessNewBlock: ACCEPTED\n");
 
     return true;
 }
