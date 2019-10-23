@@ -642,7 +642,6 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
                 COutPoint prevout = tx.vin[i].prevout;
                 assert(mapInputs.count(prevout.hash) > 0);
                 CTxIndex& txindex = mapInputs[prevout.hash].first;
-                CTransaction& txPrev = mapInputs[prevout.hash].second;
 
                 // Check for conflicts (double-spend)
                 // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
@@ -1550,8 +1549,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
 
-            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s,
-                      Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward),
+            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s,"
+                      " Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward),
                       FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt),
                       FormatMoney(nRequiredDevPmt));
 
@@ -3489,7 +3488,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CTransaction tx;
 
         //masternode signed transaction
-        bool allowFree = false;
         CTxIn vin;
         vector<unsigned char> vchSig;
         int64_t sigTime;
@@ -3518,8 +3516,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                     }
 
                     LogPrintf("dstx: Got Masternode transaction %s\n", tx.GetHash().ToString().c_str());
-
-                    allowFree = true;
                     mn.allowFreeTx = false;
 
                     if(!mapDarksendBroadcastTxes.count(tx.GetHash())){
