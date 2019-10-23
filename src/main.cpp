@@ -1401,14 +1401,20 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
         return false;
 
-    //// issue here: it doesn't know the version
+    // issue here: it doesn't know the version
     unsigned int nTxPos;
+
     if (fJustCheck)
+    {
         // FetchInputs treats CDiskTxPos(1,1,1) as a special "refer to memorypool" indicator
         // Since we're just checking the block and not actually connecting it, it might not (and probably shouldn't) be on the disk to get the transaction from
         nTxPos = 1;
+    }
     else
-        nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) - (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
+    {
+        nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) -
+                 (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
+    }
 
     map<uint256, CTxIndex> mapQueuedChanges;
     int64_t nFees = 0;
@@ -1416,6 +1422,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
     int64_t nValueOut = 0;
     int64_t nStakeReward = 0;
     unsigned int nSigOps = 0;
+
     BOOST_FOREACH(CTransaction& tx, vtx)
     {
         uint256 hashTx = tx.GetHash();
@@ -1433,89 +1440,120 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck)
         // two in the chain that violate it. This prevents exploiting the issue against nodes in their
         // initial block download.
         CTxIndex txindexOld;
-        if (txdb.ReadTxIndex(hashTx, txindexOld)) {
+
+        if (txdb.ReadTxIndex(hashTx, txindexOld))
+        {
             BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
                 if (pos.IsNull())
-                    return false;
+                    return DoS(50, error("ConnectBlock() : tried to overwrite transaction(s)"));
         }
 
         nSigOps += tx.GetLegacySigOpCount();
+
         if (nSigOps > MAX_BLOCK_SIGOPS)
             return DoS(100, error("ConnectBlock() : too many sigops"));
 
         CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
+
         if (!fJustCheck)
             nTxPos += ::GetSerializeSize(tx, SER_DISK, CLIENT_VERSION);
 
         MapPrevTx mapInputs;
+
         if (tx.IsCoinBase())
             nValueOut += tx.GetValueOut();
         else
         {
             bool fInvalid;
+
             if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid))
+            {
+                if (fDebug)
+                    LogPrintf("ConnectBlock() : fetchinputs failed\n");
+
                 return false;
+            }
 
             // Add in sigops done by pay-to-script-hash inputs;
             // this is to prevent a "rogue miner" from creating
             // an incredibly-expensive-to-validate block.
             nSigOps += tx.GetP2SHSigOpCount(mapInputs);
+
             if (nSigOps > MAX_BLOCK_SIGOPS)
                 return DoS(100, error("ConnectBlock() : too many sigops"));
 
             int64_t nTxValueIn = tx.GetValueIn(mapInputs);
             int64_t nTxValueOut = tx.GetValueOut();
+
             nValueIn += nTxValueIn;
             nValueOut += nTxValueOut;
+
             if (!tx.IsCoinStake())
                 nFees += nTxValueIn - nTxValueOut;
             if (tx.IsCoinStake())
                 nStakeReward = nTxValueOut - nTxValueIn;
 
             if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false))
+            {
+                if (fDebug)
+                    LogPrintf("ConnectBlock() : failed to connect inputs\n");
+
                 return false;
+            }
         }
 
         mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
     }
 
     // enable mandatory checks
-if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
-    fEnforceMnWinner = true;
+    if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
+        fEnforceMnWinner = true;
 
-    if (fDebug) {
-        LogPrintf("fEnforceMnWinner enabled\n");
+        if (fDebug)
+        {
+            LogPrintf("fEnforceMnWinner enabled\n");
+        }
     }
-}
 
     if (IsProofOfWork())
     {
         int64_t nReward = GetProofOfWorkReward(nFees, pindex->nHeight);
+
         // Check coinbase reward after hardcoded checkpoint
         if (pindex->nHeight > 17901 && vtx[0].GetValueOut() > nReward)
+        {
             return DoS(50, error("ConnectBlock() : coinbase reward exceeded (actual=%d vs calculated=%d)",
-                   vtx[0].GetValueOut(),
-                   nReward));
+                       vtx[0].GetValueOut(), nReward));
+        }
 
-    } else if (IsProofOfStake()) {
-
+    }
+    else if (IsProofOfStake())
+    {
         // ppcoin: coin stake tx earns reward instead of paying fee
         uint64_t nCoinAge;
+
         if (!vtx[1].GetCoinAge(txdb, nCoinAge))
             return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString().substr(0,10).c_str());
 
         int64_t nCalculatedStakeReward = GetProofOfStakeReward(nCoinAge, nFees, pindex->nHeight);
 
         if (pindex->nHeight > 17901 && nStakeReward > nCalculatedStakeReward)
-            return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)", nStakeReward, nCalculatedStakeReward));
+        {
+            return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)",
+                       nStakeReward, nCalculatedStakeReward));
+        }
 
         // Check block rewards
-        if (!IsInitialBlockDownload()) {
+        if (!IsInitialBlockDownload())
+        {
             CAmount nRequiredMnPmt = GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward);
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
 
-            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s, Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward), FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt), FormatMoney(nRequiredDevPmt));
+            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s,
+                      Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward),
+                      FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt),
+                      FormatMoney(nRequiredDevPmt));
 
             int nDoS_PMTs = sporkManager.GetSporkValue(SPORK_4_PAYMENT_ENFORCEMENT_DOS_VALUE);
 
@@ -1525,50 +1563,61 @@ if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
             bool fPaidCorrectMn = false;
             bool fValidMnPayment = false;
 
-            for (const CTxOut out : vtx[1].vout) {
-                if(out.nValue == nRequiredMnPmt) {
+            for (const CTxOut out : vtx[1].vout)
+            {
+                if(out.nValue == nRequiredMnPmt)
+                {
                     fMnPaymentMade = true;
                     blockPayee = out.scriptPubKey;
                 }
             }
 
             // case: expected masternode amount incorrect/none
-            if (!fMnPaymentMade) {
-                if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT) {
+            if (!fMnPaymentMade)
+            {
+                if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT)
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
-                } else {
+                else
                     LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount\n");
-                }
             }
 
             // check payee once masternode list obtained
-            if (isMasternodeListSynced) {
-                if (masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee)) {
-                    if (blockPayee == expectedPayee) {
+            if (isMasternodeListSynced)
+            {
+                if (masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee))
+                {
+                    if (blockPayee == expectedPayee)
                         fPaidCorrectMn = true;
-                    }
 
                     CTxDestination paidDest;
                     bool hasBlockPayee = ExtractDestination(blockPayee, paidDest);
                     CBitcoinAddress paidMN(paidDest);
 
                     // case: expected masternode address not paid
-                    if (!fPaidCorrectMn) {
+                    if (!fPaidCorrectMn)
+                    {
                         CTxDestination expectDest;
                         bool fPrintAddress = ExtractDestination(expectedPayee, expectDest);
                         CBitcoinAddress addressMN(expectDest);
 
-                        if (fEnforceMnWinner) {
+                        if (fEnforceMnWinner)
+                        {
                             return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
                                        hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
-                        } else {
+                        }
+                        else
+                        {
                             LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s\n",
                                        hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
                         }
-                    } else {
+                    }
+                    else
+                    {
                         LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
                     }
-                } else {
+                }
+                else
+                {
                     // case: was not able to determine correct masternode payee
                     LogPrintf("ConnectBlock() : Did not have expected masternode payee for block %d\n", pindexBest->nHeight+1);
                 }
@@ -1576,39 +1625,44 @@ if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
                 // verify correct payment addr and amount
                 fValidMnPayment = fMnPaymentMade && fPaidCorrectMn;
 
-                if (!fValidMnPayment) {
+                if (!fValidMnPayment)
+                {
                     if (fEnforceMnWinner)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
                     else
                         LogPrintf("ConnectBlock() : Masternode payment missing or is not valid\n");
                 }
-            } else {
+            }
+            else
+            {
                 LogPrintf("ConnectBlock() : Masternode list not yet synced - (CountEnabled=%d)\n", mnodeman.CountEnabled());
             }
 
-            //Check developer payment
+            // check developer payment
             bool fValidDevPmt = false;
             CScript scriptDev = GetDeveloperScript();
 
             // check coinstake tx for dev payment
             for (const CTxOut out : vtx[1].vout)
             {
-                if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev) {
+                if (out.nValue == nRequiredDevPmt && out.scriptPubKey == scriptDev)
                     fValidDevPmt = true;
-                }
             }
 
-            if (!fValidDevPmt) {
-                if (pindex->nHeight >= ENFORCE_DEV_PAYMENT_HEIGHT) {
+            if (!fValidDevPmt)
+            {
+                if (pindex->nHeight >= ENFORCE_DEV_PAYMENT_HEIGHT)
                     return DoS(nDoS_PMTs, error("ConnectBlock() : Block fails to pay dev payment of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
-                } else {
+                else
                     LogPrintf("ConnectBlock() : Block does not pay %s dev payment - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
-                }
             }
 
-            if (fDebug) LogPrintf("ConnectBlock() : Stake pays dev payment\n");
+            if (fDebug)
+                LogPrintf("ConnectBlock() : Stake pays dev payment\n");
 
-        } else {
+        }
+        else
+        {
             LogPrintf("ConnectBlock() : Initial block download: skipping masternode and developer payment checks %d\n", pindexBest->nHeight+1);
         }
     }
@@ -1616,6 +1670,7 @@ if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
     // ppcoin: track money supply and mint amount info
     pindex->nMint = nValueOut - nValueIn + nFees;
     pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
+
     if (!txdb.WriteBlockIndex(CDiskBlockIndex(pindex)))
         return error("Connect() : WriteBlockIndex for pindex failed");
 
@@ -1635,6 +1690,7 @@ if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
     {
         CDiskBlockIndex blockindexPrev(pindex->pprev);
         blockindexPrev.hashNext = pindex->GetBlockHash();
+
         if (!txdb.WriteBlockIndex(blockindexPrev))
             return error("ConnectBlock() : WriteBlockIndex failed");
     }
@@ -1968,8 +2024,14 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
 {
     // Check for duplicate
     uint256 hash = GetHash();
+
     if (mapBlockIndex.count(hash))
-        return error("AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
+    {
+        // Report a soft success in the case that we are trying to save something already present.
+        // There's no need to error out here, which was the previous behavior.
+        return true;
+        //return error("AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
+    }
 
     // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
@@ -2125,8 +2187,8 @@ bool CBlock::AcceptBlock()
 
     // Check for duplicate
     uint256 hash = GetHash();
-    if (mapBlockIndex.count(hash))
-        return error("AcceptBlock() : block already in mapBlockIndex");
+    //if (mapBlockIndex.count(hash))
+    //    return error("AcceptBlock() : block already in mapBlockIndex");
 
     // Get prev block index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
@@ -2244,8 +2306,8 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // Check for duplicate
     uint256 hash = pblock->GetHash();
 
-    if (mapBlockIndex.count(hash))
-        return error("ProcessNewBlock : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+    //if (mapBlockIndex.count(hash))
+    //    return error("ProcessNewBlock : already have block %d %s", mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
 
     if (mapOrphanBlocks.count(hash))
         return error("ProcessNewBlock : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
@@ -2253,7 +2315,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // ppcoin: check proof-of-stake
     // Limited duplicity on stake: prevents block flood attack
     // Duplicate stake allowed only when there is orphan child block
-    if (pblock->IsProofOfStake() && setStakeSeen.count(pblock->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
+    if (!IsInitialBlockDownload() && pblock->IsProofOfStake() && setStakeSeen.count(pblock->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
         return error("ProcessNewBlock : duplicate proof-of-stake (%s, %d) for block %s", pblock->GetProofOfStake().first.ToString().c_str(), pblock->GetProofOfStake().second, hash.ToString().c_str());
 
     // Preliminary checks
