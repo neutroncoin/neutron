@@ -51,6 +51,7 @@ namespace Checkpoints
         ( 1740000, uint256("0x2c2730fd9b7ace6b534f0ca2ab0e93ce1744afd015542baf907ed62cba9a4c94"))
         ( 1750000, uint256("0x8942ada7e88fd5f88b0d9a9038110e56aacc27ed32f5ddf5fe02d08169b8c4d9"))
         ( 1758000, uint256("0xfc3d21c40c77c1f816a32f45ea661715b2615db5cdd7f88e285f74272abc63c0"))
+	( 1805000, uint256("0x765a1af36a90b0bcea4e4da917644bfdf86b3587c7bd125efe94a834260015c6"))
     ;
 
     // TestNet has no checkpoints
@@ -405,6 +406,7 @@ bool CSyncCheckpoint::ProcessSyncCheckpoint(CNode* pfrom)
         Checkpoints::hashPendingCheckpoint = hashCheckpoint;
         Checkpoints::checkpointMessagePending = *this;
         LogPrintf("ProcessSyncCheckpoint: pending for sync-checkpoint %s\n", hashCheckpoint.ToString().c_str());
+
         // Ask this guy to fill in what we're missing
         if (pfrom)
         {
@@ -413,6 +415,7 @@ bool CSyncCheckpoint::ProcessSyncCheckpoint(CNode* pfrom)
             // proof-of-stake because getblocks may not get it this time
             pfrom->AskFor(CInv(MSG_BLOCK, mapOrphanBlocks.count(hashCheckpoint)? WantedByOrphan(mapOrphanBlocks[hashCheckpoint]) : hashCheckpoint));
         }
+
         return false;
     }
 
