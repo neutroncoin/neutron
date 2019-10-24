@@ -1109,7 +1109,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
                 }
 
                 // only do this calculation on the position of the stake
-                if (r.vout == 1)
+                if (r.vout == 1 && wtx.IsCoinStake())
                     entry.push_back(Pair("amount", ValueFromAmount(nNet)));
                 else
                     entry.push_back(Pair("amount", ValueFromAmount(r.amount)));
@@ -1117,7 +1117,7 @@ void ListTransactions(const CWalletTx& wtx, const string& strAccount, int nMinDe
                 if (pwalletMain->mapAddressBook.count(r.destination))
                     entry.push_back(Pair("label", account));
 
-                entry.push_back(Pair("vout", r.vout > 2 ? r.vout - 1 : r.vout));
+                entry.push_back(Pair("vout", wtx.IsCoinStake() && r.vout > 2 ? r.vout - 1 : r.vout));
 
                 if (fLong)
                     WalletTxToJSON(wtx, entry);
@@ -1352,6 +1352,7 @@ UniValue gettransaction(const UniValue& params, bool fHelp)
         int64_t nFee = (wtx.IsFromMe() ? wtx.GetValueOut() - nDebit : 0);
 
         entry.push_back(Pair("amount", ValueFromAmount(nNet - nFee)));
+
         if (wtx.IsFromMe())
             entry.push_back(Pair("fee", ValueFromAmount(nFee)));
 
