@@ -20,9 +20,9 @@
 #include "masternode.h"
 #include "spork.h"
 #include "wallet.h"
-//#include "txmempool.h"
 
 #include <stdio.h>
+#include <thread>
 
 using namespace std;
 using namespace boost;
@@ -1950,7 +1950,8 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     if (!fIsInitialDownload && !strCmd.empty())
     {
         boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
-        boost::thread t(runCommand, strCmd); // thread runs free
+        std::thread t(runCommand, strCmd);
+        t.detach(); // thread runs free
     }
 
     return true;
