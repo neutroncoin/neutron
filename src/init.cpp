@@ -158,7 +158,7 @@ void PrepareShutdown()
 
     fShutdown = true;
     nTransactionsUpdated++;
-    // CTxDB().Close();
+    CTxDB().Close();
     bitdb.Flush(false);
     LogPrintf("%s: call ConnMan::reset\n", __func__);
     g_connman.reset();
