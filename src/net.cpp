@@ -108,14 +108,18 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
     pindexLastGetBlocksBegin = pindexBegin;
     hashLastGetBlocksEnd = hashEnd;
 
-    BOOST_FOREACH(CNode* pnode, vNodes)
     {
-        pnode->PushMessage(NetMsgType::GETSPORKS);
+        LOCK(cs_vNodes);
 
-        if (pnode->HasFulfilledRequest("getspork"))
-            continue;
+        BOOST_FOREACH(CNode* pnode, vNodes)
+        {
+            pnode->PushMessage(NetMsgType::GETSPORKS);
 
-        pnode->FulfilledRequest("getspork");
+            if (pnode->HasFulfilledRequest("getspork"))
+                continue;
+
+            pnode->FulfilledRequest("getspork");
+        }
     }
 
     if (fDebug)
