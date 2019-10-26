@@ -125,6 +125,10 @@ CTxDB::CTxDB(const char* pszMode)
 
 void CTxDB::Close()
 {
+    // Free these, otherwise we get memory leaks on shutdown
+    for (auto i : mapBlockIndex)
+        delete i.second;
+
     delete txdb;
     txdb = pdb = NULL;
     delete options.filter_policy;
