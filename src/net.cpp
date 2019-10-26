@@ -1545,19 +1545,19 @@ void CConnman::ThreadOpenConnections2()
         //    connections.
         //  * Only make a feeler connection once every few minutes.
         //
-        bool fFeeler = false;
-        if (nOutbound >= nMaxOutbound) {
-            int64_t nTime = GetTimeMicros(); // The current time right now (in microseconds).
-            if (nTime > nNextFeeler) {
+        if (nOutbound >= nMaxOutbound)
+        {
+            int64_t nTime = GetTimeMicros(); // The current time right now (in microseconds)
+
+            if (nTime > nNextFeeler)
                 nNextFeeler = PoissonNextSend(nTime, FEELER_INTERVAL);
-                fFeeler = true;
-            } else {
+            else
                 continue;
-            }
         }
 
         int64_t nANow = GetAdjustedTime();
         int nTries = 0;
+
         while (!interruptNet)
         {
             // use an nUnkBias between 10 (no outgoing connections) and 90 (8 outgoing connections)
@@ -1571,6 +1571,7 @@ void CConnman::ThreadOpenConnections2()
             // stop this loop, and let the outer loop run again (which sleeps, adds seed nodes, recalculates
             // already-connected network ranges, ...) before trying new addrman addresses.
             nTries++;
+
             if (nTries > 100)
                 break;
 
@@ -1612,6 +1613,7 @@ void CConnman::ThreadOpenAddedConnections()
         vnThreadsRunning[THREAD_ADDEDCONNECTIONS]--;
         PrintException(NULL, "ThreadOpenAddedConnections()");
     }
+
     LogPrintf("ThreadOpenAddedConnections exited\n");
 }
 
