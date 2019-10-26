@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "init.h"
 #include "util.h"
 
 #include "utilstrencodings.h"
@@ -185,7 +186,10 @@ static void DebugPrintInit()
 void DebugPrintShutdown()
 {
     if (fileout)
+    {
         fclose(fileout);
+        fileout = nullptr;
+    }
 }
 
 bool LogAcceptCategory(const char* category)
@@ -258,6 +262,9 @@ int LogPrintStr(const std::string& str)
             fStartedNewLine = false;
 
         ret = fwrite(str.data(), 1, str.size(), fileout);
+
+        if (ShutdownRequested())
+            DebugPrintShutdown();
     }
 
     return ret;
