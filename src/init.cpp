@@ -1,7 +1,10 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "txdb.h"
 #include "walletdb.h"
 #include "bitcoinrpc.h"
@@ -33,7 +36,6 @@
 #include <signal.h>
 #endif
 
-
 using namespace std;
 using namespace boost;
 
@@ -48,10 +50,8 @@ unsigned int nMinerSleep;
 bool fUseFastIndex;
 enum Checkpoints::CPMode CheckpointsMode;
 
-
 std::unique_ptr<CConnman> g_connman;
 CConnman* shared_connman;
-
 
 //////////////////////////////////////////////////////////////////////////////
 //
@@ -187,6 +187,7 @@ void Shutdown()
 #endif
 
     LogPrintf("%s: done\n", __func__);
+    DebugPrintShutdown();
 }
 
 /**
@@ -201,7 +202,6 @@ void HandleSIGHUP(int)
 {
     fReopenDebugLog = true;
 }
-
 
 static bool LockDataDirectory(bool probeOnly)
 {
@@ -226,11 +226,11 @@ static bool LockDataDirectory(bool probeOnly)
     return true;
 }
 
-
 //////////////////////////////////////////////////////////////////////////////
 //
 // Start
 //
+
 #if !defined(QT_GUI)
 bool AppInit(int argc, char* argv[])
 {
@@ -322,7 +322,6 @@ int main(int argc, char* argv[])
 }
 #endif
 
-
 bool static Bind(const CService &addr, bool fError = true) {
     if (IsLimited(addr))
         return false;
@@ -334,7 +333,6 @@ bool static Bind(const CService &addr, bool fError = true) {
     }
     return true;
 }
-
 
 // Core-specific options shared between UI and daemon
 std::string HelpMessage()
@@ -440,7 +438,6 @@ std::string HelpMessage()
     return strUsage;
 }
 
-
 namespace { // Variables internal to initialization process only
 
 // ServiceFlags nRelevantServices = NODE_NETWORK;
@@ -450,7 +447,6 @@ int nFD;
 // ServiceFlags nLocalServices = NODE_NETWORK;
 
 }
-
 
 /** Initialize bitcoin.
  *  @pre Parameters should be parsed and config file should be read.

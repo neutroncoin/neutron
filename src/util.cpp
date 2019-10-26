@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -69,7 +71,6 @@ namespace boost {
 #include <execinfo.h>
 #endif
 
-
 using namespace std;
 //Dark  features
 bool fMasterNode = false;
@@ -83,7 +84,6 @@ bool fSucessfullyLoaded = false;
 bool fEnableDarksend = false;
 /** All denominations used by darksend */
 std::vector<int64_t> darkSendDenominations;
-
 
 map<string, string> mapArgs;
 map<string, vector<string> > mapMultiArgs;
@@ -124,15 +124,16 @@ public:
     {
         // Init OpenSSL library multithreading support
         ppmutexOpenSSL = (CCriticalSection**)OPENSSL_malloc(CRYPTO_num_locks() * sizeof(CCriticalSection*));
+
         for (int i = 0; i < CRYPTO_num_locks(); i++)
             ppmutexOpenSSL[i] = new CCriticalSection();
+
         CRYPTO_set_locking_callback(locking_callback);
 
 #ifdef WIN32
         // Seed random number generator with screen scrape and other hardware sources
         RAND_screen();
 #endif
-
         // Seed random number generator with performance counter
         RandAddSeed();
     }
@@ -140,13 +141,13 @@ public:
     {
         // Shutdown OpenSSL library multithreading support
         CRYPTO_set_locking_callback(NULL);
+
         for (int i = 0; i < CRYPTO_num_locks(); i++)
             delete ppmutexOpenSSL[i];
+
         OPENSSL_free(ppmutexOpenSSL);
     }
 } instance_of_cinit;
-
-
 
 /**
  * LogPrintf() has been broken a couple of times now
@@ -158,8 +159,8 @@ public:
  * maybe indirectly, and you get a core dump at shutdown trying to lock
  * the mutex).
  */
-
 static boost::once_flag debugPrintInitFlag = BOOST_ONCE_INIT;
+
 /**
  * We use boost::call_once() to make sure these are initialized
  * in a thread-safe manner the first time called:
@@ -174,9 +175,17 @@ static void DebugPrintInit()
 
     boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
     fileout = fopen(pathDebug.string().c_str(), "a");
-    if (fileout) setbuf(fileout, NULL); // unbuffered
+
+    if (fileout)
+        setbuf(fileout, NULL); // unbuffered
 
     mutexDebugLog = new boost::mutex();
+}
+
+void DebugPrintShutdown()
+{
+    if (fileout)
+        fclose(fileout);
 }
 
 bool LogAcceptCategory(const char* category)
@@ -254,7 +263,6 @@ int LogPrintStr(const std::string& str)
     return ret;
 }
 
-
 void ParseString(const string& str, char c, vector<string>& v)
 {
     if (str.empty())
@@ -273,7 +281,6 @@ void ParseString(const string& str, char c, vector<string>& v)
         i1 = i2+1;
     }
 }
-
 
 static void InterpretNegativeSetting(string name, map<string, string>& mapSettingsRet)
 {
@@ -381,7 +388,6 @@ bool SoftSetBoolArg(const std::string& strArg, bool fValue)
         return SoftSetArg(strArg, std::string("0"));
 }
 
-
 bool WildcardMatch(const char* psz, const char* mask)
 {
     while (true)
@@ -410,13 +416,6 @@ bool WildcardMatch(const string& str, const string& mask)
 {
     return WildcardMatch(str.c_str(), mask.c_str());
 }
-
-
-
-
-
-
-
 
 static std::string FormatException(const std::exception* pex, const char* pszThread)
 {
@@ -654,7 +653,6 @@ void ShrinkDebugFile()
     else if (file != nullptr)
         fclose(file);
 }
-
 
 #ifdef WIN32
 boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate)

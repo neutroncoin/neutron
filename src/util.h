@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -152,8 +154,11 @@ extern volatile bool fReopenDebugLog;
 
 void SetupEnvironment();
 
+void DebugPrintShutdown();
+
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);
+
 /** Send a string to the log output */
 int LogPrintStr(const std::string& str);
 
