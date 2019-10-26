@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -9,8 +11,10 @@
 #include "utiltime.h"
 #include "main.h"
 #include "ui_interface.h"
+
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <stdlib.h>
 
 #ifndef WIN32
 #include "sys/stat.h"
@@ -19,15 +23,7 @@
 using namespace std;
 using namespace boost;
 
-
 unsigned int nWalletDBUpdated;
-
-
-
-//
-// CDB
-//
-
 CDBEnv bitdb;
 
 void CDBEnv::EnvShutdown()
@@ -35,10 +31,18 @@ void CDBEnv::EnvShutdown()
     if (!fDbEnvInit)
         return;
 
+    FILE *errfile = nullptr;
+    dbenv.get_errfile(&errfile);
+
     fDbEnvInit = false;
     int ret = dbenv.close(0);
+
+    if (errfile)
+        fclose(errfile);
+
     if (ret != 0)
         LogPrintf("EnvShutdown exception: %s (%d)\n", DbEnv::strerror(ret), ret);
+
     if (!fMockDb)
         DbEnv((u_int32_t)0).remove(strPath.c_str(), 0);
 }
@@ -449,9 +453,11 @@ bool CDB::Rewrite(const string& strFile, const char* pszSkip)
 void CDBEnv::Flush(bool fShutdown)
 {
     int64_t nStart = GetTimeMillis();
+
     // Flush log data to the actual data file
     //  on all files that are not in use
     LogPrintf("Flush(%s)%s\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " db not started");
+
     if (!fDbEnvInit)
         return;
     {
@@ -479,7 +485,9 @@ void CDBEnv::Flush(bool fShutdown)
             else
                 mi++;
         }
+
         LogPrintf("DBFlush(%s)%s ended %15dms\n", fShutdown ? "true" : "false", fDbEnvInit ? "" : " db not started", GetTimeMillis() - nStart);
+
         if (fShutdown)
         {
             char** listp;
