@@ -1947,8 +1947,14 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
     std::string strCmd = GetArg("-blocknotify", "");
 
+    if (fDebug)
+        LogPrintf("SetBestChain: Blocknotify string is \"%s\"\n", strCmd);
+
     if (!fIsInitialDownload && !strCmd.empty())
     {
+        if (fDebug)
+            LogPrintf("SetBestChain: Starting blocknotify thread and command\n");
+
         boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
         std::thread t(runCommand, strCmd);
         t.detach(); // thread runs free
