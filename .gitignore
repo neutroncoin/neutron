@@ -8,6 +8,7 @@ src/test_neutron
 *.rej
 *.orig
 *.o
+*.d
 *.patch
 .neutron
 .qmake.stash
