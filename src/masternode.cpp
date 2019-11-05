@@ -1,3 +1,9 @@
+// Copyright (c) 2009-2012 The Darkcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "masternode.h"
 #include "activemasternode.h"
 #include "darksend.h"
@@ -440,7 +446,6 @@ int CountMasternodesAboveProtocol(int protocolVersion)
     return i;
 
 }
-
 
 int GetMasternodeByVin(CTxIn& vin)
 {
@@ -910,7 +915,6 @@ bool CMasternodePayments::SetPrivKey(std::string strPrivKey)
         return false;
     }
 }
-
 
 void CMasternodeMan::AskForMN(CNode* pnode, CTxIn& vin)
 {

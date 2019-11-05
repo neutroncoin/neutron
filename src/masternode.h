@@ -1,8 +1,9 @@
-
-// Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Darkcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef MASTERNODE_H
 #define MASTERNODE_H
 
@@ -59,7 +60,6 @@ extern CMasternodeMan mnodeman;
 extern std::vector<CTxIn> vecMasternodeAskedFor;
 extern map<uint256, CMasternodePaymentWinner> mapSeenMasternodeVotes;
 extern map<int64_t, uint256> mapCacheBlockHashes;
-
 
 // manage the masternode connections
 void ProcessMasternodeConnections();
@@ -176,14 +176,12 @@ public:
     std::string GetStatus() const;
 };
 
-
 // Get the current winner for this block
 int GetCurrentMasterNode(int mod=1, int64_t nBlockHeight=0, int minProtocol=0);
 
 int GetMasternodeByVin(CTxIn& vin);
 int GetMasternodeRank(CTxIn& vin, int64_t nBlockHeight=0, int minProtocol=0);
 int GetMasternodeByRank(int findRank, int64_t nBlockHeight=0, int minProtocol=0);
-
 
 // for storing the winning payments
 class CMasternodePaymentWinner
@@ -321,6 +319,5 @@ public:
     /// Return the number of (unique) Masternodes
     int size() { return vecMasternodes.size(); }
 };
-
 
 #endif
