@@ -14,7 +14,6 @@
 #include "addrman.h"
 #include <boost/lexical_cast.hpp>
 
-
 CCriticalSection cs_masternodes;
 
 /** Masternode manager */
@@ -199,8 +198,8 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         } else {
             LogPrintf("dsee - Rejected masternode entry %s\n", addr.ToString().c_str());
 
-            int nDoS = 0;
-           /* if (state.IsInvalid(nDoS))
+            /*int nDoS = 0;
+            if (state.IsInvalid(nDoS))
             {
                 LogPrintf("dsee - %s from %s %s was not accepted into the memory pool\n", tx.GetHash().ToString().c_str(),
                     pfrom->addr.ToString().c_str(), pfrom->cleanSubVer.c_str());
