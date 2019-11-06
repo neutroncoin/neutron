@@ -56,6 +56,8 @@ enum Checkpoints::CPMode CheckpointsMode;
 std::unique_ptr<CConnman> g_connman;
 CConnman* shared_connman;
 
+CCriticalSection cs_Shutdown;
+
 //////////////////////////////////////////////////////////////////////////////
 //
 // Shutdown
@@ -144,14 +146,13 @@ void Interrupt(boost::thread_group& threadGroup)
 void PrepareShutdown()
 {
     LogPrintf("%s: In progress...\n", __func__);
-    static CCriticalSection cs_Shutdown;
     TRY_LOCK(cs_Shutdown, lockShutdown);
+
     if (!lockShutdown)
         return;
 
     // fRequestShutdown = true; // Needed when we shutdown the wallet
     // fRestartRequested = true; // Needed when we restart the wallet
-
 
     /// Note: Shutdown() must be able to handle cases in which AppInit2() failed part of the way,
     /// for example if the data directory was found to be locked.
@@ -184,9 +185,14 @@ void Shutdown()
         PrepareShutdown();
     }
 
+    {
+        // Wait for shutdown in other thread to complete
+        LOCK(cs_Shutdown);
+
 #ifndef QT_GUI
-    // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
-    exit(0);
+        // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
+        exit(0);
+    }
 #endif
 
     LogPrintf("%s: done\n", __func__);
