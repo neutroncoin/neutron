@@ -262,9 +262,6 @@ int LogPrintStr(const std::string& str)
             fStartedNewLine = false;
 
         ret = fwrite(str.data(), 1, str.size(), fileout);
-
-        if (ShutdownRequested())
-            DebugPrintShutdown();
     }
 
     return ret;
