@@ -530,7 +530,12 @@ int64_t nHPSTimerStart;
 
 void StakeMiner(CWallet *pwallet, bool fProofOfStake)
 {
-    if (fDebug) LogPrintf("StakeMiner: starting\n");
+    if (fDebug)
+    {
+        LogPrintf("StakeMiner: starting\n");
+        LogPrintf("StakeMiner: detected total wallet balance is roughly %Lf\n", ((long double) pwallet->GetBalance()) / 100000000);
+    }
+
     SetThreadPriority(THREAD_PRIORITY_LOWEST);
 
     // Make this thread recognisable as the mining thread
