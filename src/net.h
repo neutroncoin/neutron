@@ -474,6 +474,8 @@ private:
     void ThreadSocketHandler();
     void ThreadSocketHandler2();
     void ThreadDNSAddressSeed();
+    void ThreadStakeMiner(CWallet *pwallet);
+
     // void ThreadOpenMasternodeConnections();
 
     // uint64_t CalculateKeyedNetGroup(const CAddress& ad) const;
@@ -579,6 +581,7 @@ private:
     std::thread threadSocketHandler;
     std::thread threadOpenAddedConnections;
     std::thread threadOpenConnections;
+    std::thread threadStakeMiner;
     // std::thread threadOpenMasternodeConnections;
     // std::thread threadMessageHandler;
 };

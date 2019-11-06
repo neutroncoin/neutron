@@ -55,7 +55,7 @@ bool fClient = false;
 bool fDiscover = true;
 bool fListen = false;
 bool fUseUPnP = false;
-uint64_t nLocalServices = (fClient ? 0 : NODE_NETWORK);
+uint64_t nLocalServices = (fClient ? 0 : (uint64_t) NODE_NETWORK);
 static CCriticalSection cs_mapLocalHost;
 static map<CNetAddr, LocalServiceInfo> mapLocalHost;
 static bool vfReachable[NET_MAX] = {};
@@ -1525,10 +1525,9 @@ void CConnman::ProcessOneShot()
     }
 }
 
-void static ThreadStakeMiner(void* parg)
+void CConnman::ThreadStakeMiner(CWallet *pwallet)
 {
     LogPrintf("ThreadStakeMiner started\n");
-    CWallet* pwallet = (CWallet*)parg;
 
     try
     {
@@ -2210,14 +2209,11 @@ bool CConnman::Start(CScheduler& scheduler, Options connOptions)
     if (!NewThread(ThreadMessageHandler, NULL))
         LogPrintf("Error: NewThread(ThreadMessageHandler) failed\n");
 
-    // NTRN TODO: convert this to use std::thread
     // Mine proof-of-stake blocks in the background
-
     if (!GetBoolArg("-staking", true))
         LogPrintf("Staking disabled\n");
     else
-        if (!NewThread(ThreadStakeMiner, pwalletMain))
-            LogPrintf("Error: NewThread(ThreadStakeMiner) failed\n");
+        threadStakeMiner = std::thread(&TraceThread<std::function<void()> >, "stakeminer", std::function<void()>(std::bind(&CConnman::ThreadStakeMiner, this, pwalletMain)));
 
     // Dump network addresses
     scheduler.scheduleEvery(boost::bind(&CConnman::DumpData, this), DUMP_ADDRESSES_INTERVAL);
@@ -2283,7 +2279,12 @@ void CConnman::Stop()
     if (threadSocketHandler.joinable())
         threadSocketHandler.join();
 
-    LogPrintf("CConnman::Stop() 6 DumpData\n");
+    LogPrintf("CConnman::Stop() 6 threadStakeMiner\n");
+
+    if (threadStakeMiner.joinable())
+        threadStakeMiner.join();
+
+    LogPrintf("CConnman::Stop() 7 DumpData\n");
 
     if (fAddressesInitialized)
     {
@@ -2291,7 +2292,7 @@ void CConnman::Stop()
         fAddressesInitialized = false;
     }
 
-    LogPrintf("CConnman::Stop() 7 CloseSockets\n");
+    LogPrintf("CConnman::Stop() 8 CloseSockets\n");
 
     // Close sockets
     for (CNode* pnode : vNodes)
