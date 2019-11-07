@@ -1223,7 +1223,7 @@ unsigned int CTransaction::GetP2SHSigOpCount(const MapPrevTx& inputs) const
 }
 
 bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx,
-                                 const CBlockIndex* pindexBlock, bool fBlock, bool fMiner)
+                                 const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool *txAlreadyUsed)
 {
     // Take over previous transactions' spent pointers
     // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain
@@ -1273,7 +1273,12 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
             // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
             // for an attacker to attempt to split the network.
             if (!txindex.vSpent[prevout.n].IsNull())
+            {
+                if (txAlreadyUsed != nullptr)
+                    *txAlreadyUsed = true;
+
                 return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+            }
 
             // Skip ECDSA signature verification when connecting blocks (fBlock=true)
             // before the last blockchain checkpoint. This is safe because block merkle hashes are
@@ -1497,12 +1502,22 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             if (tx.IsCoinStake())
                 nStakeReward = nTxValueOut - nTxValueIn;
 
-            if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false))
-            {
-                if (fDebug)
-                    LogPrintf("ConnectBlock() : failed to connect inputs\n");
+            bool txAlreadyUsed = false;
 
-                return false;
+            if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, &txAlreadyUsed))
+            {
+                if (reorganize && txAlreadyUsed)
+                {
+                    if (fDebug)
+                        LogPrintf("ConnectBlock() : Reorganizing, did not connect previously connected inputs\n");
+                }
+                else
+                {
+                    if (fDebug)
+                        LogPrintf("ConnectBlock() : failed to connect inputs\n");
+
+                    return false;
+                }
             }
         }
 
