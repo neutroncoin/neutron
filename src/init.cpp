@@ -185,7 +185,10 @@ void Shutdown()
     if(!fRequestRestart)
     {
         if (PrepareShutdown())
+        {
+            MilliSleep(200);
             return;
+        }
     }
 
     {
