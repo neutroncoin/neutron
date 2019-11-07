@@ -143,13 +143,13 @@ void Interrupt(boost::thread_group& threadGroup)
 }
 
 /** Preparing steps before shutting down or restarting the wallet */
-void PrepareShutdown()
+bool PrepareShutdown()
 {
     LogPrintf("%s: In progress...\n", __func__);
     TRY_LOCK(cs_Shutdown, lockShutdown);
 
     if (!lockShutdown)
-        return;
+        return false;
 
     // fRequestShutdown = true; // Needed when we shutdown the wallet
     // fRestartRequested = true; // Needed when we restart the wallet
@@ -173,26 +173,29 @@ void PrepareShutdown()
     delete pwalletMain;
     NewThread(ExitTimeout, NULL);
     MilliSleep(50);
+
     LogPrintf("Neutron exited\n\n");
+    return true;
 }
 
 void Shutdown()
 {
     LogPrintf("%s: In progress...\n", __func__);
 
-    // Shutdown part 1: prepare shutdown
-    if(!fRequestRestart) {
-        PrepareShutdown();
+    if(!fRequestRestart)
+    {
+        if (PrepareShutdown())
+            return;
     }
 
     {
         // Wait for shutdown in other thread to complete
         LOCK(cs_Shutdown);
+    }
 
 #ifndef QT_GUI
-        // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
-        exit(0);
-    }
+    // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
+    exit(0);
 #endif
 
     LogPrintf("%s: done\n", __func__);
@@ -310,8 +313,8 @@ bool AppInit(int argc, char* argv[])
     } else {
         WaitForShutdown(&threadGroup);
     }
-    Shutdown();
 
+    Shutdown();
     return fRet;
 }
 

@@ -24,7 +24,7 @@ bool ShutdownRequested();
 void Interrupt(boost::thread_group& threadGroup);
 void Shutdown();
 bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler);
-void PrepareShutdown();
+bool PrepareShutdown();
 
 /** Help for options shared between UI and daemon (for -help) */
 std::string HelpMessage();
