@@ -2282,8 +2282,6 @@ void ThreadCheckDarkSend(CConnman& connman)
 
     while (true)
     {
-        MilliSleep(5000);
-
         if (!IsInitialBlockDownload())
         {
             nTick++;
@@ -2309,7 +2307,7 @@ void ThreadCheckDarkSend(CConnman& connman)
             if (fDebug)
                 LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 30, requestedMasterNodeList);
 
-            // try to sync the masternode list and payment list every 30 seconds from at least 3 nodes
+            // try to sync the masternode list and payment list every 30 ticks from at least 3 nodes
             // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
             if (nTick % 30 == 0)
             {
@@ -2406,5 +2404,7 @@ void ThreadCheckDarkSend(CConnman& connman)
             //     }
             // }
         }
+
+	MilliSleep(500); // Sleep for half a second before the next tick
     }
 }
