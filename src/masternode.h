@@ -45,7 +45,7 @@ class uint256;
 #define MASTERNODE_EXPIRATION_SECONDS          (120*60)
 #define MASTERNODE_REMOVAL_SECONDS             (130*60)
 #define MASTERNODE_CHECK_SECONDS               5
-#define MASTERNODE_DSEG_SECONDS                (3*60*60)
+#define MASTERNODE_DSEG_SECONDS                (5*60) // 5 minutes
 
 #define MASTERNODE_BLOCK_OFFSET                50
 
