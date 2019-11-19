@@ -2256,7 +2256,7 @@ bool CDarksendQueue::CheckSignature()
     return false;
 }
 
-//TODO: Rename/move to core
+// TODO: Rename and move to core
 void ThreadCheckDarkSend(CConnman& connman)
 {
     if (fLiteMode)
@@ -2307,7 +2307,7 @@ void ThreadCheckDarkSend(CConnman& connman)
             }
 
             if (fDebug)
-                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
+                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 30, requestedMasterNodeList);
 
             // try to sync the masternode list and payment list every 30 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
@@ -2332,22 +2332,29 @@ void ThreadCheckDarkSend(CConnman& connman)
 
                 BOOST_FOREACH(CNode* pnode, vNodes)
                 {
-                    if (pnode->HasFulfilledRequest("getspork")) continue;
-                    pnode->FulfilledRequest("getspork");
-                    pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
+                    if (!pnode->HasFulfilledRequest("getspork"))
+                    {
+                        pnode->FulfilledRequest("getspork");
+                        pnode->PushMessage(NetMsgType::GETSPORKS); // get current network sporks
+                    }
 
-                    if (pnode->HasFulfilledRequest("mnsync")) continue;
-                    pnode->FulfilledRequest("mnsync");
-                    pnode->PushMessage(NetMsgType::DSEG, CTxIn()); //request full mn list
+                    if (!pnode->HasFulfilledRequest("mnsync"))
+                    {
+                        pnode->FulfilledRequest("mnsync");
+                        pnode->PushMessage(NetMsgType::DSEG, CTxIn()); // request full mn list
+                    }
 
-                    if (pnode->HasFulfilledRequest("mnwsync")) continue;
-                    pnode->FulfilledRequest("mnwsync");
-                    pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); //sync payees (winners list)
+                    if (pnode->HasFulfilledRequest("mnwsync"))
+                    {
+                        pnode->FulfilledRequest("mnwsync");
+                        pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); // sync payees (winners list)
+                    }
 
-                    if (fDebug) LogPrintf("ThreadCheckDarkSend::Synced with peer=%s\n", pnode->id);
+                    if (fDebug)
+                        LogPrintf("ThreadCheckDarkSend: Synced with peer=%s\n", pnode->id);
 
                     requestedMasterNodeList++;
-                    MilliSleep(3000);
+                    MilliSleep(1000);
                 }
 
                 if (!isMasternodeListSynced)
