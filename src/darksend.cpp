@@ -2321,6 +2321,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                     LogPrintf("ThreadCheckDarkSend: Asking peers for sporks and masternode list\n");
 
                 LOCK(cs_vNodes);
+                int sentRequests = 0;
 
                 BOOST_FOREACH(CNode* pnode, vNodes)
                 {
@@ -2328,25 +2329,30 @@ void ThreadCheckDarkSend(CConnman& connman)
                     {
                         pnode->FulfilledRequest("getspork");
                         pnode->PushMessage(NetMsgType::GETSPORKS); // get current network sporks
+                        sentRequests++;
                     }
 
                     if (!pnode->HasFulfilledRequest("mnsync"))
                     {
                         pnode->FulfilledRequest("mnsync");
                         pnode->PushMessage(NetMsgType::DSEG, CTxIn()); // request full mn list
+                        sentRequests++;
                     }
 
                     if (pnode->HasFulfilledRequest("mnwsync"))
                     {
                         pnode->FulfilledRequest("mnwsync");
                         pnode->PushMessage(NetMsgType::MASTERNODEPAYMENTSYNC); // sync payees (winners list)
+                        sentRequests++;
                     }
 
                     if (fDebug)
                         LogPrintf("ThreadCheckDarkSend: Synced with peer=%s\n", pnode->id);
 
                     requestedMasterNodeList++;
-                    MilliSleep(1000);
+
+                    if (sentRequests >= MAX_REQUESTS_PER_TICK)
+                        break;
                 }
 
                 if (!isMasternodeListSynced)

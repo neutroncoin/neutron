@@ -37,6 +37,7 @@ class CActiveMasternode;
 
 #define DARKSEND_QUEUE_TIMEOUT                 120
 #define DARKSEND_SIGNING_TIMEOUT               30
+#define MAX_REQUESTS_PER_TICK                  5
 
 extern CDarkSendPool darkSendPool;
 extern CDarkSendSigner darkSendSigner;
