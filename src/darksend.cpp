@@ -2256,16 +2256,20 @@ bool CDarksendQueue::CheckSignature()
     return false;
 }
 
-
 //TODO: Rename/move to core
 void ThreadCheckDarkSend(CConnman& connman)
 {
-    if(fLiteMode) return; //disable all darksend/masternode related functionality
+    if (fLiteMode)
+        return;
 
-    if (fDebug) LogPrintf("ThreadCheckDarkSend: Started\n");
+    if (fDebug)
+        LogPrintf("ThreadCheckDarkSend: Started\n");
 
     static bool fOneThread;
-    if(fOneThread) return;
+
+    if (fOneThread)
+        return;
+
     fOneThread = true;
 
     // Make this thread recognisable as the wallet flushing thread
@@ -2285,48 +2289,54 @@ void ThreadCheckDarkSend(CConnman& connman)
             nTick++;
 
             {
-                if(nTick % 60 == 0){
-                    // // LOCK2(cs_main, cs_masternodes);
+                if (nTick % 60 == 0){
+                    // LOCK2(cs_main, cs_masternodes);
 
                     LOCK(cs_main);
 
-                    //     cs_main is required for doing CMasternode.Check because something
-                    //     is modifying the coins view without a mempool lock. It causes
-                    //     segfaults from this code without the cs_main lock.
+                    // cs_main is required for doing CMasternode.Check because something
+                    // is modifying the coins view without a mempool lock. It causes
+                    // segfaults from this code without the cs_main lock.
 
-
-                    if (fDebug) LogPrintf("ThreadCheckDarkSend: Check timeout\n");
+                    if (fDebug)
+                        LogPrintf("ThreadCheckDarkSend: Check timeout\n");
 
                     mnodeman.CheckAndRemove();
                     masternodePayments.CleanPaymentList();
                 }
             }
 
-            // if (fDebug) LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
+            if (fDebug)
+                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
 
-            //try to sync the masternode list and payment list every 5 seconds from at least 3 nodes
+            // try to sync the masternode list and payment list every 30 seconds from at least 3 nodes
             // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
-            if(nTick % 5 == 0){
-                if(nTick % 8000 == 0){
+            if (nTick % 30 == 0)
+            {
+                if (nTick % 8000 == 0)
+                {
                     LOCK(cs_vNodes);
-                    BOOST_FOREACH (CNode* pnode, vNodes) {
+
+                    BOOST_FOREACH (CNode* pnode, vNodes)
+                    {
                         pnode->ClearFulfilledRequest("getspork");
                         pnode->ClearFulfilledRequest("mnsync");
                         pnode->ClearFulfilledRequest("mnwsync");
                     }
                 }
 
-                if (fDebug) LogPrintf("ThreadCheckDarkSend::Asking peers for Spork and Masternode lists\n");
+                if (fDebug)
+                    LogPrintf("ThreadCheckDarkSend: Asking peers for sporks and masternode list\n");
 
                 LOCK(cs_vNodes);
-                BOOST_FOREACH(CNode* pnode, vNodes){
-                    // TODO: NTRN - should probably cycle through a few nodes at a time until all used, then reset the list...
 
+                BOOST_FOREACH(CNode* pnode, vNodes)
+                {
                     if (pnode->HasFulfilledRequest("getspork")) continue;
                     pnode->FulfilledRequest("getspork");
                     pnode->PushMessage(NetMsgType::GETSPORKS); //get current network sporks
 
-                    if(pnode->HasFulfilledRequest("mnsync")) continue;
+                    if (pnode->HasFulfilledRequest("mnsync")) continue;
                     pnode->FulfilledRequest("mnsync");
                     pnode->PushMessage(NetMsgType::DSEG, CTxIn()); //request full mn list
 
@@ -2337,21 +2347,25 @@ void ThreadCheckDarkSend(CConnman& connman)
                     if (fDebug) LogPrintf("ThreadCheckDarkSend::Synced with peer=%s\n", pnode->id);
 
                     requestedMasterNodeList++;
-
                     MilliSleep(3000);
                 }
 
-                if (!isMasternodeListSynced) {
-                    if (!waitMnSyncStarted and (requestedMasterNodeList > 3 && mnodeman.CountEnabled() > 3)) {
+                if (!isMasternodeListSynced)
+                {
+                    if (!waitMnSyncStarted and (requestedMasterNodeList > 3 && mnodeman.CountEnabled() > 3))
+                    {
                         waitMnSyncStarted = true;
                         nMnSyncWaitTime = GetTime() + 180;
-                        LogPrintf("ThreadCheckDarkSend - MNSYNC: Started waiting for mnsync");
+                        LogPrintf("ThreadCheckDarkSend: Started waiting for mnsync");
                     }
 
-                    LogPrintf("ThreadCheckDarkSend - MNSYNC: waiting... requested=%d, enabled=%d, time_remaining=%d\n", requestedMasterNodeList, mnodeman.CountEnabled(), nMnSyncWaitTime-GetTime());
+                    LogPrintf("ThreadCheckDarkSend: waiting... requested=%d, enabled=%d, time_remaining=%d\n",
+                              requestedMasterNodeList, mnodeman.CountEnabled(), nMnSyncWaitTime-GetTime());
 
-                    if (waitMnSyncStarted && (GetTime() >= nMnSyncWaitTime)) {
-                        LogPrintf("ThreadCheckDarkSend - MNSYNC: complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n", requestedMasterNodeList, mnodeman.CountEnabled());
+                    if (waitMnSyncStarted && (GetTime() >= nMnSyncWaitTime))
+                    {
+                        LogPrintf("ThreadCheckDarkSend: complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n",
+                                  requestedMasterNodeList, mnodeman.CountEnabled());
 
                         // calculate a few masternode winners first
                         masternodePayments.ProcessBlock(pindexBest->nHeight);
@@ -2363,9 +2377,8 @@ void ThreadCheckDarkSend(CConnman& connman)
                 }
             }
 
-            if(nTick % MASTERNODE_PING_SECONDS == 0){
+            if(nTick % MASTERNODE_PING_SECONDS == 0)
                 activeMasternode.ManageStatus(*g_connman);
-            }
 
             // TODO: NTRN - disabled for now
             // darkSendPool.CheckTimeout();
