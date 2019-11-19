@@ -950,18 +950,22 @@ void CMasternodeMan::CheckAndRemove()
         LOCK(cs_masternodes);
 
         Check();
-
         LogPrintf("CMasternodeMan::CheckAndRemove remove masternodes\n");
 
-        //remove inactive and outdated
+        // remove inactive and outdated
         vector<CMasternode>::iterator it = vecMasternodes.begin();
-        while (it != vecMasternodes.end()) {
-            if((*it).nActiveState == CMasternode::MASTERNODE_REMOVE || (*it).nActiveState == CMasternode::MASTERNODE_VIN_SPENT){
-                LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n", (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).nActiveState);
+
+        while (it != vecMasternodes.end())
+        {
+            if((*it).nActiveState == CMasternode::MASTERNODE_REMOVE || (*it).nActiveState == CMasternode::MASTERNODE_VIN_SPENT)
+            {
+                LogPrintf("CMasternodeMan::CheckAndRemove - Removing inactive masternode %s - %s -- reason: %d\n",
+                          (*it).addr.ToString().c_str(), (*it).vin.prevout.hash.ToString(), (*it).nActiveState);
+
                 it = vecMasternodes.erase(it);
-            } else {
-                ++it;
             }
+            else
+                ++it;
         }
     }
 
@@ -975,12 +979,13 @@ void CMasternodeMan::CheckAndRemove()
 
         // check who's asked for the Masternode list
         auto it1 = mAskedUsForMasternodeList.begin();
-        while(it1 != mAskedUsForMasternodeList.end()){
-            if((*it1).second < GetTime()) {
+
+        while(it1 != mAskedUsForMasternodeList.end())
+        {
+            if((*it1).second < GetTime())
                 mAskedUsForMasternodeList.erase(it1++);
-            } else {
+            else
                 ++it1;
-            }
         }
     }
 
@@ -998,9 +1003,13 @@ int CMasternodeMan::CountEnabled(int protocolVersion)
     int i = 0;
     protocolVersion = protocolVersion == -1 ? ActiveProtocol() : protocolVersion;
 
-    BOOST_FOREACH (CMasternode& mn, vecMasternodes) {
+    BOOST_FOREACH (CMasternode& mn, vecMasternodes)
+    {
         mn.Check();
-        if (mn.protocolVersion < protocolVersion || !mn.IsEnabled()) continue;
+
+        if (mn.protocolVersion < protocolVersion || !mn.IsEnabled())
+            continue;
+
         i++;
     }
 
@@ -1011,10 +1020,11 @@ CMasternode* CMasternodeMan::Find(const CTxIn& vin)
 {
     LOCK(cs_masternodes);
 
-    BOOST_FOREACH (CMasternode& mn, vecMasternodes) {
+    BOOST_FOREACH (CMasternode& mn, vecMasternodes)
+    {
         if (mn.vin.prevout == vin.prevout)
             return &mn;
     }
+
     return NULL;
 }
-
