@@ -2307,11 +2307,11 @@ void ThreadCheckDarkSend(CConnman& connman)
             if (fDebug)
                 LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 30, requestedMasterNodeList);
 
-            // try to sync the masternode list and payment list every 30 ticks from at least 3 nodes
+            // try to sync the masternode list and payment list every 25 ticks from at least 3 nodes
             // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
-            if (nTick % 30 == 0)
+            if (nTick % 25 == 0)
             {
-                if (nTick % 8000 == 0)
+                if (nTick % 400 == 0)
                 {
                     LOCK(cs_vNodes);
 
