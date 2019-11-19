@@ -43,9 +43,6 @@ bool isMasternodeListSynced = false;
 
 void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
-    if(fLiteMode)
-        return; // disable all darksend/masternode related functionality
-
     if (strCommand == "dsf") // DarkSend Final tx
     {
         if (pfrom->nVersion < darkSendPool.MIN_PEER_PROTO_VERSION)
@@ -2259,9 +2256,6 @@ bool CDarksendQueue::CheckSignature()
 // TODO: Rename and move to core
 void ThreadCheckDarkSend(CConnman& connman)
 {
-    if (fLiteMode)
-        return;
-
     if (fDebug)
         LogPrintf("ThreadCheckDarkSend: Started\n");
 
@@ -2305,7 +2299,7 @@ void ThreadCheckDarkSend(CConnman& connman)
             }
 
             if (fDebug)
-                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 30, requestedMasterNodeList);
+                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
 
             // try to sync the masternode list and payment list every 25 ticks from at least 3 nodes
             // if(nTick % 25 == 0 && requestedMasterNodeList < 3){

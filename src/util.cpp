@@ -77,7 +77,6 @@ using namespace std;
 bool fMasterNode = false;
 string strMasterNodePrivKey = "";
 string strMasterNodeAddr = "";
-bool fLiteMode = false;
 int nDarksendRounds = 2;
 int nAnonymizeNeutronAmount = 500;
 int nLiquidityProvider = 0;

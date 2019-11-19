@@ -1,3 +1,8 @@
+// Copyright (c) 2014-2015 The Darkcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "db.h"
 #include "txdb.h"
@@ -35,8 +40,8 @@ int nCompleteTXLocks;
 
 void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
-    if(fLiteMode) return; //disable all darksend/masternode related functionality
-    if(!IsSporkActive(SPORK_TBD_INSTANTX_ENABLED)) return;
+    if(!IsSporkActive(SPORK_TBD_INSTANTX_ENABLED))
+        return;
 
     if (strCommand == "txlreq")
     {
@@ -64,10 +69,7 @@ void ProcessMessageInstantX(CNode* pfrom, std::string& strCommand, CDataStream& 
         }
 
         int nBlockHeight = CreateNewLock(tx);
-
         bool fMissingInputs = false;
-
-
 
         //if (AcceptToMemoryPool(mempool, state, tx, true, &fMissingInputs))
         CTxDB txdb("r");

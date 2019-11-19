@@ -52,9 +52,8 @@ void ProcessMasternodeConnections(){
 
 void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)
 {
-    if (fLiteMode and strCommand != NetMsgType::MASTERNODEPAYMENTVOTE) return; //disable all Darksend/Masternode related functionality
-
-    if(IsInitialBlockDownload()) return;
+    if(IsInitialBlockDownload())
+        return;
 
     if (strCommand == NetMsgType::DSEE) { //DarkSend Election Entry
         CTxIn vin;
@@ -346,7 +345,6 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
     }
 
     else if (strCommand == NetMsgType::MASTERNODEPAYMENTVOTE) { //Masternode Payments Declare Winner
-        //this is required in litemode
         CMasternodePaymentWinner winner;
         int a = 0;
         vRecv >> winner >> a;

@@ -436,7 +436,6 @@ std::string HelpMessage()
         "  -rpcsslcertificatechainfile=<file.cert>  " + _("Server certificate file (default: server.cert)") + "\n" +
         "  -rpcsslprivatekeyfile=<file.pem>         " + _("Server private key (default: server.pem)") + "\n" +
         "  -rpcsslciphers=<ciphers>                 " + _("Acceptable ciphers (default: TLSv1+HIGH:!SSLv2:!aNULL:!eNULL:!AH:!3DES:@STRENGTH)") + "\n";
-    strUsage += "  -litemode=<n>          " + _("Disable all Masternode and Darksend related functionality (0-1, default: 0)") + "\n";
 
     strUsage += "\n" + _("Masternode options:") + "\n";
     strUsage += "  -masternode=<n>            " + _("Enable the client to act as a masternode (0-1, default: 0)") + "\n";
@@ -1090,15 +1089,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // nAnonymizeNeutronAmount = GetArg("-anonymizeNeutronamount", 0);
     // if(nAnonymizeNeutronAmount > 999999) nAnonymizeNeutronAmount = 999999;
     // if(nAnonymizeNeutronAmount < 2) nAnonymizeNeutronAmount = 2;
-
-    //lite mode disables all Masternode and Darksend related functionality
-    fLiteMode = GetBoolArg("-litemode", false);
-
-    LogPrintf("[AppInit2] fLiteMode: %d\n", fLiteMode);
-
-    if(fMasterNode && fLiteMode){
-        return InitError("You can not start a masternode in litemode");
-    }
 
     // LogPrintf("Darksend rounds %d\n", nDarksendRounds);
     // LogPrintf("Anonymize Neutron Amount %d\n", nAnonymizeNeutronAmount);

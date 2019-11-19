@@ -38,7 +38,6 @@
 #include <openssl/rand.h>
 #include <openssl/bn.h>
 
-
 // to obtain PRId64 on some old systems
 #define __STDC_FORMAT_MACROS 1
 
@@ -104,7 +103,6 @@ boost::filesystem::path GetMasternodeConfigFile();
 #define MAX_PATH            1024
 #endif
 
-
 /* This GNU C extension enables the compiler to check the format string against the parameters provided.
  * X is the number of the "format string" parameter, and Y is the number of the first variadic parameter.
  * Parameters count from 1.
@@ -115,14 +113,7 @@ boost::filesystem::path GetMasternodeConfigFile();
 #define ATTR_WARN_PRINTF(X,Y)
 #endif
 
-
-
-
-
-//Dark features
-
 extern bool fMasterNode;
-extern bool fLiteMode;
 extern int nDarksendRounds;
 extern int nAnonymizeNeutronAmount;
 extern int nLiquidityProvider;
@@ -211,14 +202,7 @@ boost::filesystem::path GetSpecialFolderPath(int nFolder, bool fCreate = true);
 int RaiseFileDescriptorLimit(int nMinFD);
 void ShrinkDebugFile();
 void runCommand(std::string strCommand);
-
 void GetRandBytes(unsigned char* buf, int num);
-
-
-
-
-
-
 
 inline int roundint(double d)
 {
@@ -239,7 +223,6 @@ inline std::string leftTrim(std::string src, char chr)
 
     return src;
 }
-
 
 template<typename T>
 void skipspaces(T& it)
@@ -310,8 +293,6 @@ bool SoftSetArg(const std::string& strArg, const std::string& strValue);
  */
 bool SoftSetBoolArg(const std::string& strArg, bool fValue);
 
-
-
 bool NewThread(void(*pfn)(void*), void* parg);
 
 #ifdef WIN32
@@ -376,4 +357,3 @@ void TraceThread(const char* name, Callable func)
 }
 
 #endif // BITCOIN_UTIL_H
-
