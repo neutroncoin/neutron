@@ -2281,9 +2281,8 @@ void ThreadCheckDarkSend(CConnman& connman)
             nTick++;
 
             {
-                if (nTick % 60 == 0){
-                    // LOCK2(cs_main, cs_masternodes);
-
+                if (nTick % 60 == 0)
+                {
                     LOCK(cs_main);
 
                     // cs_main is required for doing CMasternode.Check because something
@@ -2299,22 +2298,17 @@ void ThreadCheckDarkSend(CConnman& connman)
             }
 
             if (fDebug)
-                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 25, requestedMasterNodeList);
+                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 5, requestedMasterNodeList);
 
-            // try to sync the masternode list and payment list every 25 ticks from at least 3 nodes
-            // if(nTick % 25 == 0 && requestedMasterNodeList < 3){
-            if (nTick % 25 == 0)
+            // every 5 ticks we try to send some requests (roughly 2.5 seconds)
+            if (nTick % 5 == 0)
             {
-                if (nTick % 400 == 0)
                 {
-                    LOCK(cs_vNodes);
-
-                    BOOST_FOREACH (CNode* pnode, vNodes)
-                    {
-                        pnode->ClearFulfilledRequest("getspork");
-                        pnode->ClearFulfilledRequest("mnsync");
-                        pnode->ClearFulfilledRequest("mnwsync");
-                    }
+                    // randomly clear a node in order to get constant syncing of the lists
+                    int index = GetRandInt(vNodes.size() - 1);
+                    vNodes[index]->ClearFulfilledRequest("getspork");
+                    vNodes[index]->ClearFulfilledRequest("mnsync");
+                    vNodes[index]->ClearFulfilledRequest("mnwsync");
                 }
 
                 if (fDebug)
@@ -2351,7 +2345,7 @@ void ThreadCheckDarkSend(CConnman& connman)
 
                     requestedMasterNodeList++;
 
-                    if (sentRequests >= MAX_REQUESTS_PER_TICK)
+                    if (sentRequests >= MAX_REQUESTS_PER_TICK_CYCLE)
                         break;
                 }
 
@@ -2360,7 +2354,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                     if (!waitMnSyncStarted and (requestedMasterNodeList > 3 && mnodeman.CountEnabled() > 3))
                     {
                         waitMnSyncStarted = true;
-                        nMnSyncWaitTime = GetTime() + 60;
+                        nMnSyncWaitTime = GetTime() + 15;
                         LogPrintf("ThreadCheckDarkSend: Started waiting for mnsync");
                     }
 
@@ -2396,11 +2390,14 @@ void ThreadCheckDarkSend(CConnman& connman)
             //     // If we've used 90% of the Masternode list then drop the oldest first ~30%
             //     int nThreshold_high = nMnCountEnabled * 0.9;
             //     int nThreshold_low = nThreshold_high * 0.7;
-            //     LogPrintf("ThreadCheckDarkSend::Checking vecMasternodesUsed: size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+            //     LogPrintf("ThreadCheckDarkSend::Checking vecMasternodesUsed: size: %d, threshold: %d\n",
+            //               (int) vecMasternodesUsed.size(), nThreshold_high);
 
             //     if((int)vecMasternodesUsed.size() > nThreshold_high) {
-            //         vecMasternodesUsed.erase(vecMasternodesUsed.begin(), vecMasternodesUsed.begin() + vecMasternodesUsed.size() - nThreshold_low);
-            //         LogPrintf("ThreadCheckDarkSend::Cleaning vecMasternodesUsed: new size: %d, threshold: %d\n", (int)vecMasternodesUsed.size(), nThreshold_high);
+            //         vecMasternodesUsed.erase(vecMasternodesUsed.begin(), vecMasternodesUsed.begin() +
+            //                                  vecMasternodesUsed.size() - nThreshold_low);
+            //         LogPrintf("ThreadCheckDarkSend::Cleaning vecMasternodesUsed: new size: %d, threshold: %d\n",
+            //                   (int) vecMasternodesUsed.size(), nThreshold_high);
             //     }
             // }
         }
