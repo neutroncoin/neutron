@@ -24,15 +24,15 @@ using namespace boost;
 
 CCriticalSection cs_darksend;
 
-/** The main object for accessing darksend */
+// The main object for accessing darksend
 CDarkSendPool darkSendPool;
-/** A helper object for signing messages from masternodes */
+// A helper object for signing messages from masternodes
 CDarkSendSigner darkSendSigner;
-/** The current darksends in progress on the network */
+// The current darksends in progress on the network
 std::vector<CDarksendQueue> vecDarksendQueue;
-/** Keep track of the used masternodes */
+// Keep track of the used masternodes
 std::vector<CTxIn> vecMasternodesUsed;
-// keep track of the scanning errors I've seen
+// Keep track of the scanning errors I've seen
 map<uint256, CDarksendBroadcastTx> mapDarksendBroadcastTxes;
 
 CActiveMasternode activeMasternode;

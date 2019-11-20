@@ -1,4 +1,5 @@
 // Copyright (c) 2014-2015 The Darkcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -88,9 +89,11 @@ public:
 
     bool Add(const std::vector<CTxIn> vinIn, int64_t amountIn, const CTransaction collateralIn, const std::vector<CTxOut> voutIn)
     {
-        if(isSet){return false;}
+        if(isSet)
+            return false;
 
-        BOOST_FOREACH(const CTxIn v, vinIn) {
+        BOOST_FOREACH(const CTxIn v, vinIn)
+        {
             CDarkSendEntryVin s = CDarkSendEntryVin();
             s.vin = v;
             sev.push_back(s);
@@ -106,9 +109,13 @@ public:
 
     bool AddSig(const CTxIn& vin)
     {
-        BOOST_FOREACH(CDarkSendEntryVin& s, sev) {
-            if(s.vin.prevout == vin.prevout && s.vin.nSequence == vin.nSequence){
-                if(s.isSigSet){return false;}
+        BOOST_FOREACH(CDarkSendEntryVin& s, sev)
+        {
+            if(s.vin.prevout == vin.prevout && s.vin.nSequence == vin.nSequence)
+            {
+                if(s.isSigSet)
+                    return false;
+
                 s.vin.scriptSig = vin.scriptSig;
                 s.vin.prevPubKey = vin.prevPubKey;
                 s.isSigSet = true;
@@ -126,9 +133,7 @@ public:
     }
 };
 
-//
 // A currently inprogress darksend merge and denomination information
-//
 class CDarksendQueue
 {
 public:
@@ -162,20 +167,26 @@ public:
     bool GetAddress(CService &addr)
     {
         CMasternode* pmn = mnodeman.Find(vin);
-        if (pmn != NULL) {
+
+        if (pmn != NULL)
+        {
             addr = pmn->addr;
             return true;
         }
+
         return false;
     }
 
     bool GetProtocolVersion(int &protocolVersion)
     {
         CMasternode* pmn = mnodeman.Find(vin);
-        if (pmn != NULL) {
+
+        if (pmn != NULL)
+        {
             protocolVersion = pmn->protocolVersion;
             return true;
         }
+
         return false;
     }
 
@@ -188,10 +199,9 @@ public:
     }
 
     bool CheckSignature();
-
 };
 
-// store darksend tx signature information
+// Store darksend tx signature information
 class CDarksendBroadcastTx
 {
 public:
@@ -201,9 +211,7 @@ public:
     int64_t sigTime;
 };
 
-//
 // Helper object for signing and checking signatures
-//
 class CDarkSendSigner
 {
 public:
@@ -218,9 +226,7 @@ class CDarksendSession
 
 };
 
-//
 // Used to keep track of current status of darksend pool
-//
 class CDarkSendPool
 {
 public:
@@ -245,9 +251,7 @@ public:
     CScript collateralPubKey;
 
     std::vector<CTxIn> lockedCoins;
-
     uint256 masterNodeBlockHash;
-
     std::string lastMessage;
     bool completedTransaction;
     bool unitTest;
@@ -289,13 +293,16 @@ public:
         SetNull();
     }
 
-    void InitCollateralAddress(){
+    void InitCollateralAddress()
+    {
         std::string strAddress = "";
-            strAddress = (fTestNet ? "n1M2akQLGEG54mWWGbVmLwuxycdjYMUTSA" : "9qKUmSTDAmoDs67WpuUkh6Nhmkm5iUqmbi");
+        strAddress = (fTestNet ? "n1M2akQLGEG54mWWGbVmLwuxycdjYMUTSA" : "9qKUmSTDAmoDs67WpuUkh6Nhmkm5iUqmbi");
+
         SetCollateralAddress(strAddress);
     }
 
-    void SetMinBlockSpacing(int minBlockSpacingIn){
+    void SetMinBlockSpacing(int minBlockSpacingIn)
+    {
         minBlockSpacing = minBlockSpacingIn;
     }
 
@@ -317,11 +324,10 @@ public:
 
     int GetEntriesCount() const
     {
-        if(fMasterNode){
+        if(fMasterNode)
             return entries.size();
-        } else {
+        else
             return entriesCount;
-        }
     }
 
     int GetLastEntryAccepted() const
@@ -341,30 +347,34 @@ public:
 
     void UpdateState(unsigned int newState)
     {
-        if (fMasterNode && (newState == POOL_STATUS_ERROR || newState == POOL_STATUS_SUCCESS)){
+        if (fMasterNode && (newState == POOL_STATUS_ERROR || newState == POOL_STATUS_SUCCESS))
+        {
             LogPrintf("CDarkSendPool::UpdateState() - Can't set state to ERROR or SUCCESS as a masternode. \n");
             return;
         }
 
         LogPrintf("CDarkSendPool::UpdateState() == %d | %d \n", state, newState);
-        if(state != newState){
+
+        if(state != newState)
+        {
             lastTimeChanged = GetTimeMillis();
-            if(fMasterNode) {
+
+            if(fMasterNode)
                 RelayDarkSendStatus(darkSendPool.sessionID, darkSendPool.GetState(), darkSendPool.GetEntriesCount(), MASTERNODE_RESET);
-            }
         }
+
         state = newState;
     }
 
     int GetMaxPoolTransactions()
     {
-
         //use the production amount
         return POOL_MAX_TRANSACTIONS;
     }
 
     //Do we have enough users to take entries?
-    bool IsSessionReady(){
+    bool IsSessionReady()
+    {
         return sessionUsers >= GetMaxPoolTransactions();
     }
 
@@ -376,7 +386,6 @@ public:
     // Passively run Darksend in the background according to the configuration in settings (only for QT)
     bool DoAutomaticDenominating(bool fDryRun=false, bool ready=false);
     bool PrepareDarksendDenominate();
-
 
     // check for process in Darksend
     void Check();
@@ -421,13 +430,9 @@ public:
     int GetDenominationsByAmount(int64_t nAmount, int nDenomTarget=0);
 
     int GetDenominationsByAmounts(std::vector<int64_t>& vecAmount);
-
     static bool IsDenominatedAmount(int64_t nInputAmount);
 };
 
-
 void ConnectToDarkSendMasterNodeWinner();
-
 void ThreadCheckDarkSend(CConnman& connman);
-
 #endif
