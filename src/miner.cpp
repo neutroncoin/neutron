@@ -599,6 +599,9 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
             nLastCoinStakeSearchInterval = 0;
             MilliSleep(5000);
 
+            if (fShutdown)
+                return;
+
             if (!fGenerateBitcoins && !fProofOfStake)
                 continue;
         }
@@ -728,6 +731,9 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
                 break;
 
             if (pindexPrev != pindexBest)
+                break;
+
+            if (fShutdown)
                 break;
 
             // Update nTime every few seconds
