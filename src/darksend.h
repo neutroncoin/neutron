@@ -50,10 +50,6 @@ extern CActiveMasternode activeMasternode;
 //specific messages for the Darksend protocol
 void ProcessMessageDarksend(CNode* pfrom, std::string& strCommand, CDataStream& vRecv);
 
-// get the darksend chain depth for a given input
-int GetInputDarksendRounds(CTxIn in, int rounds=0);
-
-
 // An input in the darksend pool
 class CDarkSendEntryVin
 {
@@ -98,6 +94,7 @@ public:
             s.vin = v;
             sev.push_back(s);
         }
+
         vout = voutIn;
         amount = amountIn;
         collateral = collateralIn;
@@ -289,8 +286,6 @@ public:
         minBlockSpacing = 1;
         nDsqCount = 0;
         lastNewBlock = 0;
-
-        SetNull();
     }
 
     void InitCollateralAddress()
@@ -308,9 +303,6 @@ public:
 
     bool SetCollateralAddress(std::string strAddress);
     void Reset();
-    void SetNull(bool clearEverything=false);
-
-    void UnlockCoins();
 
     bool IsNull() const
     {
@@ -378,58 +370,8 @@ public:
         return sessionUsers >= GetMaxPoolTransactions();
     }
 
-    // Are these outputs compatible with other client in the pool?
-    bool IsCompatibleWithEntries(std::vector<CTxOut> vout);
-    // Is this amount compatible with other client in the pool?
-    bool IsCompatibleWithSession(int64_t nAmount, CTransaction txCollateral, std::string& strReason);
-
-    // Passively run Darksend in the background according to the configuration in settings (only for QT)
-    bool DoAutomaticDenominating(bool fDryRun=false, bool ready=false);
-    bool PrepareDarksendDenominate();
-
-    // check for process in Darksend
-    void Check();
-    // charge fees to bad actors
-    void ChargeFees();
-    // rarely charge fees to pay miners
-    void ChargeRandomFees();
-    void CheckTimeout();
-    // check to make sure a signature matches an input in the pool
-    bool SignatureValid(const CScript& newSig, const CTxIn& newVin);
-    // if the collateral is valid given by a client
-    bool IsCollateralValid(const CTransaction& txCollateral);
-    // add a clients entry to the pool
-    bool AddEntry(const std::vector<CTxIn>& newInput, const int64_t& nAmount, const CTransaction& txCollateral, const std::vector<CTxOut>& newOutput, std::string& error);
-    // add signature to a vin
-    bool AddScriptSig(const CTxIn newVin);
-    // are all inputs signed?
-    bool SignaturesComplete();
-    // as a client, send a transaction to a masternode to start the denomination process
-    void SendDarksendDenominate(std::vector<CTxIn>& vin, std::vector<CTxOut>& vout, int64_t amount);
-    // get masternode updates about the progress of darksend
-    bool StatusUpdate(int newState, int newEntriesCount, int newAccepted, std::string& error, int newSessionID=0);
-
-    // as a client, check and sign the final transaction
-    bool SignFinalTransaction(CTransaction& finalTransactionNew, CNode* node);
-
     // get the last valid block hash for a given modulus
     bool GetLastValidBlockHash(uint256& hash, int mod=1, int nBlockHeight=0);
-    // process a new block
-    void NewBlock();
-    void CompletedTransaction(bool error, std::string lastMessageNew);
-    void ClearLastMessage();
-    // used for liquidity providers
-    bool SendRandomPaymentToSelf();
-    // split up large inputs or make fee sized inputs
-    bool MakeCollateralAmounts();
-    bool CreateDenominated(int64_t nTotalValue);
-    // get the denominations for a list of outputs (returns a bitshifted integer)
-    int GetDenominations(const std::vector<CTxOut>& vout);
-    void GetDenominationsToString(int nDenom, std::string& strDenom);
-    // get the denominations for a specific amount of neutron.
-    int GetDenominationsByAmount(int64_t nAmount, int nDenomTarget=0);
-
-    int GetDenominationsByAmounts(std::vector<int64_t>& vecAmount);
     static bool IsDenominatedAmount(int64_t nInputAmount);
 };
 
