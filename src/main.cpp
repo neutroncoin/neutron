@@ -1621,24 +1621,27 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
                         if (fEnforceMnWinner)
                         {
-                            return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode: actual=%s required=%s",
-                                       hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : ""));
+                            return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode, "
+                                       "actual=%s required=%s, block=%d\n", hasBlockPayee ? paidMN.ToString() : "",
+                                       fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1));
                         }
                         else
                         {
-                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, actual=%s required=%s\n",
-                                       hasBlockPayee ? paidMN.ToString() : "", fPrintAddress ? addressMN.ToString() : "");
+                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, "
+                                      "actual=%s required=%s, block=%d\n", hasBlockPayee ? paidMN.ToString() : "",
+                                      fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1);
                         }
                     }
                     else
                     {
-                        LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s\n", hasBlockPayee ? paidMN.ToString() : "");
+                        LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s, block=%d\n",
+                                  hasBlockPayee ? paidMN.ToString() : "", pindexBest->nHeight + 1);
                     }
                 }
                 else
                 {
                     // case: was not able to determine correct masternode payee
-                    LogPrintf("ConnectBlock() : Did not have expected masternode payee for block %d\n", pindexBest->nHeight+1);
+                    LogPrintf("ConnectBlock() : Did not have expected masternode payee for block %d\n", pindexBest->nHeight + 1);
                 }
 
                 // verify correct payment addr and amount
