@@ -229,37 +229,43 @@ UniValue masternode(const UniValue& params, bool fHelp)
     {
         std::string strCommand = "active";
 
-        if (params.size() == 2){
+        if (params.size() == 2)
             strCommand = params[1].get_str().c_str();
-        }
 
-        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" && strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol" && strCommand != "status"){
-            throw runtime_error(
-                "list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds', 'rank', 'protocol', 'status'\n");
+        if (strCommand != "active" && strCommand != "vin" && strCommand != "pubkey" && strCommand != "lastseen" &&
+            strCommand != "activeseconds" && strCommand != "rank" && strCommand != "protocol" &&
+            strCommand != "score" && strCommand != "status")
+        {
+            throw runtime_error("list supports 'active', 'vin', 'pubkey', 'lastseen', 'activeseconds'"
+                                ", 'rank', 'protocol', 'score', 'status'\n");
         }
 
         UniValue obj(UniValue::VOBJ);
-        BOOST_FOREACH(CMasternode mn, vecMasternodes) {
+
+        BOOST_FOREACH(CMasternode mn, vecMasternodes)
+        {
             mn.Check();
 
-            if(strCommand == "active"){
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       (int)mn.IsEnabled()));
-            } else if (strCommand == "vin") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.vin.prevout.hash.ToString().c_str()));
-            } else if (strCommand == "pubkey") {
+            if(strCommand == "active")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), (int) mn.IsEnabled()));
+            else if (strCommand == "vin")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), mn.vin.prevout.hash.ToString().c_str()));
+            else if (strCommand == "pubkey")
                 obj.push_back(Pair(mn.addr.ToString().c_str(), CBitcoinAddress(mn.pubkey.GetID()).ToString().c_str()));
-            } else if (strCommand == "protocol") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)mn.protocolVersion));
-            } else if (strCommand == "lastseen") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)mn.lastTimeSeen));
-            } else if (strCommand == "activeseconds") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       (int64_t)(mn.lastTimeSeen - mn.now)));
-            } else if (strCommand == "rank") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       (int)(GetMasternodeRank(mn.vin, pindexBest->nHeight))));
-            } else if (strCommand == "status") {
-                obj.push_back(Pair(mn.addr.ToString().c_str(),       mn.GetStatus()));
-            }
+            else if (strCommand == "protocol")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), (int64_t) mn.protocolVersion));
+            else if (strCommand == "lastseen")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), (int64_t) mn.lastTimeSeen));
+            else if (strCommand == "activeseconds")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), (int64_t) (mn.lastTimeSeen - mn.now)));
+            else if (strCommand == "rank")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), (int) (GetMasternodeRank(mn.vin, pindexBest->nHeight))));
+            else if (strCommand == "score")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), mn.CalculateScore(pindexBest->nHeight).ToString().c_str()));
+            else if (strCommand == "status")
+                obj.push_back(Pair(mn.addr.ToString().c_str(), mn.GetStatus()));
         }
+
         return obj;
     }
 
