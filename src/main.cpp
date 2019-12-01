@@ -1607,6 +1607,16 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                 {
                     if (blockPayee == expectedPayee)
                         fPaidCorrectMn = true;
+                    else
+                    {
+                        /* if the current block payment is invalid it might just be a matter of the
+                           payment list being out of sync... */
+                        LogPrintf("ConnectBlock() : Possible discrepancy found in masternode payment, recalculating payee...\n");
+
+                        masternodePayments.ProcessBlock(pindex->nHeight);
+                        masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee);
+                        fPaidCorrectMn = blockPayee == expectedPayee;
+                    }
 
                     CTxDestination paidDest;
                     bool hasBlockPayee = ExtractDestination(blockPayee, paidDest);
