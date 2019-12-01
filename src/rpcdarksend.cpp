@@ -75,90 +75,93 @@ UniValue masternode(const UniValue& params, bool fHelp)
     if (params.size() >= 1)
         strCommand = params[0].get_str();
 
-    if (fHelp  ||
-        (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" && strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" && strCommand != "list" && strCommand != "list-conf" && strCommand != "count"  && strCommand != "enforce"
-            && strCommand != "debug" && strCommand != "current" && strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" && strCommand != "outputs"))
-        throw runtime_error(
-            "masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|count|debug|current|winners|genkey|enforce|outputs> [passphrase]\n");
+    if (fHelp  || (strCommand != "start" && strCommand != "start-alias" && strCommand != "start-many" &&
+                   strCommand != "stop" && strCommand != "stop-alias" && strCommand != "stop-many" &&
+                   strCommand != "list" && strCommand != "list-conf" && strCommand != "count" &&
+                   strCommand != "enforce" && strCommand != "debug" && strCommand != "current" &&
+                   strCommand != "winners" && strCommand != "genkey" && strCommand != "connect" &&
+                   strCommand != "outputs"))
+        throw runtime_error("masternode <start|start-alias|start-many|stop|stop-alias|stop-many|list|list-conf|"
+                            "count|debug|current|winners|genkey|enforce|outputs> [passphrase]\n");
 
     if (strCommand == "stop")
     {
-        if(!fMasterNode) return "you must set masternode=1 in the configuration";
+        if (!fMasterNode)
+            return "you must set masternode=1 in the configuration";
 
-        if(pwalletMain->IsLocked()) {
+        if (pwalletMain->IsLocked())
+        {
             SecureString strWalletPass;
             strWalletPass.reserve(100);
 
-            if (params.size() == 2){
+            if (params.size() == 2)
                 strWalletPass = params[1].get_str().c_str();
-            } else {
-                throw runtime_error(
-                    "Your wallet is locked, passphrase is required\n");
-            }
+            else
+                throw runtime_error("Your wallet is locked, passphrase is required\n");
 
-            if(!pwalletMain->Unlock(strWalletPass)){
+            if (!pwalletMain->Unlock(strWalletPass))
                 return "incorrect passphrase";
-            }
         }
 
         std::string errorMessage;
-        if(!activeMasternode.StopMasterNode(errorMessage)) {
+
+        if (!activeMasternode.StopMasterNode(errorMessage))
             return "stop failed: " + errorMessage;
-        }
+
         pwalletMain->Lock();
 
-        if(activeMasternode.status == MASTERNODE_STOPPED) return "successfully stopped masternode";
-        if(activeMasternode.status == MASTERNODE_NOT_CAPABLE) return "not capable masternode";
+        if (activeMasternode.status == MASTERNODE_STOPPED)
+            return "successfully stopped masternode";
+
+        if (activeMasternode.status == MASTERNODE_NOT_CAPABLE)
+            return "not capable masternode";
 
         return "unknown";
     }
 
     if (strCommand == "stop-alias")
     {
-        if (params.size() < 2){
-            throw runtime_error(
-            "command needs at least 2 parameters\n");
-        }
+        if (params.size() < 2)
+            throw runtime_error("command needs at least 2 parameters\n");
 
         std::string alias = params[1].get_str().c_str();
 
-        if(pwalletMain->IsLocked()) {
+        if (pwalletMain->IsLocked())
+        {
             SecureString strWalletPass;
             strWalletPass.reserve(100);
 
-            if (params.size() == 3){
+            if (params.size() == 3)
                 strWalletPass = params[2].get_str().c_str();
-            } else {
-                throw runtime_error(
-                "Your wallet is locked, passphrase is required\n");
-            }
+            else
+                throw runtime_error("Your wallet is locked, passphrase is required\n");
 
-            if(!pwalletMain->Unlock(strWalletPass)){
+            if (!pwalletMain->Unlock(strWalletPass))
                 return "incorrect passphrase";
-            }
         }
 
         bool found = false;
-
         UniValue statusObj(UniValue::VOBJ);
-
         statusObj.push_back(Pair("alias", alias));
 
-        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
-            if(mne.getAlias() == alias) {
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries())
+        {
+            if (mne.getAlias() == alias)
+            {
                 found = true;
                 std::string errorMessage;
                 bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
-
                 statusObj.push_back(Pair("result", result ? "successful" : "failed"));
-                if(!result) {
+
+                if (!result)
                     statusObj.push_back(Pair("errorMessage", errorMessage));
-                }
+
                 break;
             }
         }
 
-        if(!found) {
+        if (!found)
+        {
             statusObj.push_back(Pair("result", "failed"));
             statusObj.push_back(Pair("errorMessage", "could not find alias in config. Verify with list-conf."));
         }
@@ -169,32 +172,29 @@ UniValue masternode(const UniValue& params, bool fHelp)
 
     if (strCommand == "stop-many")
     {
-        if(pwalletMain->IsLocked()) {
+        if (pwalletMain->IsLocked())
+        {
             SecureString strWalletPass;
             strWalletPass.reserve(100);
 
-            if (params.size() == 2){
+            if (params.size() == 2)
                 strWalletPass = params[1].get_str().c_str();
-            } else {
-                throw runtime_error(
-                "Your wallet is locked, passphrase is required\n");
-            }
+            else
+                throw runtime_error("Your wallet is locked, passphrase is required\n");
 
-            if(!pwalletMain->Unlock(strWalletPass)){
+            if (!pwalletMain->Unlock(strWalletPass))
                 return "incorrect passphrase";
-            }
         }
 
         int total = 0;
         int successful = 0;
         int fail = 0;
 
-
         UniValue resultsObj(UniValue::VOBJ);
 
-        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries()) {
+        BOOST_FOREACH(CMasternodeConfig::CMasternodeEntry mne, masternodeConfig.getEntries())
+        {
             total++;
-
             std::string errorMessage;
             bool result = activeMasternode.StopMasterNode(mne.getIp(), mne.getPrivKey(), errorMessage);
 
@@ -202,23 +202,25 @@ UniValue masternode(const UniValue& params, bool fHelp)
             statusObj.push_back(Pair("alias", mne.getAlias()));
             statusObj.push_back(Pair("result", result ? "successful" : "failed"));
 
-            if(result) {
+            if (result)
                 successful++;
-            } else {
+            else
+            {
                 fail++;
                 statusObj.push_back(Pair("errorMessage", errorMessage));
             }
 
             resultsObj.push_back(Pair("status", statusObj));
         }
-        pwalletMain->Lock();
 
+        pwalletMain->Lock();
         UniValue returnObj(UniValue::VOBJ);
 
-        returnObj.push_back(Pair("overall", "Successfully stopped " + boost::lexical_cast<std::string>(successful) + " masternodes, failed to stop " +
-                boost::lexical_cast<std::string>(fail) + ", total " + boost::lexical_cast<std::string>(total)));
-        returnObj.push_back(Pair("detail", resultsObj));
+        returnObj.push_back(Pair("overall", "Successfully stopped " + boost::lexical_cast<std::string>(successful) +
+                                 " masternodes, failed to stop " + boost::lexical_cast<std::string>(fail) +
+                                 ", total " + boost::lexical_cast<std::string>(total)));
 
+        returnObj.push_back(Pair("detail", resultsObj));
         return returnObj;
 
     }
