@@ -1529,9 +1529,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         fEnforceMnWinner = true;
 
         if (fDebug)
-        {
             LogPrintf("fEnforceMnWinner enabled\n");
-        }
     }
 
     if (IsProofOfWork())
@@ -3145,6 +3143,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CAddress addrFrom;
         uint64_t nNonce = 1;
         vRecv >> pfrom->nVersion >> pfrom->nServices >> nTime >> addrMe;
+
         if (pfrom->nVersion < ActiveProtocol())
         {
             // disconnect from peers older than this proto version
@@ -3810,29 +3809,15 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
 int ActiveProtocol()
 {
-    /*
-        Allowed: 60019-60020 until spork-date
-        Banned:  60018 or below
-    */
-
-    if (sporkManager.IsSporkActive(SPORK_11_PROTOCOL_V301_ENFORCEMENT)){
-    // v3.0.1+ - 60020
-    return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT;
-   } else {
-    // v3.0.0+ - 60019
-    return MIN_PEER_PROTO_VERSION_AFTER_V3_ENFORCEMENT;
+    if (sporkManager.IsSporkActive(SPORK_11_PROTOCOL_V301_ENFORCEMENT))
+    {
+        if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
+            return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT_AND_MNENFORCE;
+        else
+            return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT;
     }
-    // v2.1.0+ - 60018
-    // return MIN_PEER_PROTO_VERSION_AFTER_V210_ENFORCEMENT;
-
-    // // v2.0.2 to v2.0.5 - 60017
-    // return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
-
-    // // v2.0.1 - 60017
-    // return MIN_PEER_PROTO_VERSION_AFTER_V201_ENFORCEMENT;
-
-    // // v2.0.0 - 60016
-    // return MIN_PEER_PROTO_VERSION_AFTER_V200_ENFORCEMENT;
+    else
+        return MIN_PEER_PROTO_VERSION_AFTER_V3_ENFORCEMENT;
 }
 
 // requires LOCK(cs_vRecvMsg)
