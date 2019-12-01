@@ -274,70 +274,96 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         mnodeman.AskForMN(pfrom, vin);
 
-    } else if (strCommand == NetMsgType::DSEG) { //Get masternode list or specific entry
+    }
+    else if (strCommand == NetMsgType::DSEG) // Get masternode list or specific entry
+    {
         CTxIn vin;
         vRecv >> vin;
 
-        if(fDebug) LogPrintf("dseg - Masternode list, vin=%s, prevout=%s\n", vin.ToString().c_str(), vin.prevout.hash.ToString());
+        if (fDebug)
+        {
+            LogPrintf("dseg - Masternode list, vin=%s, prevout=%s\n", vin.ToString().c_str(),
+                      vin.prevout.hash.ToString());
+        }
 
-        if(vin == CTxIn()) { //only should ask for this once
-            //local network
-            //Note tor peers show up as local proxied addrs //if(!pfrom->addr.IsRFC1918())//&& !Params().MineBlocksOnDemand())
-            //{
-                std::map<CNetAddr, int64_t>::iterator i = mAskedUsForMasternodeList.find(pfrom->addr);
-                if (i != mAskedUsForMasternodeList.end())
+        if (vin == CTxIn()) // Should only ask for this once
+        {
+            std::map<CNetAddr, int64_t>::iterator i = mAskedUsForMasternodeList.find(pfrom->addr);
+
+            if (i != mAskedUsForMasternodeList.end())
+            {
+                int64_t t = (*i).second;
+
+                if (GetTime() < t)
                 {
-                    int64_t t = (*i).second;
-                    if (GetTime() < t) {
-                       // LogPrintf("dseg - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
-                       // pfrom->Misbehaving(34);
-                       // return;
-                    }
+                   // LogPrintf("dseg - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
+                   // pfrom->Misbehaving(34);
+                   // return;
                 }
+            }
 
-                int64_t askAgain = GetTime() + MASTERNODE_DSEG_SECONDS;
-                mAskedUsForMasternodeList[pfrom->addr] = askAgain;
-            //}
-        } //else, asking for a specific node which is ok
+            int64_t askAgain = GetTime() + MASTERNODE_DSEG_SECONDS;
+            mAskedUsForMasternodeList[pfrom->addr] = askAgain;
+        } // else, asking for a specific node which is ok
 
         LOCK(cs_masternodes);
         int count = vecMasternodes.size();
         int i = 0;
 
-        BOOST_FOREACH(CMasternode mn, vecMasternodes) {
+        BOOST_FOREACH(CMasternode mn, vecMasternodes)
+        {
+            if (mn.addr.IsRFC1918())
+                continue; // local network
 
-            if(mn.addr.IsRFC1918()) continue; //local network
-
-            if(vin == CTxIn()){
+            if (vin == CTxIn())
+            {
                 mn.Check();
-                if(mn.IsEnabled()) {
-                    if(fDebug) LogPrintf("dseg - Sending masternode entry - %s \n", mn.addr.ToString().c_str());
-                    pfrom->PushMessage(NetMsgType::DSEE, mn.vin, mn.addr, mn.sig, mn.now, mn.pubkey, mn.pubkey2, count, i, mn.lastTimeSeen, mn.protocolVersion);
+
+                if (mn.IsEnabled())
+                {
+                    if (fDebug)
+                        LogPrintf("dseg - Sending masternode entry - %s \n", mn.addr.ToString().c_str());
+
+                    pfrom->PushMessage(NetMsgType::DSEE, mn.vin, mn.addr, mn.sig, mn.now, mn.pubkey, mn.pubkey2,
+                                       count, i, mn.lastTimeSeen, mn.protocolVersion);
                 }
-            } else if (vin == mn.vin) {
-                if(fDebug) LogPrintf("dseg - Sending masternode entry - %s \n", mn.addr.ToString().c_str());
-                pfrom->PushMessage(NetMsgType::DSEE, mn.vin, mn.addr, mn.sig, mn.now, mn.pubkey, mn.pubkey2, count, i, mn.lastTimeSeen, mn.protocolVersion);
-                LogPrintf("dseg - Sent 1 masternode entries to peer %s (%s)\n", pfrom->GetId(), pfrom->addr.ToString().c_str());
+            }
+            else if (vin == mn.vin)
+            {
+                if (fDebug)
+                    LogPrintf("dseg - Sending masternode entry - %s \n", mn.addr.ToString().c_str());
+
+                pfrom->PushMessage(NetMsgType::DSEE, mn.vin, mn.addr, mn.sig, mn.now, mn.pubkey, mn.pubkey2,
+                                   count, i, mn.lastTimeSeen, mn.protocolVersion);
+
+                LogPrintf("dseg - Sent 1 masternode entries to peer %s (%s)\n",
+                          pfrom->GetId(), pfrom->addr.ToString().c_str());
                 return;
             }
+
             i++;
         }
 
         LogPrintf("dseg - Sent %d masternode entries to %s\n", count, pfrom->addr.ToString().c_str());
     }
+    else if (strCommand == NetMsgType::MASTERNODEPAYMENTSYNC) // Masternode Payments Request Sync
+    {
+        if (pfrom->HasFulfilledRequest(NetMsgType::MASTERNODEPAYMENTSYNC))
+        {
+            if (fDebug)
+            {
+                LogPrintf("mnget - peer already asked me for the list, peer=%d (%s)\n",
+                          pfrom->id, pfrom->addr.ToString().c_str());
+            }
 
-    else if (strCommand == NetMsgType::MASTERNODEPAYMENTSYNC) { //Masternode Payments Request Sync
-        if(pfrom->HasFulfilledRequest(NetMsgType::MASTERNODEPAYMENTSYNC)) {
-            // Asking for the payments list multiple times in a short period of time is no good
-            LogPrintf("mnget - peer already asked me for the list, peer=%d (%s)\n", pfrom->id, pfrom->addr.ToString().c_str());
-            // TODO: maybe enable this later -- Misbehaving(pfrom->GetId(), 20);
             return;
         }
 
         // Ignore such requests until we are fully synced.
         // We could start processing this after masternode list is synced
         // but this is a heavy one so it's better to finish sync first.
-        if (!isMasternodeListSynced) return;
+        if (!isMasternodeListSynced)
+            return;
 
         pfrom->FulfilledRequest(NetMsgType::MASTERNODEPAYMENTSYNC);
         masternodePayments.Sync(pfrom);
@@ -349,13 +375,18 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
         int a = 0;
         vRecv >> winner >> a;
 
-        if (pfrom->nVersion < ActiveProtocol()) {
-            LogPrintf("%s : mnw -- peer=%d (%s) using obsolete version %i\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE, strprintf("Version must be %d or greater", ActiveProtocol()));
+        if (pfrom->nVersion < ActiveProtocol())
+        {
+            LogPrintf("%s : mnw -- peer=%d (%s) using obsolete version %i\n", __func__,
+                      pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
+
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
+                               strprintf("Version must be %d or greater", ActiveProtocol()));
             return;
         }
 
-        if(pindexBest == NULL) return;
+        if(pindexBest == NULL)
+            return;
 
         CTxDestination address1;
         ExtractDestination(winner.payee, address1);
@@ -363,14 +394,26 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         uint256 nHash = winner.GetHash();
 
-        if(mapSeenMasternodeVotes.count(nHash)) {
-            if(fDebug) LogPrintf("mnw - seen vote %s address=%s nBlockHeight=%d nHeight=%d\n", nHash.ToString(), address2.ToString(), winner.nBlockHeight, pindexBest->nHeight);
+        if(mapSeenMasternodeVotes.count(nHash))
+        {
+            if(fDebug)
+            {
+                LogPrintf("mnw - seen vote %s address=%s nBlockHeight=%d nHeight=%d\n", nHash.ToString(),
+                          address2.ToString(), winner.nBlockHeight, pindexBest->nHeight);
+            }
+
             return;
         }
 
-        int nFirstBlock = pindexBest->nHeight - (mnodeman.CountEnabled()*1.25);
-        if (winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > pindexBest->nHeight+20) {
-            if(fDebug) LogPrintf("mnw - winner out of range - nFirstBlock=%d, nBlockHeight=%d, nHeight=%d\n", nFirstBlock, winner.nBlockHeight, pindexBest->nHeight);
+        int nFirstBlock = pindexBest->nHeight - (mnodeman.CountEnabled() * 1.25);
+        if (winner.nBlockHeight < nFirstBlock || winner.nBlockHeight > pindexBest->nHeight + 20)
+        {
+            if(fDebug)
+            {
+                LogPrintf("mnw - winner out of range - nFirstBlock=%d, nBlockHeight=%d, nHeight=%d\n",
+                          nFirstBlock, winner.nBlockHeight, pindexBest->nHeight);
+            }
+
             return;
         }
 
