@@ -791,10 +791,17 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
     //check to see if there is already a winner set for this block.
     //if a winner is set, compare scores and update if new winner is higher score
     bool foundBlock = false;
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning){
-        if(winner.nBlockHeight == winnerIn.nBlockHeight) {
+
+    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    {
+        if(winner.nBlockHeight == winnerIn.nBlockHeight)
+        {
             foundBlock = true;
-            if(winner.score < winnerIn.score){
+
+            if(winner.score <= winnerIn.score)
+            {
+                LogPrintf("%s: New masternode winner has an equal or higher score - replacing\n", __func__);
+
                 winner.score = winnerIn.score;
                 winner.vin = winnerIn.vin;
                 winner.payee = winnerIn.payee;
@@ -802,11 +809,14 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
 
                 return true;
             }
+            else
+                LogPrintf("%s: New masternode winner has a lower score - ignoring\n", __func__);
         }
     }
 
     // if it's not in the vector
-    if(!foundBlock){
+    if(!foundBlock)
+    {
         LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
         vWinning.push_back(winnerIn);
         mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
