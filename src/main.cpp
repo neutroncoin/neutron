@@ -1524,12 +1524,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
     }
 
-    // enable mandatory checks
-    if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT)) {
-        fEnforceMnWinner = true;
+    fEnforceMnWinner = sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT);
 
-        if (fDebug)
-            LogPrintf("fEnforceMnWinner enabled\n");
+    if (fDebug && fEnforceMnWinner)
+        LogPrintf("Specific masternode winner enforcement enabled\n");
     }
 
     if (IsProofOfWork())
