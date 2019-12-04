@@ -1528,7 +1528,6 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
     if (fDebug && fEnforceMnWinner)
         LogPrintf("Specific masternode winner enforcement enabled\n");
-    }
 
     if (IsProofOfWork())
     {
@@ -1609,7 +1608,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                            payment list being out of sync... */
                         LogPrintf("ConnectBlock() : Possible discrepancy found in masternode payment, recalculating payee...\n");
 
-                        masternodePayments.ProcessBlock(pindex->nHeight);
+                        masternodePayments.ProcessBlock(pindex->nHeight, reorganize);
                         masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee);
                         fPaidCorrectMn = blockPayee == expectedPayee;
                     }

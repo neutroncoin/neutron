@@ -279,8 +279,8 @@ public:
 
     uint64_t CalculateScore(uint256 blockHash, CTxIn& vin);
     bool GetWinningMasternode(int nBlockHeight, CTxIn& vinOut);
-    bool AddWinningMasternode(CMasternodePaymentWinner& winner);
-    bool ProcessBlock(int nBlockHeight);
+    bool AddWinningMasternode(CMasternodePaymentWinner& winner, bool reorganize=false);
+    bool ProcessBlock(int nBlockHeight, bool reorganize=false);
     bool ProcessManyBlocks(int nBlockHeight);
     void Relay(CMasternodePaymentWinner& winner);
     void Sync(CNode* node);

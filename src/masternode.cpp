@@ -450,9 +450,8 @@ void ProcessMessageMasternode(CNode* pfrom, std::string& strCommand, CDataStream
 
         mapSeenMasternodeVotes.insert(make_pair(nHash, winner));
 
-        if(masternodePayments.AddWinningMasternode(winner)){
+        if (masternodePayments.AddWinningMasternode(winner))
             masternodePayments.Relay(winner);
-        }
     }
 }
 
@@ -786,7 +785,7 @@ bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
     return false;
 }
 
-bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerIn)
+bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerIn, bool reorganize)
 {
     //check to see if there is already a winner set for this block.
     //if a winner is set, compare scores and update if new winner is higher score
@@ -798,9 +797,10 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
         {
             foundBlock = true;
 
-            if(winner.score <= winnerIn.score)
+            if(reorganize || winner.score <= winnerIn.score)
             {
-                LogPrintf("%s: New masternode winner has an equal or higher score - replacing\n", __func__);
+                LogPrintf("%s: New masternode winner %s - replacing\n", __func__,
+                          reorganize ? "during reorganize" : "has an equal or higher score");
 
                 winner.score = winnerIn.score;
                 winner.vin = winnerIn.vin;
@@ -814,7 +814,6 @@ bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerI
         }
     }
 
-    // if it's not in the vector
     if(!foundBlock)
     {
         LogPrintf("CMasternodePayments::AddWinningMasternode() Adding block %d\n", winnerIn.nBlockHeight);
@@ -844,26 +843,27 @@ void CMasternodePayments::CleanPaymentList()
     }
 }
 
-bool CMasternodePayments::ProcessBlock(int nBlockHeight)
+bool CMasternodePayments::ProcessBlock(int nBlockHeight, bool reorganize)
 {
     CMasternodePaymentWinner winner;
+
     {
         LOCK(cs_masternodes);
         // scan for winner
         unsigned int score = 0;
-        for(CMasternode mn : vecMasternodes) {
+        for (CMasternode mn : vecMasternodes)
+        {
             mn.Check();
 
-            if(!mn.IsEnabled()) {
+            if (!mn.IsEnabled())
                 continue;
-            }
 
             // calculate the score for each masternode
             uint256 nScore_256 = mn.CalculateScore(nBlockHeight);
             unsigned int n2 = static_cast<unsigned int>(nScore_256.Get64());
 
             // determine the winner
-            if(n2 > score) {
+            if (n2 > score) {
                 score = n2;
                 winner.score = n2;
                 winner.nBlockHeight = nBlockHeight;
@@ -874,14 +874,16 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     }
 
     //if we can't find someone to get paid, pick randomly
-    if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0) {
+    if(winner.nBlockHeight == 0 && vecMasternodes.size() > 0)
+    {
         LogPrintf("CMasternodePayments::ProcessBlock -- Using random mn as winner\n");
         winner.score = 0;
         winner.nBlockHeight = nBlockHeight;
-
         unsigned int nHeightOffset = nBlockHeight;
+
         if (nHeightOffset > vecMasternodes.size() - 1)
             nHeightOffset = (vecMasternodes.size() - 1) % nHeightOffset;
+
         winner.vin = vecMasternodes[nHeightOffset].vin;
         winner.payee = GetScriptForDestination(vecMasternodes[nHeightOffset].pubkey.GetID());
     }
@@ -889,7 +891,6 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     CTxDestination address1;
     ExtractDestination(winner.payee, address1);
     CBitcoinAddress address2(address1);
-
     LogPrintf("CMasternodePayments::ProcessBlock -- Winner: payee=%s, nBlockHeight=%d\n", address2.ToString(), nBlockHeight);
 
     // LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
@@ -903,13 +904,19 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight)
     //     }
     // }
 
-    if (AddWinningMasternode(winner)) {
-        if (enabled) { // only if active masternode
+    if (AddWinningMasternode(winner, reorganize))
+    {
+        if (enabled)
+        {
             LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
+
             if (Sign(winner))
+            {
                 LogPrintf("CMasternodePayments::ProcessBlock -- Relay Winner\n");
                 Relay(winner);
+            }
         }
+
         return true;
     }
 
