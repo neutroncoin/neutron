@@ -322,6 +322,18 @@ string CRPCTable::help(string strCommand) const
     return strRet;
 }
 
+UniValue debug(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 1)
+    {
+        throw runtime_error("debug <enabled>\n"
+                            "<enabled> is true or false and controls if debug messages should be enabled.");
+    }
+
+    fDebug = params[0].get_bool();
+    return true;
+}
+
 UniValue help(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
@@ -358,6 +370,7 @@ static const CRPCCommand vRPCCommands[] =
     /* Overall control/query calls */
     { "getinfo",                &getinfo,                true,       false },
     { "getdebuginfo",           &getdebuginfo,           true,       false },
+    { "debug",                  &debug,                  true,       true },
     { "help",                   &help,                   true,       true },
     { "stop",                   &stop,                   true,       true },
 
@@ -1486,6 +1499,7 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "echojson", 8, "arg8" },
     { "echojson", 9, "arg9" },
 
+    { "debug", 0, "enabled" },
     { "stop", 0, "detach" },
     { "reservebalance", 0, "reserve" },
     { "reservebalance", 1, "amount" },
