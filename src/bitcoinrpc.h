@@ -1,5 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -15,15 +17,12 @@ class CBlockIndex;
 #include "json/json_spirit_reader_template.h"
 #include "json/json_spirit_writer_template.h"
 #include "json/json_spirit_utils.h"
-
 #include "util.h"
 #include "checkpoints.h"
-
 #include "univalue.h"
 
 class CRPCCommand;
 
-//! HTTP status codes
 enum HTTPStatusCode
 {
     HTTP_OK                    = 200,
@@ -36,52 +35,52 @@ enum HTTPStatusCode
     HTTP_SERVICE_UNAVAILABLE   = 503,
 };
 
-//! Bitcoin RPC error codes
 enum RPCErrorCode
 {
-    //! Standard JSON-RPC 2.0 errors
+    // Standard JSON-RPC 2.0 errors
     RPC_INVALID_REQUEST  = -32600,
     RPC_METHOD_NOT_FOUND = -32601,
     RPC_INVALID_PARAMS   = -32602,
     RPC_INTERNAL_ERROR   = -32603,
     RPC_PARSE_ERROR      = -32700,
 
-    //! General application defined errors
-    RPC_MISC_ERROR                  = -1,  //!< std::exception thrown in command handling
-    RPC_FORBIDDEN_BY_SAFE_MODE      = -2,  //!< Server is in safe mode, and command is not allowed in safe mode
-    RPC_TYPE_ERROR                  = -3,  //!< Unexpected type was passed as parameter
-    RPC_INVALID_ADDRESS_OR_KEY      = -5,  //!< Invalid address or key
-    RPC_OUT_OF_MEMORY               = -7,  //!< Ran out of memory during operation
-    RPC_INVALID_PARAMETER           = -8,  //!< Invalid, missing or duplicate parameter
-    RPC_DATABASE_ERROR              = -20, //!< Database error
-    RPC_DESERIALIZATION_ERROR       = -22, //!< Error parsing or validating structure in raw format
+    // General application defined errors
+    RPC_MISC_ERROR                  = -1,  // std::exception thrown in command handling
+    RPC_FORBIDDEN_BY_SAFE_MODE      = -2,  // Server is in safe mode, and command is not allowed in safe mode
+    RPC_TYPE_ERROR                  = -3,  // Unexpected type was passed as parameter
+    RPC_INVALID_ADDRESS_OR_KEY      = -5,  // Invalid address or key
+    RPC_OUT_OF_MEMORY               = -7,  // Ran out of memory during operation
+    RPC_INVALID_PARAMETER           = -8,  // Invalid, missing or duplicate parameter
+    RPC_DATABASE_ERROR              = -20, // Database error
+    RPC_DESERIALIZATION_ERROR       = -22, // Error parsing or validating structure in raw format
 
-    //! P2P client errors
-    RPC_CLIENT_NOT_CONNECTED        = -9,  //!< Bitcoin is not connected
-    RPC_CLIENT_IN_INITIAL_DOWNLOAD  = -10, //!< Still downloading initial blocks
-    RPC_CLIENT_NODE_ALREADY_ADDED   = -23, //!< Node is already added
-    RPC_CLIENT_NODE_NOT_ADDED       = -24, //!< Node has not been added before
-    RPC_CLIENT_NODE_NOT_CONNECTED   = -29, //!< Node to disconnect not found in connected nodes
-    RPC_CLIENT_INVALID_IP_OR_SUBNET = -30, //!< Invalid IP/Subnet
-    RPC_CLIENT_P2P_DISABLED         = -31, //!< No valid connection manager instance found
+    // P2P client errors
+    RPC_CLIENT_NOT_CONNECTED        = -9,
+    RPC_CLIENT_IN_INITIAL_DOWNLOAD  = -10, // Still downloading initial blocks
+    RPC_CLIENT_NODE_ALREADY_ADDED   = -23, // Node is already added
+    RPC_CLIENT_NODE_NOT_ADDED       = -24, // Node has not been added before
+    RPC_CLIENT_NODE_NOT_CONNECTED   = -29, // Node to disconnect not found in connected nodes
+    RPC_CLIENT_INVALID_IP_OR_SUBNET = -30, // Invalid IP/Subnet
+    RPC_CLIENT_P2P_DISABLED         = -31, // No valid connection manager instance found
 
-    //! Wallet errors
-    RPC_WALLET_ERROR                = -4,  //!< Unspecified problem with wallet (key not found etc.)
-    RPC_WALLET_INSUFFICIENT_FUNDS   = -6,  //!< Not enough funds in wallet or account
-    RPC_WALLET_INVALID_ACCOUNT_NAME = -11, //!< Invalid account name
-    RPC_WALLET_KEYPOOL_RAN_OUT      = -12, //!< Keypool ran out, call keypoolrefill first
-    RPC_WALLET_UNLOCK_NEEDED        = -13, //!< Enter the wallet passphrase with walletpassphrase first
-    RPC_WALLET_PASSPHRASE_INCORRECT = -14, //!< The wallet passphrase entered was incorrect
-    RPC_WALLET_WRONG_ENC_STATE      = -15, //!< Command given in wrong wallet encryption state (encrypting an encrypted wallet etc.)
-    RPC_WALLET_ENCRYPTION_FAILED    = -16, //!< Failed to encrypt the wallet
-    RPC_WALLET_ALREADY_UNLOCKED     = -17, //!< Wallet is already unlocked
+    // Wallet errors
+    RPC_WALLET_ERROR                = -4,  // Unspecified problem with wallet (key not found etc.)
+    RPC_WALLET_INSUFFICIENT_FUNDS   = -6,  // Not enough funds in wallet or account
+    RPC_WALLET_INVALID_ACCOUNT_NAME = -11, // Invalid account name
+    RPC_WALLET_KEYPOOL_RAN_OUT      = -12, // Keypool ran out, call keypoolrefill first
+    RPC_WALLET_UNLOCK_NEEDED        = -13, // Enter the wallet passphrase with walletpassphrase first
+    RPC_WALLET_PASSPHRASE_INCORRECT = -14, // The wallet passphrase entered was incorrect
+    RPC_WALLET_WRONG_ENC_STATE      = -15, // Command given in wrong wallet encryption state (encrypting an encrypted wallet etc.)
+    RPC_WALLET_ENCRYPTION_FAILED    = -16, // Failed to encrypt the wallet
+    RPC_WALLET_ALREADY_UNLOCKED     = -17, // Wallet is already unlocked
 };
 
-/** Wrapper for UniValue::VType, which includes typeAny:
- * Used to denote don't care type. Only used by RPCTypeCheckObj */
-struct UniValueType {
-    UniValueType(UniValue::VType _type) : typeAny(false), type(_type) {}
-    UniValueType() : typeAny(true) {}
+/* Wrapper for UniValue::VType, which includes typeAny:
+   Used to denote don't care type. Only used by RPCTypeCheckObj */
+struct UniValueType
+{
+    UniValueType(UniValue::VType _type) : typeAny(false), type(_type) { }
+    UniValueType() : typeAny(true) {  }
     bool typeAny;
     UniValue::VType type;
 };
@@ -108,44 +107,24 @@ UniValue JSONRPCError(int code, const std::string& message);
 void ThreadRPCServer(void* parg);
 int CommandLineRPC(int argc, char *argv[]);
 
-/** Convert parameter values for RPC call from strings to command-specific JSON objects. */
+// Convert parameter values for RPC call from strings to command-specific JSON objects
 UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::string> &strParams);
 
-/** Convert named arguments to command-specific RPC representation */
+// Convert named arguments to command-specific RPC representation
 UniValue RPCConvertNamedValues(const std::string& strMethod, const std::vector<std::string>& strParams);
 
-/** Non-RFC4627 JSON parser, accepts internal values (such as numbers, true, false, null)
- * as well as objects and arrays.
- */
+/* Non-RFC4627 JSON parser, accepts internal values (such as numbers, true, false, null)
+   as well as objects and arrays. */
 UniValue ParseNonRFCJSONValue(const std::string& strVal);
 
-/** Query whether RPC is running */
 bool IsRPCRunning();
 
-/**
- * Type-check arguments; throws JSONRPCError if wrong type given. Does not check that
- * the right number of arguments are passed, just that any passed are the correct type.
- */
 void RPCTypeCheck(const UniValue& params,
                   const std::list<UniValue::VType>& typesExpected, bool fAllowNull=false);
-
-/**
- * Type-check one argument; throws JSONRPCError if wrong type given.
- */
 void RPCTypeCheckArgument(const UniValue& value, UniValue::VType typeExpected);
-
-/*
-  Check for expected keys/value types in an Object.
-*/
-void RPCTypeCheckObj(const UniValue& o,
-    const std::map<std::string, UniValueType>& typesExpected,
-    bool fAllowNull = false,
-    bool fStrict = false);
-
-
-// typedef json_spirit::Value(*rpcfn_type)(const json_spirit::Array& params, bool fHelp);
+void RPCTypeCheckObj(const UniValue& o, const std::map<std::string, UniValueType>& typesExpected,
+                     bool fAllowNull = false, bool fStrict = false);
 typedef UniValue(*rpcfn_type)(const UniValue& params, bool fHelp);
-// typedef UniValue(*rpcfn_type)(const JSONRPCRequest& jsonRequest, bool fHelp);
 
 class CRPCCommand
 {
@@ -156,73 +135,40 @@ public:
     bool unlocked;
 };
 
-
-/**
- * Bitcoin RPC command dispatcher.
- */
+// RPC command dispatcher
 class CRPCTable
 {
 private:
     std::map<std::string, const CRPCCommand*> mapCommands;
+
 public:
     CRPCTable();
     const CRPCCommand* operator[](std::string name) const;
     std::string help(std::string name) const;
 
-    /**
-     * Execute a method.
-     * @param method   Method to execute
-     * @param params   Array of arguments (JSON objects)
-     * @returns Result of the call.
-     * @throws an exception (json_spirit::Value) when an error happens.
-     */
-    // UniValue execute(const std::string &method, const UniValue &params) const;
-
-    /**
-     * Execute a method.
-     * @param request The JSONRPCRequest to execute
-     * @returns Result of the call.
-     * @throws an exception (UniValue) when an error happens.
-     */
     UniValue execute(const JSONRPCRequest &request) const;
-
-    /**
-    * Returns a list of registered commands
-    * @returns List of registered commands.
-    */
     std::vector<std::string> listCommands() const;
-
-    /**
-     * Appends a CRPCCommand to the dispatch table.
-     * Returns false if RPC server is already running (dump concurrency protection).
-     * Commands cannot be overwritten (returns false).
-     */
     bool appendCommand(const std::string& name, const CRPCCommand* pcmd);
 };
 
 extern CRPCTable tableRPC;
-
 extern int64_t nWalletUnlockTime;
 extern CAmount AmountFromValue(const UniValue& value);
 extern UniValue ValueFromAmount(const CAmount& amount);
 extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
-
 extern double GetPoWMHashPS();
 extern double GetPoSKernelPS();
-
 extern std::string HexBits(unsigned int nBits);
 extern std::string HelpRequiringPassphrase();
 extern void EnsureWalletIsUnlocked();
 
-//
 // Utilities: convert hex-encoded Values
 // (throws error if not hex).
-//
+
 extern uint256 ParseHashV(const UniValue& v, std::string strName);
 extern uint256 ParseHashO(const UniValue& o, std::string strKey);
 extern std::vector<unsigned char> ParseHexV(const UniValue& v, std::string strName);
 extern std::vector<unsigned char> ParseHexO(const UniValue& o, std::string strKey);
-
 extern std::string HelpExampleCli(std::string methodname, std::string args);
 extern std::string HelpExampleRpc(std::string methodname, std::string args);
 
@@ -303,8 +249,6 @@ extern UniValue makekeypair(const UniValue& params, bool fHelp);
 extern UniValue getminingreport(const UniValue& params, bool fHelp);
 extern UniValue listlockunspent(const UniValue& params, bool fHelp);
 extern UniValue lockunspent(const UniValue& params, bool fHelp);
-
-
 
 // in rcprawtransaction.cpp
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp);
