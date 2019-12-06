@@ -1069,7 +1069,6 @@ bool CTransaction::DisconnectInputs(CTxDB& txdb)
     return true;
 }
 
-
 bool CTransaction::FetchInputs(CTxDB& txdb, const map<uint256, CTxIndex>& mapTestPool,
                                bool fBlock, bool fMiner, MapPrevTx& inputsRet, bool& fInvalid)
 {
@@ -1730,101 +1729,130 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     return true;
 }
 
-bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew)
+bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, bool trustworthy)
 {
-    LogPrintf("REORGANIZE\n");
+    LogPrintf("[%s]\n", __func__);
 
     // Find the fork
     CBlockIndex* pfork = pindexBest;
     CBlockIndex* plonger = pindexNew;
+
     while (pfork != plonger)
     {
         while (plonger->nHeight > pfork->nHeight)
+        {
             if (!(plonger = plonger->pprev))
-                return error("Reorganize() : plonger->pprev is null");
+                return error("%s : plonger->pprev is null", __func__);
+        }
+
         if (pfork == plonger)
             break;
+
         if (!(pfork = pfork->pprev))
-            return error("Reorganize() : pfork->pprev is null");
+            return error("%s : pfork->pprev is null", __func__);
     }
 
     // List of what to disconnect
     vector<CBlockIndex*> vDisconnect;
+
     for (CBlockIndex* pindex = pindexBest; pindex != pfork; pindex = pindex->pprev)
         vDisconnect.push_back(pindex);
 
     // List of what to connect
     vector<CBlockIndex*> vConnect;
+
     for (CBlockIndex* pindex = pindexNew; pindex != pfork; pindex = pindex->pprev)
         vConnect.push_back(pindex);
+
     reverse(vConnect.begin(), vConnect.end());
 
-    LogPrintf("REORGANIZE: Disconnect %u blocks; %s..%s\n", vDisconnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
-    LogPrintf("REORGANIZE: Connect %u blocks; %s..%s\n", vConnect.size(), pfork->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
+    LogPrintf("%s : Disconnect %u blocks; %s..%s\n", __func__, vDisconnect.size(),
+              pfork->GetBlockHash().ToString().substr(0,20).c_str(),
+              pindexBest->GetBlockHash().ToString().substr(0,20).c_str());
+
+    LogPrintf("%s : Connect %u blocks; %s..%s\n", __func__, vConnect.size(),
+              pfork->GetBlockHash().ToString().substr(0,20).c_str(),
+              pindexNew->GetBlockHash().ToString().substr(0,20).c_str());
 
     // Disconnect shorter branch
     vector<CTransaction> vResurrect;
+
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
     {
         CBlock block;
+
         if (!block.ReadFromDisk(pindex))
-            return error("Reorganize() : ReadFromDisk for disconnect failed");
+            return error("%s : ReadFromDisk for disconnect failed", __func__);
+
         if (!block.DisconnectBlock(txdb, pindex))
-            return error("Reorganize() : DisconnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
+        {
+            return error("%s : DisconnectBlock %s failed", __func__,
+                         pindex->GetBlockHash().ToString().substr(0,20).c_str());
+        }
 
         // Queue memory transactions to resurrect
         BOOST_FOREACH(const CTransaction& tx, block.vtx)
+        {
             if (!(tx.IsCoinBase() || tx.IsCoinStake()))
                 vResurrect.push_back(tx);
+        }
     }
 
     // Connect longer branch
     vector<CTransaction> vDelete;
+
     for (unsigned int i = 0; i < vConnect.size(); i++)
     {
         CBlockIndex* pindex = vConnect[i];
         CBlock block;
+
         if (!block.ReadFromDisk(pindex))
-            return error("Reorganize() : ReadFromDisk for connect failed");
+            return error("%s : ReadFromDisk for connect failed", __func__);
+
         if (!block.ConnectBlock(txdb, pindex, false, true))
         {
             // Invalid block
-            return error("Reorganize() : ConnectBlock %s failed", pindex->GetBlockHash().ToString().substr(0,20).c_str());
+            return error("%s : ConnectBlock %s failed", __func__, pindex->GetBlockHash().ToString().substr(0,20).c_str());
         }
 
         // Queue memory transactions to delete
         BOOST_FOREACH(const CTransaction& tx, block.vtx)
             vDelete.push_back(tx);
     }
+
     if (!txdb.WriteHashBestChain(pindexNew->GetBlockHash()))
-        return error("Reorganize() : WriteHashBestChain failed");
+        return error("%s : WriteHashBestChain failed", __func__);
 
     // Make sure it's successfully written to disk before changing memory structure
     if (!txdb.TxnCommit())
-        return error("Reorganize() : TxnCommit failed");
+        return error("%s : TxnCommit failed", __func__);
 
     // Disconnect shorter branch
     BOOST_FOREACH(CBlockIndex* pindex, vDisconnect)
+    {
         if (pindex->pprev)
             pindex->pprev->pnext = NULL;
+    }
 
     // Connect longer branch
     BOOST_FOREACH(CBlockIndex* pindex, vConnect)
+    {
         if (pindex->pprev)
             pindex->pprev->pnext = pindex;
+    }
 
     // Resurrect memory transactions that were in the disconnected branch
     BOOST_FOREACH(CTransaction& tx, vResurrect)
         tx.AcceptToMemoryPool(txdb, false);
 
     // Delete redundant memory transactions that are in the connected branch
-    BOOST_FOREACH(CTransaction& tx, vDelete) {
+    BOOST_FOREACH(CTransaction& tx, vDelete)
+    {
         mempool.remove(tx);
         mempool.removeConflicts(tx);
     }
 
-    LogPrintf("REORGANIZE: done\n");
-
+    LogPrintf("[%s] : Done\n", __func__);
     return true;
 }
 
@@ -1861,21 +1889,21 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     uint256 hash = GetHash();
 
     if (!txdb.TxnBegin())
-        return error("SetBestChain() : TxnBegin failed");
+        return error("%s : TxnBegin failed", __func__);
 
     if (pindexGenesisBlock == NULL && hash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
     {
         txdb.WriteHashBestChain(hash);
 
         if (!txdb.TxnCommit())
-            return error("SetBestChain() : TxnCommit failed");
+            return error("%s : TxnCommit failed", __func__);
 
         pindexGenesisBlock = pindexNew;
     }
     else if (hashPrevBlock == hashBestChain)
     {
         if (!SetBestChainInner(txdb, pindexNew))
-            return error("SetBestChain() : SetBestChainInner failed");
+            return error("%s : SetBestChainInner failed", __func__);
     }
     else
     {
@@ -1894,15 +1922,17 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         }
 
         if (!vpindexSecondary.empty())
-            LogPrintf("Postponing %u reconnects\n", vpindexSecondary.size());
+            LogPrintf("%s : Postponing %u reconnects\n", __func__, vpindexSecondary.size());
+
+        LogPrintf("%s : The tail of the new chain is at block %d\n", __func__, pindexNew->nHeight);
 
         // Switch to new best branch
-        if (!Reorganize(txdb, pindexIntermediate))
+        if (!Reorganize(txdb, pindexIntermediate, pindexNew))
         {
             txdb.TxnAbort();
             InvalidChainFound(pindexNew);
 
-            return error("SetBestChain() : Reorganize failed");
+            return error("%s : Reorganize failed", __func__);
         }
 
         // Connect further blocks
@@ -1912,13 +1942,13 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
             if (!block.ReadFromDisk(pindex))
             {
-                LogPrintf("SetBestChain() : ReadFromDisk failed\n");
+                LogPrintf("%s : ReadFromDisk failed\n", __func__);
                 break;
             }
 
             if (!txdb.TxnBegin())
             {
-                LogPrintf("SetBestChain() : TxnBegin 2 failed\n");
+                LogPrintf("%s : TxnBegin 2 failed\n", __func__);
                 break;
             }
 
@@ -1949,7 +1979,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     uint256 nBestBlockTrust = pindexBest->nHeight != 0 ? (pindexBest->nChainTrust -
                               pindexBest->pprev->nChainTrust) : pindexBest->nChainTrust;
 
-    LogPrintf("SetBestChain: new best=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n",
+    LogPrintf("%s : new best=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n", __func__,
               hashBestChain.ToString().substr(0,20).c_str(), nBestHeight,
               CBigNum(nBestChainTrust).ToString().c_str(),
               nBestBlockTrust.Get64(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
@@ -1970,7 +2000,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
         if (nUpgraded > 0)
         {
-            LogPrintf("SetBestChain: %d of last 100 blocks above version %d\n",
+            LogPrintf("%s : %d of last 100 blocks above version %d\n", __func__,
                       nUpgraded, (int)CBlock::CURRENT_VERSION);
         }
 
@@ -1982,12 +2012,12 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     std::string strCmd = GetArg("-blocknotify", "");
 
     if (fDebug)
-        LogPrintf("SetBestChain: Blocknotify string is \"%s\"\n", strCmd);
+        LogPrintf("%s : Blocknotify string is \"%s\"\n", __func__, strCmd);
 
     if (!fIsInitialDownload && !strCmd.empty())
     {
         if (fDebug)
-            LogPrintf("SetBestChain: Starting blocknotify thread and command\n");
+            LogPrintf("%s : Starting blocknotify thread and command\n", __func__);
 
         boost::replace_all(strCmd, "%s", hashBestChain.GetHex());
         std::thread t(runCommand, strCmd);
@@ -2172,7 +2202,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 {
     // Size limits
     if (vtx.empty() || vtx.size() > MAX_BLOCK_SIZE || ::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
-        return DoS(100, error("CheckBlock() : size limits failed"));
+        return DoS(100, error("%s : size limits failed", __func__));
 
     // Check proof of work matches claimed amount
     // if (fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
@@ -2180,56 +2210,56 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 
     // Check timestamp
     if (GetBlockTime() > FutureDrift(GetAdjustedTime()))
-        return error("CheckBlock() : block timestamp too far in the future");
+        return error("%s : block timestamp too far in the future", __func__);
 
     // First transaction must be coinbase, the rest must not be
     if (vtx.empty() || !vtx[0].IsCoinBase())
-        return DoS(100, error("CheckBlock() : first tx is not coinbase"));
+        return DoS(100, error("%s : first tx is not coinbase", __func__));
 
     for (unsigned int i = 1; i < vtx.size(); i++)
     {
         if (vtx[i].IsCoinBase())
-            return DoS(100, error("CheckBlock() : more than one coinbase"));
+            return DoS(100, error("%s : more than one coinbase", __func__));
     }
 
     // Check coinbase timestamp
     if (GetBlockTime() > FutureDrift((int64_t)vtx[0].nTime))
-        return DoS(50, error("CheckBlock() : coinbase timestamp is too early"));
+        return DoS(50, error("%s : coinbase timestamp is too early", __func__));
 
     if (IsProofOfStake())
     {
         // Coinbase output should be empty if proof-of-stake block
         if (vtx[0].vout.size() != 1 || !vtx[0].vout[0].IsEmpty())
-            return DoS(100, error("CheckBlock() : coinbase output not empty for proof-of-stake block"));
+            return DoS(100, error("%s : coinbase output not empty for proof-of-stake block", __func__));
 
         // Second transaction must be coinstake, the rest must not be
         if (vtx.empty() || !vtx[1].IsCoinStake())
-            return DoS(100, error("CheckBlock() : second tx is not coinstake"));
+            return DoS(100, error("%s : second tx is not coinstake", __func__));
 
         for (unsigned int i = 2; i < vtx.size(); i++)
         {
             if (vtx[i].IsCoinStake())
-                return DoS(100, error("CheckBlock() : more than one coinstake"));
+                return DoS(100, error("%s : more than one coinstake", __func__));
         }
 
         // Check coinstake timestamp
         if (!CheckCoinStakeTimestamp(GetBlockTime(), (int64_t)vtx[1].nTime))
-            return DoS(50, error("CheckBlock() : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", GetBlockTime(), vtx[1].nTime));
+            return DoS(50, error("%s : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", __func__, GetBlockTime(), vtx[1].nTime));
 
         // Neutron: check proof-of-stake block signature
         if (fCheckSig && !CheckBlockSignature())
-            return DoS(100, error("CheckBlock() : bad proof-of-stake block signature"));
+            return DoS(100, error("%s : bad proof-of-stake block signature", __func__));
     }
 
     // Check transactions
     BOOST_FOREACH(const CTransaction& tx, vtx)
     {
         if (!tx.CheckTransaction())
-            return DoS(tx.nDoS, error("CheckBlock() : CheckTransaction failed"));
+            return DoS(tx.nDoS, error("%s : CheckTransaction failed", __func__));
 
         // ppcoin: check transaction timestamp
         if (GetBlockTime() < (int64_t)tx.nTime)
-            return DoS(50, error("CheckBlock() : block timestamp earlier than transaction timestamp"));
+            return DoS(50, error("%s : block timestamp earlier than transaction timestamp", __func__));
     }
 
     // Check for duplicate txids. This is caught by ConnectInputs(),
@@ -2242,7 +2272,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
     }
 
     if (uniqueTx.size() != vtx.size())
-        return DoS(100, error("CheckBlock() : duplicate transaction"));
+        return DoS(100, error("%s : duplicate transaction", __func__));
 
     unsigned int nSigOps = 0;
 
@@ -2252,11 +2282,11 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
     }
 
     if (nSigOps > MAX_BLOCK_SIGOPS)
-        return DoS(100, error("CheckBlock() : out-of-bounds SigOpCount"));
+        return DoS(100, error("%s : out-of-bounds SigOpCount", __func__));
 
     // Check merkle root
     if (fCheckMerkleRoot && hashMerkleRoot != BuildMerkleTree())
-        return DoS(100, error("CheckBlock() : hashMerkleRoot mismatch"));
+        return DoS(100, error("%s : hashMerkleRoot mismatch", __func__));
 
     return true;
 }
@@ -2409,21 +2439,27 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     //                  mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
 
     if (mapOrphanBlocks.count(hash))
-        return error("ProcessNewBlock : already have block (orphan) %s", hash.ToString().substr(0,20).c_str());
+        return error("%s : already have block (orphan) %s", __func__, hash.ToString().substr(0,20).c_str());
 
     // ppcoin: check proof-of-stake
     // Limited duplicity on stake: prevents block flood attack
     // Duplicate stake allowed only when there is orphan child block
-    if (!IsInitialBlockDownload() && pblock->IsProofOfStake() && setStakeSeen.count(pblock->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
-        return error("ProcessNewBlock : duplicate proof-of-stake (%s, %d) for block %s", pblock->GetProofOfStake().first.ToString().c_str(), pblock->GetProofOfStake().second, hash.ToString().c_str());
+    if (!IsInitialBlockDownload() && pblock->IsProofOfStake() && setStakeSeen.count(pblock->GetProofOfStake()) &&
+        !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
+    {
+        return error("%s : duplicate proof-of-stake (%s, %d) for block %s", __func__,
+                     pblock->GetProofOfStake().first.ToString().c_str(),
+                     pblock->GetProofOfStake().second, hash.ToString().c_str());
+    }
 
     // Preliminary checks
     if (!pblock->CheckBlock())
-        return error("ProcessNewBlock : CheckBlock FAILED");
+        return error("%s : CheckBlock FAILED", __func__);
 
     CBlockIndex* pcheckpoint = Checkpoints::GetLastSyncCheckpoint();
 
-    if (pcheckpoint && pblock->hashPrevBlock != hashBestChain && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
+    if (pcheckpoint && pblock->hashPrevBlock != hashBestChain &&
+        !Checkpoints::WantedByPendingSyncCheckpoint(hash))
     {
         // Extra checks to prevent "fill up memory by spamming with bogus blocks"
         int64_t deltaTime = pblock->GetBlockTime() - pcheckpoint->nTime;
@@ -2432,16 +2468,23 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         CBigNum bnRequired;
 
         if (pblock->IsProofOfStake())
-            bnRequired.SetCompact(ComputeMinStake(GetLastBlockIndex(pcheckpoint, true)->nBits, deltaTime, pblock->nTime));
+        {
+            bnRequired.SetCompact(ComputeMinStake(GetLastBlockIndex(pcheckpoint, true)->nBits,
+                                                                    deltaTime, pblock->nTime));
+        }
         else
-            bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, false)->nBits, deltaTime));
+        {
+            bnRequired.SetCompact(ComputeMinWork(GetLastBlockIndex(pcheckpoint, false)->nBits,
+                                                                   deltaTime));
+        }
 
         if (bnNewBlock > bnRequired)
         {
             if (pfrom)
                 pfrom->Misbehaving(100);
 
-            return error("ProcessNewBlock : block with too little %s", pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
+            return error("%s : block with too little %s", __func__,
+                         pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
         }
     }
 
@@ -2453,7 +2496,10 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     if (!mapBlockIndex.count(pblock->hashPrevBlock))
     {
         if (fDebug)
-            LogPrintf("Missing orphan block with hash %s\n", pblock->hashPrevBlock.ToString().c_str());
+        {
+            LogPrintf("%s : Missing orphan block with hash %s\n", __func__,
+                      pblock->hashPrevBlock.ToString().c_str());
+        }
 
         CBlock* pblock2 = new CBlock(*pblock);
 
@@ -2462,8 +2508,13 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         {
             // Limited duplicity on stake: prevents block flood attack
             // Duplicate stake allowed only when there is orphan child block
-            if (setStakeSeenOrphan.count(pblock2->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) && !Checkpoints::WantedByPendingSyncCheckpoint(hash))
-                return error("ProcessNewBlock : duplicate proof-of-stake (%s, %d) for orphan block %s", pblock2->GetProofOfStake().first.ToString().c_str(), pblock2->GetProofOfStake().second, hash.ToString().c_str());
+            if (setStakeSeenOrphan.count(pblock2->GetProofOfStake()) && !mapOrphanBlocksByPrev.count(hash) &&
+                !Checkpoints::WantedByPendingSyncCheckpoint(hash))
+            {
+                return error("%s : duplicate proof-of-stake (%s, %d) for orphan block %s", __func__,
+                             pblock2->GetProofOfStake().first.ToString().c_str(),
+                             pblock2->GetProofOfStake().second, hash.ToString().c_str());
+            }
             else
                 setStakeSeenOrphan.insert(pblock2->GetProofOfStake());
         }
@@ -2475,10 +2526,13 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         if (pfrom)
         {
             if (fDebug)
-                LogPrintf("Asking for missing blocks between index %d to hash %s\n",
+            {
+                LogPrintf("%s : Asking for missing blocks between index %d to hash %s\n", __func__,
                           pindexBest->nHeight, GetOrphanRoot(pblock2).ToString().c_str());
+            }
 
             pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(pblock2));
+
             // ppcoin: getblocks may not obtain the ancestor block rejected
             // earlier by duplicate-stake check so we ask for it again directly
             if (!IsInitialBlockDownload())
@@ -2493,7 +2547,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     {
         pfrom->Misbehaving(5);
 
-        return error("ProcessNewBlock : AcceptBlock for %s with parent %s FAILED",
+        return error("%s : AcceptBlock for %s with parent %s FAILED", __func__,
                      hash.ToString().c_str(), pblock->hashPrevBlock.ToString().c_str());
     }
 
@@ -2526,7 +2580,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
         Checkpoints::SendSyncCheckpoint(Checkpoints::AutoSelectSyncCheckpoint());
 
     if (fDebug)
-        LogPrintf("ProcessNewBlock: ACCEPTED\n");
+        LogPrintf("%s: ACCEPTED\n", __func__);
 
     return true;
 }
