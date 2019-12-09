@@ -42,7 +42,6 @@ CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 2);
 
 static const int64_t nTargetTimespan = 20 * 60;  // Neutron - every 20mins
 unsigned int nTargetSpacing = 1 * 79; // Neutron - 79 secs
-static const int64_t nInterval = nTargetTimespan / nTargetSpacing;
 static const int64_t nDiffChangeTarget = 1;
 unsigned int nStakeMinAge = 5 * 60 * 60; // Neutron - 5 hours
 unsigned int nStakeMaxAge = 5 * 60 * 60; // Neutron - 5 hours
