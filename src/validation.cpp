@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
+// Copyright (c) 2016-2019 The Neutron Developers
+//
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -76,6 +78,7 @@ bool IsInitialBlockDownload()
         return false;
 
     LOCK(cs_main);
+
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
 
@@ -85,12 +88,13 @@ bool IsInitialBlockDownload()
     if (nBestHeight < Checkpoints::GetTotalBlocksEstimate())
         return true;
 
-    /* TODO: NTRN - look into verifying chain work */
+    /* TODO: look into verifying chain work */
 
     static int64_t nLastUpdate;
     static CBlockIndex* pindexLastBest;
 
-    if (pindexBest != pindexLastBest) {
+    if (pindexBest != pindexLastBest)
+    {
         pindexLastBest = pindexBest;
         nLastUpdate = GetTime();
     }

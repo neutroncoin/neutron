@@ -1,6 +1,8 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
 // Copyright (c) 2014-2017 The Dash Core developers
+// Copyright (c) 2017-2019 The Neutron Developers
+//
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,10 +12,8 @@
 #include <stdint.h>
 #include <string>
 
-static const int64_t DEFAULT_MAX_TIP_AGE = 1 * 60 * 60; // ~45 blocks behind -> 2 x fork detection time, was 24 * 60 * 60 in bitcoin
-
+static const int64_t DEFAULT_MAX_TIP_AGE = 60 * 60 * 2;
 extern int64_t nMaxTipAge;
-
 class CBlockIndex;
 
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");

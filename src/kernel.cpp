@@ -241,9 +241,11 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 
 // The stake modifier used to hash for a stake kernel is chosen as the stake
 // modifier about a selection interval later than the coin generating the kernel
-static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int& nStakeModifierHeight, int64_t& nStakeModifierTime, bool fPrintProofOfStake)
+static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifier, int& nStakeModifierHeight,
+                                   int64_t& nStakeModifierTime, bool fPrintProofOfStake)
 {
     nStakeModifier = 0;
+
     if (!mapBlockIndex.count(hashBlockFrom))
         return error("GetKernelStakeModifier() : block not indexed");
 
