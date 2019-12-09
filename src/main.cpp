@@ -1392,7 +1392,7 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return true;
 }
 
-bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, bool reorganize)
+bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, bool reorganize, int postponedBlocks)
 {
     // Check it again in case a previous version let a bad block in, but skip BlockSig checking
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
@@ -1617,7 +1617,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                         bool fPrintAddress = ExtractDestination(expectedPayee, expectDest);
                         CBitcoinAddress addressMN(expectDest);
 
-                        if (fEnforceMnWinner)
+                        if (fEnforceMnWinner && postponedBlocks < sporkManager.GetSporkValue(SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD))
                         {
                             return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode, "
                                        "actual=%s required=%s, block=%d\n", hasBlockPayee ? paidMN.ToString() : "",
@@ -1645,7 +1645,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                 // verify correct payment addr and amount
                 fValidMnPayment = fMnPaymentMade && fPaidCorrectMn;
 
-                if (!fValidMnPayment)
+                if (!fValidMnPayment && postponedBlocks < sporkManager.GetSporkValue(SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD))
                 {
                     if (fEnforceMnWinner)
                         return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
@@ -1729,11 +1729,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     return true;
 }
 
-bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, bool trustworthy)
+bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, int postponedBlocks)
 {
     LogPrintf("[%s]\n", __func__);
 
-    // Find the fork
     CBlockIndex* pfork = pindexBest;
     CBlockIndex* plonger = pindexNew;
 
@@ -1809,7 +1808,7 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, bool trustworthy)
         if (!block.ReadFromDisk(pindex))
             return error("%s : ReadFromDisk for connect failed", __func__);
 
-        if (!block.ConnectBlock(txdb, pindex, false, true))
+        if (!block.ConnectBlock(txdb, pindex, false, true, postponedBlocks))
         {
             // Invalid block
             return error("%s : ConnectBlock %s failed", __func__, pindex->GetBlockHash().ToString().substr(0,20).c_str());
@@ -1927,7 +1926,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
         LogPrintf("%s : The tail of the new chain is at block %d\n", __func__, pindexNew->nHeight);
 
         // Switch to new best branch
-        if (!Reorganize(txdb, pindexIntermediate, pindexNew))
+        if (!Reorganize(txdb, pindexIntermediate, vpindexSecondary.empty() ? -1 : vpindexSecondary.size()))
         {
             txdb.TxnAbort();
             InvalidChainFound(pindexNew);
