@@ -2295,8 +2295,12 @@ void CConnman::Stop()
     LogPrintf("CConnman::Stop() 8 CloseSockets\n");
 
     // Close sockets
-    for (CNode* pnode : vNodes)
-        pnode->CloseSocketDisconnect();
+    {
+        LOCK(cs_vNodes);
+
+        for (CNode* pnode : vNodes)
+            pnode->CloseSocketDisconnect();
+    }
 
     for (SOCKET hListenSocket : vhListenSocket)
         if (hListenSocket != INVALID_SOCKET)
