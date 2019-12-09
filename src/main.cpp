@@ -2344,8 +2344,10 @@ bool CBlock::AcceptBlock()
 
         if (!CheckProofOfStake(vtx[1], nBits, hashProof, targetProofOfStake))
         {
-            LogPrintf("WARNING: AcceptBlock(): check proof-of-stake failed for block %s\n", hash.ToString().c_str());
-            return false; // Do not error here as we expect this during initial block download
+            LogPrintf("%s : [WARNING] check proof-of-stake failed for block %s\n", __func__, hash.ToString().c_str());
+
+            if (!IsInitialBlockDownload())
+                return false;
         }
     }
 
