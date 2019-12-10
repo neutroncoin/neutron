@@ -1,10 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2015 The Bitcoin Core developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
-#ifndef BITCOIN_ADDRDB_H
-#define BITCOIN_ADDRDB_H
+#ifndef ADDRDB_H
+#define ADDRDB_H
 
 #include "serialize.h"
 
@@ -43,23 +45,12 @@ public:
         nCreateTime = nCreateTimeIn;
     }
 
-
     IMPLEMENT_SERIALIZE(
         READWRITE(this->nVersion);
         READWRITE(nCreateTime);
         READWRITE(nBanUntil);
         READWRITE(banReason);
     )
-
-    // ADD_SERIALIZE_METHODS;
-
-    // template <typename Stream, typename Operation>
-    // inline void SerializationOp(Stream& s, Operation ser_action) {
-    //     READWRITE(this->nVersion);
-    //     READWRITE(nCreateTime);
-    //     READWRITE(nBanUntil);
-    //     READWRITE(banReason);
-    // }
 
     void SetNull()
     {
@@ -71,20 +62,20 @@ public:
 
     std::string banReasonToString()
     {
-        switch (banReason) {
-        case BanReasonNodeMisbehaving:
-            return "node misbehaving";
-        case BanReasonManuallyAdded:
-            return "manually added";
-        default:
-            return "unknown";
+        switch (banReason)
+        {
+            case BanReasonNodeMisbehaving:
+                return "node misbehaving";
+            case BanReasonManuallyAdded:
+                return "manually added";
+            default:
+                return "unknown";
         }
     }
 };
 
 typedef std::map<CSubNet, CBanEntry> banmap_t;
 
-/** Access to the (IP) address database (peers.dat) */
 class CAddrDB
 {
 private:
@@ -96,7 +87,6 @@ public:
     bool Read(CAddrMan& addr, CDataStream& ssPeers);
 };
 
-/** Access to the banlist database (banlist.dat) */
 class CBanDB
 {
 private:
@@ -107,4 +97,4 @@ public:
     bool Read(banmap_t& banSet);
 };
 
-#endif // BITCOIN_ADDRDB_H
+#endif // ADDRDB_H
