@@ -284,23 +284,6 @@ private:
 
 extern std::unique_ptr<CConnman> g_connman;
 
-class CNodeStats
-{
-public:
-    NodeId nodeid;
-    uint64_t nServices;
-    int64_t nLastSend;
-    int64_t nLastRecv;
-    int64_t nTimeConnected;
-    std::string addrName;
-    int nVersion;
-    std::string cleanSubVer;
-    std::string strSubVer;
-    bool fInbound;
-    int nStartingHeight;
-    int nMisbehavior;
-};
-
 class CNetMessage {
 public:
     bool in_data;                   // parsing header (false) or data (true)
@@ -380,7 +363,6 @@ public:
     int nRefCount;
     NodeId id;
 
-public:
     int nMisbehavior;
     std::vector<std::string> vecRequestsFulfilled; // Keep track of what client has asked for
     std::map<uint256, CRequestTracker> mapRequests;
@@ -791,7 +773,6 @@ public:
     // between nodes running old code and nodes running
     // new code.
     bool Misbehaving(int howmuch); // 1 == a little, 100 == a lot
-    void copyStats(CNodeStats &stats);
 };
 
 class CTransaction;

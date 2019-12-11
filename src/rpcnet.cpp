@@ -1,7 +1,8 @@
 // Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 
 #include "netbase.h"
 #include "net.h"
@@ -11,59 +12,46 @@
 #include "db.h"
 #include "walletdb.h"
 #include "spork.h"
-
 #include "univalue.h"
 
 UniValue getconnectioncount(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "getconnectioncount\n"
-            "Returns the number of connections to other nodes.");
+    {
+        throw runtime_error("getconnectioncount\n"
+                            "Returns the number of connections to other nodes.");
+    }
 
     LOCK(cs_vNodes);
     return (int)vNodes.size();
 }
 
-static void CopyNodeStats(std::vector<CNodeStats>& vstats)
-{
-    vstats.clear();
-
-    LOCK(cs_vNodes);
-    vstats.reserve(vNodes.size());
-    BOOST_FOREACH(CNode* pnode, vNodes) {
-        CNodeStats stats;
-        pnode->copyStats(stats);
-        vstats.push_back(stats);
-    }
-}
-
 UniValue getpeerinfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
-            "getpeerinfo\n"
-            "Returns data about each connected network node as a json array of objects.");
+    {
+        throw runtime_error("getpeerinfo\nReturns data about each connected "
+                            "network node as a json array of objects.");
+    }
 
-    vector<CNodeStats> vstats;
-    CopyNodeStats(vstats);
-
+    LOCK(cs_vNodes);
     UniValue ret(UniValue::VARR);
 
-    BOOST_FOREACH(const CNodeStats& stats, vstats) {
+    BOOST_FOREACH(const CNode *pnode, vNodes)
+    {
         UniValue obj(UniValue::VOBJ);
 
-        obj.push_back(Pair("id", stats.nodeid));
-        obj.push_back(Pair("addr", stats.addrName));
-        obj.push_back(Pair("services", strprintf("%016x", stats.nServices)));
-        obj.push_back(Pair("lastsend", (int64_t)stats.nLastSend));
-        obj.push_back(Pair("lastrecv", (int64_t)stats.nLastRecv));
-        obj.push_back(Pair("conntime", stats.nTimeConnected));
-        obj.push_back(Pair("version", stats.nVersion));
-        obj.push_back(Pair("subver", stats.strSubVer));
-        obj.push_back(Pair("inbound", stats.fInbound));
-        obj.push_back(Pair("startingheight", stats.nStartingHeight));
-        obj.push_back(Pair("banscore", stats.nMisbehavior));
+        obj.push_back(Pair("id", pnode->GetId()));
+        obj.push_back(Pair("addr", pnode->addrName));
+        obj.push_back(Pair("services", strprintf("%016x", pnode->nServices)));
+        obj.push_back(Pair("lastsend", (int64_t) pnode->nLastSend));
+        obj.push_back(Pair("lastrecv", (int64_t) pnode->nLastRecv));
+        obj.push_back(Pair("conntime", pnode->nTimeConnected));
+        obj.push_back(Pair("version", pnode->nVersion));
+        obj.push_back(Pair("subver", pnode->strSubVer));
+        obj.push_back(Pair("inbound", pnode->fInbound));
+        obj.push_back(Pair("startingheight", pnode->nStartingHeight));
+        obj.push_back(Pair("banscore", pnode->nMisbehavior));
 
         ret.push_back(obj);
     }

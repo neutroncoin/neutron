@@ -747,26 +747,6 @@ bool CNode::Misbehaving(int howmuch)
     return false;
 }
 
-#undef X
-#define X(name) stats.name = name
-
-void CNode::copyStats(CNodeStats &stats)
-{
-    stats.nodeid = this->GetId();
-    X(nServices);
-    X(nLastSend);
-    X(nLastRecv);
-    X(nTimeConnected);
-    X(addrName);
-    X(nVersion);
-    X(cleanSubVer);
-    X(strSubVer);
-    X(fInbound);
-    X(nStartingHeight);
-    X(nMisbehavior);
-}
-#undef X
-
 // requires LOCK(cs_vRecvMsg)
 bool CNode::ReceiveMsgBytes(const char *pch, unsigned int nBytes)
 {
