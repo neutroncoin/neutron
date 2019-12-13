@@ -725,26 +725,48 @@ void CConnman::SetBannedSetDirty(bool dirty)
     setBannedIsDirty = dirty;
 }
 
-bool CNode::Misbehaving(int howmuch)
+bool CNode::Misbehaving(std::string cause, int howmuch)
 {
     if (addr.IsLocal())
     {
-        LogPrintf("Warning: Local node %s misbehaving (delta: %d)!\n", addrName.c_str(), howmuch);
+        LogPrintf("%s : [WARNING] Local node %s misbehaving (delta: %d, cause: %s)\n",
+                  __func__, addrName.c_str(), howmuch, cause.c_str());
         return false;
     }
 
     nMisbehavior += howmuch;
 
+    {
+        LOCK(cs_misbehaviors);
+        misbehaviors.push_back(Misbehavior(GetTime(), howmuch, cause));
+    }
+
     if (nMisbehavior >= GetArg("-banscore", 100))
     {
-        LogPrintf("Misbehaving: %s (%d -> %d) DISCONNECTING\n", addr.ToString().c_str(), nMisbehavior-howmuch, nMisbehavior);
+        LogPrintf("%s : [WARNING] %s (%d -> %d, cause: %s) DISCONNECTING\n", __func__, addr.ToString().c_str(),
+                  nMisbehavior - howmuch, nMisbehavior, cause.c_str());
         g_connman->Ban(addr, BanReasonNodeMisbehaving);
         return true;
     }
     else
-        LogPrintf("Misbehaving: %s (%d -> %d)\n", addr.ToString().c_str(), nMisbehavior-howmuch, nMisbehavior);
+    {
+        LogPrintf("%s : [WARNING] %s (%d -> %d, cause: %s)\n", __func__, addr.ToString().c_str(),
+                  nMisbehavior - howmuch, nMisbehavior, cause.c_str());
+    }
 
     return false;
+}
+
+std::vector<CNode::Misbehavior> CNode::GetMisbehaviors()
+{
+    std::vector<CNode::Misbehavior> copy;
+
+    {
+        LOCK(cs_misbehaviors);
+        copy = misbehaviors;
+    }
+
+    return copy;
 }
 
 // requires LOCK(cs_vRecvMsg)
@@ -833,7 +855,7 @@ int CNetMessage::readData(const char *pch, unsigned int nBytes)
     return nCopy;
 }
 
-// NTRN TODO - implement: void CConnman::AcceptConnection
+// TODO: implement void CConnman::AcceptConnection
 
 // requires LOCK(cs_vSend)
 void SocketSendData(CNode *pnode)

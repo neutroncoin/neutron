@@ -16,12 +16,14 @@
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/format.hpp>
 #include "darksend.h"
 #include "masternode.h"
 #include "spork.h"
 #include "wallet.h"
 
 #include <stdio.h>
+#include <sstream>
 #include <thread>
 
 using namespace std;
@@ -2480,11 +2482,16 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
 
         if (bnNewBlock > bnRequired)
         {
-            if (pfrom)
-                pfrom->Misbehaving(100);
+            std::stringstream msg;
+            msg << boost::format("%s : block with too little %s") % __func__ %
+                (pblock->IsProofOfStake() ? "proof-of-stake" : "proof-of-work");
 
-            return error("%s : block with too little %s", __func__,
-                         pblock->IsProofOfStake()? "proof-of-stake" : "proof-of-work");
+            if (pfrom)
+            {
+                pfrom->Misbehaving(msg.str(), 100);
+            }
+
+            return error(msg.str().c_str());
         }
     }
 
@@ -2545,10 +2552,14 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // Store to disk
     if (!pblock->AcceptBlock())
     {
-        pfrom->Misbehaving(5);
+        std::stringstream msg;
+        msg << boost::format("%s : AcceptBlock for %s with parent %s FAILED") % __func__ %
+            hash.ToString().c_str() % pblock->hashPrevBlock.ToString().c_str();
 
-        return error("%s : AcceptBlock for %s with parent %s FAILED", __func__,
-                     hash.ToString().c_str(), pblock->hashPrevBlock.ToString().c_str());
+        if (pfrom)
+            pfrom->Misbehaving(msg.str(), 5);
+
+        return error(msg.str().c_str());
     }
 
     // Recursively process any orphan blocks that depended on this one
@@ -3236,23 +3247,31 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 {
     static map<CService, CPubKey> mapReuseKey;
     RandAddSeedPerfmon();
-    if (fDebug) LogPrintf("received: %s (%u bytes) peer=%d (%s)\n", SanitizeString(strCommand), vRecv.size(), pfrom->id, pfrom->addr.ToString().c_str());
+
+    if (fDebug)
+    {
+        LogPrintf("%s : received: %s (%u bytes) peer=%d (%s)\n", __func__, SanitizeString(strCommand),
+                  vRecv.size(), pfrom->id, pfrom->addr.ToString().c_str());
+    }
 
     if (mapArgs.count("-dropmessagestest") && GetRand(atoi(mapArgs["-dropmessagestest"])) == 0)
     {
-        LogPrintf("dropmessagestest DROPPING RECV MESSAGE\n");
+        LogPrintf("%s : dropmessagestest [DROPPING RECV MESSAGE]\n", __func__);
         return true;
     }
 
-    /* TODO: NTRN - look into bloom */
+    /* TODO: look into bloom */
 
     if (strCommand == NetMsgType::VERSION)
     {
         // Each connection can only send one version message
         if (pfrom->nVersion != 0)
         {
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, string("Duplicate version message"));
-            pfrom->Misbehaving(1);
+            std::stringstream msg;
+            msg << boost::format("%s : duplicate version message") % __func__;
+
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_DUPLICATE, string("duplicate version message"));
+            pfrom->Misbehaving(msg.str(), 1);
             return false;
         }
 
@@ -3264,11 +3283,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         if (pfrom->nVersion < ActiveProtocol())
         {
+            std::stringstream msg;
+            msg << boost::format("%s : peer=%d (%s) using obsolete version %i; disconnecting") % __func__ %
+                pfrom->id % pfrom->addr.ToString().c_str() % pfrom->nVersion;
+
             // disconnect from peers older than this proto version
-            LogPrintf("%s : peer=%d (%s) using obsolete version %i; disconnecting\n", __func__, pfrom->id, pfrom->addr.ToString().c_str(), pfrom->nVersion);
-            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE, strprintf("Version must be %d or greater", ActiveProtocol()));
+            LogPrintf("%s\n", msg.str().c_str());
+
+            pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_OBSOLETE,
+                               strprintf("version must be %d or greater", ActiveProtocol()));
+
             pfrom->fDisconnect = true;
-            pfrom->Misbehaving(100);
+            pfrom->Misbehaving(msg.str(), 100);
             return false;
         }
 
@@ -3280,6 +3306,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             vRecv >> pfrom->strSubVer;
         if (!vRecv.empty())
             vRecv >> pfrom->nStartingHeight;
+
         if (!vRecv.empty())
             vRecv >> pfrom->fRelayTxes; // set to true after we get the first filter* message
         else
@@ -3335,7 +3362,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                 pfrom->fGetAddr = true;
             }
             addrman.Good(pfrom->addr);
-        } else {
+        }
+        else
+        {
             if (((CNetAddr)pfrom->addr) == (CNetAddr)addrFrom)
             {
                 addrman.Add(addrFrom, addrFrom);
@@ -3346,15 +3375,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // Ask the first connected node for block updates
         static int nAskedForBlocks = 0;
 
-        if (!pfrom->fClient && !pfrom->fOneShot &&
-                (pfrom->nStartingHeight > (nBestHeight - 144)) &&
-                (pfrom->nVersion < NOBLKS_VERSION_START ||
-                 pfrom->nVersion >= NOBLKS_VERSION_END) &&
-                (nAskedForBlocks < 1 || vNodes.size() <= 1))
+        if (!pfrom->fClient && !pfrom->fOneShot && (pfrom->nStartingHeight > (nBestHeight - 144)) &&
+            (pfrom->nVersion < NOBLKS_VERSION_START || pfrom->nVersion >= NOBLKS_VERSION_END) &&
+            (nAskedForBlocks < 1 || vNodes.size() <= 1))
         {
             if (fDebug)
-                LogPrintf("asking peer %d for block update from height %d\n",
-                          pfrom->GetId(), pindexBest->nHeight);
+                LogPrintf("%s : asking peer %d for block update from height %d\n",
+                          __func__, pfrom->GetId(), pindexBest->nHeight);
 
             nAskedForBlocks++;
             pfrom->PushGetBlocks(pindexBest, uint256(0));
@@ -3363,6 +3390,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // Relay alerts
         {
             LOCK(cs_mapAlerts);
+
             BOOST_FOREACH(PAIRTYPE(const uint256, CAlert)& item, mapAlerts)
                 item.second.RelayTo(pfrom);
         }
@@ -3370,13 +3398,16 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // Relay sync-checkpoint
         {
             LOCK(Checkpoints::cs_hashSyncCheckpoint);
+
             if (!Checkpoints::checkpointMessage.IsNull())
                 Checkpoints::checkpointMessage.RelayTo(pfrom);
         }
 
         pfrom->fSuccessfullyConnected = true;
 
-        LogPrintf("receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n", pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(), addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
+        LogPrintf("%s : receive version message: version %d, blocks=%d, us=%s, them=%s, peer=%s\n",
+                  __func__, pfrom->nVersion, pfrom->nStartingHeight, addrMe.ToString().c_str(),
+                  addrFrom.ToString().c_str(), pfrom->addr.ToString().c_str());
 
         cPeerBlockCounts.input(pfrom->nStartingHeight);
 
@@ -3393,22 +3424,19 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         //     pfrom->PushGetBlocks(pindexBest, uint256(0));
         // }
     }
-
-
     else if (pfrom->nVersion == 0)
     {
+        std::stringstream msg;
+        msg << boost::format("%s : must initially send a version") % __func__;
+
         // Must have a version message before anything else
-        pfrom->Misbehaving(1);
+        pfrom->Misbehaving(msg.str(), 1);
         return false;
     }
-
-
     else if (strCommand == NetMsgType::VERACK)
     {
         pfrom->SetRecvVersion(min(pfrom->nVersion, PROTOCOL_VERSION));
     }
-
-
     else if (strCommand == NetMsgType::ADDR)
     {
         vector<CAddress> vAddr;
@@ -3417,10 +3445,14 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // Don't want addr from older versions unless seeding
         if (pfrom->nVersion < CADDR_TIME_VERSION && addrman.size() > 1000)
             return true;
+
         if (vAddr.size() > 1000)
         {
-            pfrom->Misbehaving(20);
-            return error("message addr size() = %u", vAddr.size());
+            std::stringstream msg;
+            msg << boost::format("%s : message addr size() = %u") % __func__ % vAddr.size();
+
+            pfrom->Misbehaving(msg.str(), 20);
+            return error(msg.str().c_str());
         }
 
         // Store the new addresses
@@ -3431,69 +3463,94 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         {
             if (fShutdown)
                 return true;
+
             if (addr.nTime <= 100000000 || addr.nTime > nNow + 10 * 60)
                 addr.nTime = nNow - 5 * 24 * 60 * 60;
+
             pfrom->AddAddressKnown(addr);
             bool fReachable = IsReachable(addr);
+
             if (addr.nTime > nSince && !pfrom->fGetAddr && vAddr.size() <= 10 && addr.IsRoutable())
             {
                 // Relay to a limited number of other nodes
                 {
                     LOCK(cs_vNodes);
+
                     // Use deterministic randomness to send to the same nodes for 24 hours
                     // at a time so the setAddrKnowns of the chosen nodes prevent repeats
                     static uint256 hashSalt;
+
                     if (hashSalt == 0)
                         hashSalt = GetRandHash();
+
                     uint64_t hashAddr = addr.GetHash();
-                    uint256 hashRand = hashSalt ^ (hashAddr<<32) ^ ((GetTime()+hashAddr)/(24*60*60));
+                    uint256 hashRand = hashSalt ^ (hashAddr << 32) ^ ((GetTime()+hashAddr) / (24 * 60 * 60));
                     hashRand = Hash(BEGIN(hashRand), END(hashRand));
                     multimap<uint256, CNode*> mapMix;
+
                     BOOST_FOREACH(CNode* pnode, vNodes)
                     {
                         if (pnode->nVersion < CADDR_TIME_VERSION)
                             continue;
+
                         unsigned int nPointer;
                         memcpy(&nPointer, &pnode, sizeof(nPointer));
                         uint256 hashKey = hashRand ^ nPointer;
                         hashKey = Hash(BEGIN(hashKey), END(hashKey));
                         mapMix.insert(make_pair(hashKey, pnode));
                     }
+
                     int nRelayNodes = fReachable ? 2 : 1; // limited relaying of addresses outside our network(s)
-                    for (multimap<uint256, CNode*>::iterator mi = mapMix.begin(); mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+
+                    for (multimap<uint256, CNode*>::iterator mi = mapMix.begin();
+                         mi != mapMix.end() && nRelayNodes-- > 0; ++mi)
+                    {
                         ((*mi).second)->PushAddress(addr);
+                    }
                 }
             }
+
             // Do not store addresses outside our network
             if (fReachable)
                 vAddrOk.push_back(addr);
         }
+
         addrman.Add(vAddrOk, pfrom->addr, 2 * 60 * 60);
+
         if (vAddr.size() < 1000)
             pfrom->fGetAddr = false;
+
         if (pfrom->fOneShot)
             pfrom->fDisconnect = true;
     }
-
     else if (strCommand == NetMsgType::INV)
     {
         vector<CInv> vInv;
         vRecv >> vInv;
+
         if (vInv.size() > MAX_INV_SZ)
         {
-            pfrom->Misbehaving(20);
-            return error("message inv size() = %u", vInv.size());
+            std::stringstream msg;
+            msg << boost::format("%s : message inv size() = %u") % __func__ % vInv.size();
+
+            pfrom->Misbehaving(msg.str(), 20);
+            return error(msg.str().c_str());
         }
 
         // find last block in inv vector
-        unsigned int nLastBlock = (unsigned int)(-1);
-        for (unsigned int nInv = 0; nInv < vInv.size(); nInv++) {
-            if (vInv[vInv.size() - 1 - nInv].type == MSG_BLOCK) {
+        unsigned int nLastBlock = (unsigned int) (-1);
+
+        for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
+        {
+            if (vInv[vInv.size() - 1 - nInv].type == MSG_BLOCK)
+            {
                 nLastBlock = vInv.size() - 1 - nInv;
                 break;
             }
         }
+
         CTxDB txdb("r");
+
         for (unsigned int nInv = 0; nInv < vInv.size(); nInv++)
         {
             const CInv &inv = vInv[nInv];
@@ -3505,35 +3562,42 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             bool fAlreadyHave = AlreadyHave(txdb, inv);
 
             if (fDebug)
-                LogPrintf("got inv: %s  %s peer=%d\n",
-                          inv.hash.ToString().c_str(), fAlreadyHave ? "have" : "new", pfrom->GetId());
+            {
+                LogPrintf("%s : got inv: %s  %s peer=%d\n", __func__, inv.hash.ToString().c_str(),
+                          fAlreadyHave ? "have" : "new", pfrom->GetId());
+            }
 
             if (!fAlreadyHave)
                 pfrom->AskFor(inv);
-            else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash)) {
+            else if (inv.type == MSG_BLOCK && mapOrphanBlocks.count(inv.hash))
                 pfrom->PushGetBlocks(pindexBest, GetOrphanRoot(mapOrphanBlocks[inv.hash]));
-            } else if (nInv == nLastBlock) {
+            else if (nInv == nLastBlock)
+            {
                 // In case we are on a very long side-chain, it is possible that we already have
                 // the last block in an inv bundle sent in response to getblocks. Try to detect
                 // this situation and push another getblocks to continue.
                 pfrom->PushGetBlocks(mapBlockIndex[inv.hash], uint256(0));
-                if (fDebug) LogPrintf("force request: %s\n", inv.ToString().c_str());
+
+                if (fDebug)
+                    LogPrintf("%s : force request: %s\n", __func__, inv.ToString().c_str());
             }
 
             // Track requests for our stuff
             Inventory(inv.hash);
         }
     }
-
-
     else if (strCommand == NetMsgType::GETDATA)
     {
         vector<CInv> vInv;
         vRecv >> vInv;
+
         if (vInv.size() > MAX_INV_SZ)
         {
-            pfrom->Misbehaving(20);
-            return error("message getdata size() = %u", vInv.size());
+            std::stringstream msg;
+            msg << boost::format("%s : message getdata size() = %u") % __func__ % vInv.size();
+
+            pfrom->Misbehaving(msg.str(), 20);
+            return error(msg.str().c_str());
         }
 
         if (fDebugNet || (vInv.size() != 1))
@@ -3545,8 +3609,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         pfrom->vRecvGetData.insert(pfrom->vRecvGetData.end(), vInv.begin(), vInv.end());
         ProcessGetData(pfrom);
     }
-
-
     else if (strCommand == NetMsgType::GETBLOCKS)
     {
         CBlockLocator locator;
@@ -3583,7 +3645,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             }
         }
     }
-
     else if (strCommand == "checkpoint")
     {
         CSyncCheckpoint checkpoint;
@@ -3600,7 +3661,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                 checkpoint.RelayTo(pnode);
         }
     }
-
     else if (strCommand == NetMsgType::GETHEADERS)
     {
         CBlockLocator locator;
@@ -3635,7 +3695,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         }
         pfrom->PushMessage(NetMsgType::HEADERS, vHeaders);
     }
-
     else if (strCommand == NetMsgType::TX || strCommand == NetMsgType::DSTX)
     {
         vector<uint256> vWorkQueue;
@@ -3687,10 +3746,11 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                 }
             }
         }
+
         CInv inv(MSG_TX, tx.GetHash());
         pfrom->AddInventoryKnown(inv);
-
         bool fMissingInputs = false;
+
         if (tx.AcceptToMemoryPool(txdb, true, &fMissingInputs))
         {
             SyncWithWallets(tx, NULL, true);
@@ -3704,8 +3764,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             {
                 uint256 hashPrev = vWorkQueue[i];
                 for (set<uint256>::iterator mi = mapOrphanTransactionsByPrev[hashPrev].begin();
-                     mi != mapOrphanTransactionsByPrev[hashPrev].end();
-                     ++mi)
+                     mi != mapOrphanTransactionsByPrev[hashPrev].end(); ++mi)
                 {
                     const uint256& orphanTxHash = *mi;
                     CTransaction& orphanTx = mapOrphanTransactions[orphanTxHash];
@@ -3713,7 +3772,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
                     if (orphanTx.AcceptToMemoryPool(txdb, true, &fMissingInputs2))
                     {
-                        LogPrintf("   accepted orphan tx %s\n", orphanTxHash.ToString().substr(0,10).c_str());
+                        LogPrintf("%s : accepted orphan tx %s\n", __func__,
+                                  orphanTxHash.ToString().substr(0,10).c_str());
+
                         SyncWithWallets(tx, NULL, true);
                         RelayTransaction(orphanTx, orphanTxHash);
                         mapAlreadyAskedFor.erase(CInv(MSG_TX, orphanTxHash));
@@ -3724,7 +3785,9 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                     {
                         // invalid orphan
                         vEraseQueue.push_back(orphanTxHash);
-                        LogPrintf("   removed invalid orphan tx %s\n", orphanTxHash.ToString().substr(0,10).c_str());
+
+                        LogPrintf("%s : removed invalid orphan tx %s\n", __func__,
+                                  orphanTxHash.ToString().substr(0,10).c_str());
                     }
                 }
             }
@@ -3738,20 +3801,21 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
             // DoS prevention: do not allow mapOrphanTransactions to grow unbounded
             unsigned int nEvicted = LimitOrphanTxSize(MAX_ORPHAN_TRANSACTIONS);
+
             if (nEvicted > 0)
                 LogPrintf("mapOrphan overflow, removed %u tx\n", nEvicted);
         }
-        if (tx.nDoS) pfrom->Misbehaving(tx.nDoS);
+
+        if (tx.nDoS)
+            pfrom->Misbehaving(std::string("transaction misbehavior"), tx.nDoS);
     }
-
-
     else if (strCommand == NetMsgType::BLOCK)
     {
         CBlock block;
         vRecv >> block;
 
         if (fDebug)
-            LogPrintf("received block %s\n", block.GetHash().ToString().c_str());
+            LogPrintf("%s : received block %s\n", __func__, block.GetHash().ToString().c_str());
 
         CInv inv(MSG_BLOCK, block.GetHash());
         pfrom->AddInventoryKnown(inv);
@@ -3771,10 +3835,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // }
 
         if (block.nDoS)
-            pfrom->Misbehaving(block.nDoS);
+            pfrom->Misbehaving(std::string("block misbehavior"), block.nDoS);
     }
-
-
     else if (strCommand == NetMsgType::GETADDR)
     {
         // Don't return addresses older than nCutOff timestamp
@@ -3785,24 +3847,22 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             if(addr.nTime > nCutOff)
                 pfrom->PushAddress(addr);
     }
-
-
     else if (strCommand == NetMsgType::MEMPOOL)
     {
         std::vector<uint256> vtxid;
         mempool.queryHashes(vtxid);
         vector<CInv> vInv;
+
         for (unsigned int i = 0; i < vtxid.size(); i++) {
             CInv inv(MSG_TX, vtxid[i]);
             vInv.push_back(inv);
             if (i == (MAX_INV_SZ - 1))
                 break;
         }
+
         if (vInv.size() > 0)
             pfrom->PushMessage(NetMsgType::INV, vInv);
     }
-
-
     else if (strCommand == NetMsgType::PING)
     {
         if (pfrom->nVersion > BIP0031_VERSION)
@@ -3823,8 +3883,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             pfrom->PushMessage(NetMsgType::PONG, nonce);
         }
     }
-
-
     else if (strCommand == NetMsgType::ALERT)
     {
         CAlert alert;
@@ -3850,11 +3908,10 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
                 // This isn't a Misbehaving(100) (immediate ban) because the
                 // peer might be an older or different implementation with
                 // a different signature key, etc.
-                pfrom->Misbehaving(10);
+                pfrom->Misbehaving(std::string("alert misbehavior"), 10);
             }
         }
     }
-
     else if (strCommand == NetMsgType::REJECT)
     {
         if (fDebug) {

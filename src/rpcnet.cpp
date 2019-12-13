@@ -37,7 +37,7 @@ UniValue getpeerinfo(const UniValue& params, bool fHelp)
     LOCK(cs_vNodes);
     UniValue ret(UniValue::VARR);
 
-    BOOST_FOREACH(const CNode *pnode, vNodes)
+    BOOST_FOREACH(CNode *pnode, vNodes)
     {
         UniValue obj(UniValue::VOBJ);
 
@@ -53,6 +53,20 @@ UniValue getpeerinfo(const UniValue& params, bool fHelp)
         obj.push_back(Pair("startingheight", pnode->nStartingHeight));
         obj.push_back(Pair("banscore", pnode->nMisbehavior));
 
+        UniValue marray(UniValue::VARR);
+        std::vector<CNode::Misbehavior> misbehaviors = pnode->GetMisbehaviors();
+
+        BOOST_FOREACH(const CNode::Misbehavior& m, misbehaviors)
+        {
+            UniValue mobj(UniValue::VOBJ);
+
+            mobj.push_back(Pair("time", m.time));
+            mobj.push_back(Pair("score", m.score));
+            mobj.push_back(Pair("cause", m.cause));
+            marray.push_back(mobj);
+        }
+
+        obj.push_back(Pair("misbehaviors", marray));
         ret.push_back(obj);
     }
 

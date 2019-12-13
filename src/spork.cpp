@@ -8,6 +8,8 @@
 #include "spork.h"
 #include "main.h"
 
+#include <sstream>
+#include <boost/format.hpp>
 #include <boost/lexical_cast.hpp>
 
 class CSporkMessage;
@@ -45,14 +47,16 @@ void CSporkManager::ProcessSpork(CNode* pfrom, std::string& strCommand, CDataStr
                 return;
             }
             else if (fDebug)
-                    LogPrintf("%s : got updated spork %s block %d \n", __func__, hash.ToString(), pindexBest->nHeight);
+                LogPrintf("%s : got updated spork %s block %d \n", __func__, hash.ToString(), pindexBest->nHeight);
         }
 
         if (!spork.CheckSignature())
         {
-            LogPrintf("%s : invalid signature\n", __func__);
-            pfrom->Misbehaving(100);
+            std::stringstream msg;
+            msg << boost::format("%s : invalid spork signature") % __func__;
 
+            LogPrintf("%s\n", msg.str().c_str());
+            pfrom->Misbehaving(msg.str(), 100);
             return;
         }
 

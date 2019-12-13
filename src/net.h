@@ -284,7 +284,8 @@ private:
 
 extern std::unique_ptr<CConnman> g_connman;
 
-class CNetMessage {
+class CNetMessage
+{
 public:
     bool in_data;                   // parsing header (false) or data (true)
     CDataStream hdrbuf;             // partially received header
@@ -387,10 +388,24 @@ public:
 
     CNode(SOCKET hSocketIn, CAddress addrIn, std::string addrNameIn = "", bool fInboundIn = false);
     ~CNode();
-
-private:
     CNode(const CNode&);
     void operator=(const CNode&);
+
+public:
+    class Misbehavior
+    {
+        public:
+        Misbehavior(int64_t time, int score, std::string cause) :
+            time(time), score(score), cause(cause) { }
+
+        int64_t time;
+        int score;
+        std::string cause;
+    };
+
+private:
+    CCriticalSection cs_misbehaviors;
+    std::vector<Misbehavior> misbehaviors;
 
 public:
     NodeId GetId() const
@@ -772,7 +787,8 @@ public:
     // dangerous, because it can cause a network split
     // between nodes running old code and nodes running
     // new code.
-    bool Misbehaving(int howmuch); // 1 == a little, 100 == a lot
+    bool Misbehaving(std::string cause, int howmuch); // 1 == a little, 100 == a lot
+    std::vector<Misbehavior> GetMisbehaviors();
 };
 
 class CTransaction;
