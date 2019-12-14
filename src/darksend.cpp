@@ -741,7 +741,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                 LOCK(cs_vNodes);
 
                 // randomly clear a node in order to get constant syncing of the lists
-                int index = GetRandInt(vNodes.size() - 1);
+                int index = GetRandInt(vNodes.size());
                 vNodes[index]->ClearFulfilledRequest("getspork");
                 vNodes[index]->ClearFulfilledRequest("mnsync");
                 vNodes[index]->ClearFulfilledRequest("mnwsync");
