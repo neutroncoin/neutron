@@ -740,11 +740,15 @@ void ThreadCheckDarkSend(CConnman& connman)
             {
                 LOCK(cs_vNodes);
 
-                // randomly clear a node in order to get constant syncing of the lists
-                int index = GetRandInt(vNodes.size());
-                vNodes[index]->ClearFulfilledRequest("getspork");
-                vNodes[index]->ClearFulfilledRequest("mnsync");
-                vNodes[index]->ClearFulfilledRequest("mnwsync");
+                if (!vNodes.empty())
+                {
+                    // randomly clear a node in order to get constant syncing of the lists
+                    int index = GetRandInt(vNodes.size());
+
+                    vNodes[index]->ClearFulfilledRequest("getspork");
+                    vNodes[index]->ClearFulfilledRequest("mnsync");
+                    vNodes[index]->ClearFulfilledRequest("mnwsync");
+                }
 
                 if (fDebug)
                     LogPrintf("ThreadCheckDarkSend: Asking peers for sporks and masternode list\n");
