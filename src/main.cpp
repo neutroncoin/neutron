@@ -168,9 +168,10 @@ void ResendWalletTransactions(bool fForce)
 bool AbortNode(const std::string &strMessage, const std::string &userMessage) {
     strMiscWarning = strMessage;
 
-    LogPrintf("*** %s\n", strMessage.c_str());
+    LogPrintf("[FATAL] %s\n", strMessage.c_str());
     uiInterface.ThreadSafeMessageBox(userMessage.empty() ? _("Error: A fatal internal error occured, "
-                                     "see debug.log for details") : userMessage, "", CClientUIInterface::MSG_ERROR);
+                                     "see debug.log for details") : userMessage, "",
+                                     CClientUIInterface::MSG_ERROR);
     StartShutdown();
     return false;
 }
@@ -194,7 +195,9 @@ bool AddOrphanTx(const CTransaction& tx)
 
     if (nSize > 5000)
     {
-        LogPrintf("ignoring large orphan tx (size: %u, hash: %s)\n", nSize, hash.ToString().substr(0,10).c_str());
+        LogPrintf("%s : ignoring large orphan tx (size: %u, hash: %s)\n", __func__,
+                  nSize, hash.ToString().substr(0,10).c_str());
+
         return false;
     }
 
@@ -203,8 +206,8 @@ bool AddOrphanTx(const CTransaction& tx)
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
         mapOrphanTransactionsByPrev[txin.prevout.hash].insert(hash);
 
-    LogPrintf("stored orphan tx %s (mapsz %u)\n", hash.ToString().substr(0,10).c_str(),
-              mapOrphanTransactions.size());
+    LogPrintf("%s : stored orphan tx %s (mapsz %u)\n", __func__,
+              hash.ToString().substr(0,10).c_str(), mapOrphanTransactions.size());
 
     return true;
 }
@@ -295,9 +298,8 @@ bool CTransaction::IsStandard() const
         if (!txin.scriptSig.IsPushOnly())
             return false;
 
-        if (fEnforceCanonical && !txin.scriptSig.HasCanonicalPushes()) {
+        if (fEnforceCanonical && !txin.scriptSig.HasCanonicalPushes())
             return false;
-        }
     }
 
     unsigned int nDataOut = 0;
@@ -343,14 +345,17 @@ bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const
     for (unsigned int i = 0; i < vin.size(); i++)
     {
         const CTxOut& prev = GetOutputFor(vin[i], mapInputs);
-
         vector<vector<unsigned char> > vSolutions;
         txnouttype whichType;
+
         // get the scriptPubKey corresponding to this input:
         const CScript& prevScript = prev.scriptPubKey;
+
         if (!Solver(prevScript, whichType, vSolutions))
             return false;
+
         int nArgsExpected = ScriptSigArgsExpected(whichType, vSolutions);
+
         if (nArgsExpected < 0)
             return false;
 
@@ -360,6 +365,7 @@ bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const
         // beside "push data" in the scriptSig the
         // IsStandard() call returns false
         vector<vector<unsigned char> > stack;
+
         if (!EvalScript(stack, vin[i].scriptSig, *this, i, 0))
             return false;
 
@@ -367,18 +373,23 @@ bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const
         {
             if (stack.empty())
                 return false;
+
             CScript subscript(stack.back().begin(), stack.back().end());
             vector<vector<unsigned char> > vSolutions2;
             txnouttype whichType2;
+
             if (!Solver(subscript, whichType2, vSolutions2))
                 return false;
+
             if (whichType2 == TX_SCRIPTHASH)
                 return false;
 
             int tmpExpected;
             tmpExpected = ScriptSigArgsExpected(whichType2, vSolutions2);
+
             if (tmpExpected < 0)
                 return false;
+
             nArgsExpected += tmpExpected;
         }
 
@@ -393,14 +404,13 @@ unsigned int
 CTransaction::GetLegacySigOpCount() const
 {
     unsigned int nSigOps = 0;
+
     BOOST_FOREACH(const CTxIn& txin, vin)
-    {
         nSigOps += txin.scriptSig.GetSigOpCount(false);
-    }
+
     BOOST_FOREACH(const CTxOut& txout, vout)
-    {
         nSigOps += txout.scriptPubKey.GetSigOpCount(false);
-    }
+
     return nSigOps;
 }
 
@@ -409,48 +419,60 @@ bool CTransaction::CheckTransaction() const
 {
     // Basic checks that don't depend on any context
     if (vin.empty())
-        return DoS(10, error("CTransaction::CheckTransaction() : vin empty"));
+        return DoS(10, error("%s : vin empty", __func__));
+
     if (vout.empty())
-        return DoS(10, error("CTransaction::CheckTransaction() : vout empty"));
+        return DoS(10, error("%s : vout empty", __func__));
+
     // Size limits
     if (::GetSerializeSize(*this, SER_NETWORK, PROTOCOL_VERSION) > MAX_BLOCK_SIZE)
-        return DoS(100, error("CTransaction::CheckTransaction() : size limits failed"));
+        return DoS(100, error("%s : size limits failed", __func__));
 
     // Check for negative or overflow output values
     int64_t nValueOut = 0;
+
     for (unsigned int i = 0; i < vout.size(); i++)
     {
         const CTxOut& txout = vout[i];
+
         if (txout.IsEmpty() && !IsCoinBase() && !IsCoinStake())
-            return DoS(100, error("CTransaction::CheckTransaction() : txout empty for user transaction"));
+            return DoS(100, error("%s : txout empty for user transaction", __func__));
+
         if (txout.nValue < 0)
-            return DoS(100, error("CTransaction::CheckTransaction() : txout.nValue negative"));
+            return DoS(100, error("%s : txout.nValue negative", __func__));
+
         if (txout.nValue > MAX_MONEY)
-            return DoS(100, error("CTransaction::CheckTransaction() : txout.nValue too high"));
+            return DoS(100, error("%s : txout.nValue too high", __func__));
+
         nValueOut += txout.nValue;
+
         if (!MoneyRange(nValueOut))
-            return DoS(100, error("CTransaction::CheckTransaction() : txout total out of range"));
+            return DoS(100, error("%s : txout total out of range", __func__));
     }
 
     // Check for duplicate inputs
     set<COutPoint> vInOutPoints;
+
     BOOST_FOREACH(const CTxIn& txin, vin)
     {
         if (vInOutPoints.count(txin.prevout))
             return false;
+
         vInOutPoints.insert(txin.prevout);
     }
 
     if (IsCoinBase())
     {
         if (!fTestNet && (vin[0].scriptSig.size() < 2 || vin[0].scriptSig.size() > 100))
-            return DoS(100, error("CTransaction::CheckTransaction() : coinbase script size is invalid"));
+            return DoS(100, error("%s : coinbase script size is invalid", __func__));
     }
     else
     {
         BOOST_FOREACH(const CTxIn& txin, vin)
+        {
             if (txin.prevout.IsNull())
-                return DoS(10, error("CTransaction::CheckTransaction() : prevout is null"));
+                return DoS(10, error("%s : prevout is null", __func__));
+        }
     }
 
     return true;
@@ -460,7 +482,6 @@ int64_t CTransaction::GetMinFee(unsigned int nBlockSize, enum GetMinFee_mode mod
 {
     // Base fee is either MIN_TX_FEE or MIN_RELAY_TX_FEE
     int64_t nBaseFee = (mode == GMF_RELAY) ? MIN_RELAY_TX_FEE : MIN_TX_FEE;
-
     unsigned int nNewBlockSize = nBlockSize + nBytes;
     int64_t nMinFee = (1 + (int64_t)nBytes / 1000) * nBaseFee;
 
@@ -468,56 +489,62 @@ int64_t CTransaction::GetMinFee(unsigned int nBlockSize, enum GetMinFee_mode mod
     if (nMinFee < nBaseFee)
     {
         BOOST_FOREACH(const CTxOut& txout, vout)
+        {
             if (txout.nValue < CENT)
                 nMinFee = nBaseFee;
+        }
     }
 
     // Raise the price as the block approaches full
-    if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN/2)
+    if (nBlockSize != 1 && nNewBlockSize >= MAX_BLOCK_SIZE_GEN / 2)
     {
         if (nNewBlockSize >= MAX_BLOCK_SIZE_GEN)
             return MAX_MONEY;
+
         nMinFee *= MAX_BLOCK_SIZE_GEN / (MAX_BLOCK_SIZE_GEN - nNewBlockSize);
     }
 
     if (!MoneyRange(nMinFee))
         nMinFee = MAX_MONEY;
+
     return nMinFee;
 }
 
 bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree,
                       bool* pfMissingInputs)
 {
-
     if (pfMissingInputs)
         *pfMissingInputs = false;
 
     CTransaction tx(txo);
 
     if (!tx.CheckTransaction())
-        return error("AcceptableInputs : CheckTransaction failed");
+        return error("%s : CheckTransaction() failed", __func__);
 
     // Coinbase is only valid in a block, not as a loose transaction
     if (tx.IsCoinBase())
-        return tx.DoS(100, error("AcceptableInputs : coinbase as individual tx"));
+        return tx.DoS(100, error("%s : coinbase as individual tx", __func__));
 
     // ppcoin: coinstake is also only valid in a block, not as a loose transaction
     if (tx.IsCoinStake())
-        return tx.DoS(100, error("AcceptableInputs : coinstake as individual tx"));
+        return tx.DoS(100, error("%s : coinstake as individual tx", __func__));
 
     // Rather not work on nonstandard transactions (unless -testnet)
     string reason;
+
     if (!fTestNet && !tx.IsStandard())
-        return error("AcceptableInputs : nonstandard transaction");
+        return error("%s : nonstandard transaction", __func__);
 
     // is it already in the memory pool?
     uint256 hash = tx.GetHash();
+
     if (pool.exists(hash))
         return false;
 
     // Check for conflicts with in-memory transactions
     {
         LOCK(pool.cs); // protect pool.mapNextTx
+
         for (unsigned int i = 0; i < tx.vin.size(); i++)
         {
             COutPoint outpoint = tx.vin[i].prevout;
@@ -539,25 +566,29 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         MapPrevTx mapInputs;
         map<uint256, CTxIndex> mapUnused;
         bool fInvalid = false;
+
         if (!tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
         {
             if (fInvalid)
-                return error("AcceptableInputs : FetchInputs found invalid tx %s", hash.ToString().c_str());
+                return error("%s : FetchInputs() found invalid tx %s", __func__, hash.ToString().c_str());
+
             if (pfMissingInputs)
                 *pfMissingInputs = true;
+
             return false;
         }
-
 
         int64_t nFees = tx.GetValueIn(mapInputs)-tx.GetValueOut();
         unsigned int nSize = ::GetSerializeSize(tx, SER_NETWORK, PROTOCOL_VERSION);
 
         // Don't accept it if it can't get into a block
         int64_t txMinFee = tx.GetMinFee(1000, GMF_RELAY, nSize);
+
         if ((fLimitFree && nFees < txMinFee) || (!fLimitFree && nFees < MIN_TX_FEE))
-            return error("AcceptableInputs : not enough fees %s, %ld < %ld",
-                         hash.ToString().c_str(),
-                         nFees, txMinFee);
+        {
+            return error("%s : not enough fees %s, %ld < %ld", __func__,
+                         hash.ToString().c_str(), nFees, txMinFee);
+        }
 
         // Continuously rate-limit free transactions
         // This mitigates 'penny-flooding' -- sending thousands of free transactions just to
@@ -572,13 +603,15 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
             LOCK(csFreeLimiter);
 
             // Use an exponentially decaying ~10-minute window:
-            dFreeCount *= pow(1.0 - 1.0/600.0, (double)(nNow - nLastTime));
+            dFreeCount *= pow(1.0 - 1.0 / 600.0, (double)(nNow - nLastTime));
             nLastTime = nNow;
+
             // -limitfreerelay unit is thousand-bytes-per-minute
             // At default rate it would take over a month to fill 1GB
-            if (dFreeCount > GetArg("-limitfreerelay", 15)*10*1000)
-                return error("AcceptableInputs : free transaction rejected by rate limiter");
-            LogPrintf("mempool", "Rate limit dFreeCount: %g => %g\n", dFreeCount, dFreeCount+nSize);
+            if (dFreeCount > GetArg("-limitfreerelay", 15) * 10 * 1000)
+                return error("%s : free transaction rejected by rate limiter", __func__);
+
+            LogPrintf("%s : rate limit dFreeCount: %g => %g\n", __func__, dFreeCount, dFreeCount+nSize);
             dFreeCount += nSize;
         }
 
@@ -586,10 +619,12 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         // This is done last to help prevent CPU exhaustion denial-of-service attacks.
         CDiskTxPos posThisTx(1,1,1);
         CBlockIndex* pindexBlock = pindexBest;
+
         if (!tx.IsCoinBase())
         {
             int64_t nValueIn = 0;
             int64_t nFees = 0;
+
             for (unsigned int i = 0; i < tx.vin.size(); i++)
             {
                 COutPoint prevout = tx.vin[i].prevout;
@@ -598,24 +633,42 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
                 CTransaction& txPrev = mapInputs[prevout.hash].second;
 
                 if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-                    return error("AcceptableInputs() : %s prevout.n out of range %d %u %u prev tx %s\n%s", tx.GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str());
+                {
+                    return error("%s : %s prevout.n out of range %d %u %u prev tx %s\n%s", __func__,
+                                 tx.GetHash().ToString().substr(0,10).c_str(), prevout.n,
+                                 txPrev.vout.size(), txindex.vSpent.size(),
+                                 prevout.hash.ToString().substr(0,10).c_str(),
+                                 txPrev.ToString().c_str());
+                }
 
                 // If prev is coinbase or coinstake, check that it's matured
                 if (txPrev.IsCoinBase() || txPrev.IsCoinStake())
-                    for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < nCoinbaseMaturity; pindex = pindex->pprev)
+                {
+                    for (const CBlockIndex* pindex = pindexBlock; pindex &&
+                         pindexBlock->nHeight - pindex->nHeight < nCoinbaseMaturity;
+                         pindex = pindex->pprev)
+                    {
                         if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
-                            return error("AcceptableInputs() : tried to spend %s at depth %d", txPrev.IsCoinBase() ? "coinbase" : "coinstake", pindexBlock->nHeight - pindex->nHeight);
+                        {
+                            return error("%s : tried to spend %s at depth %d", __func__,
+                                         txPrev.IsCoinBase() ? "coinbase" : "coinstake",
+                                         pindexBlock->nHeight - pindex->nHeight);
+                        }
+                    }
+                }
 
                 // ppcoin: check transaction timestamp
                 if (txPrev.nTime > tx.nTime)
-                    return error("AcceptableInputs() : transaction timestamp earlier than input transaction");
+                    return error("%s : transaction timestamp earlier than input transaction", __func__);
 
                 // Check for negative or overflow input values
                 nValueIn += txPrev.vout[prevout.n].nValue;
+
                 if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                    return error("AcceptableInputs() : txin values out of range");
+                    return error("%s : txin values out of range", __func__);
 
             }
+
             // The first loop above does all the inexpensive checks.
             // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
             // Helps prevent CPU exhaustion attacks.
@@ -629,7 +682,11 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
                 // This doesn't trigger the DoS code on purpose; if it did, it would make it easier
                 // for an attacker to attempt to split the network.
                 if (!txindex.vSpent[prevout.n].IsNull())
-                    return error("AcceptableInputs() : %s prev tx already used at %s", tx.GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+                {
+                    return error("%s : %s prev tx already used at %s", __func__,
+                                 tx.GetHash().ToString().substr(0,10).c_str(),
+                                 txindex.vSpent[prevout.n].ToString().c_str());
+                }
 
                 // Mark outpoints as spent
                 txindex.vSpent[prevout.n] = posThisTx;
@@ -638,20 +695,33 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
             if (!tx.IsCoinStake())
             {
                 if (nValueIn < tx.GetValueOut())
-                    return error("AcceptableInputs() : %s value in < value out", tx.GetHash().ToString().substr(0,10).c_str());
+                {
+                    return error("%s : %s value in < value out", __func__,
+                                 tx.GetHash().ToString().substr(0,10).c_str());
+                }
 
                 // Tally transaction fees
                 int64_t nTxFee = nValueIn - tx.GetValueOut();
+
                 if (nTxFee < 0)
-                    return error("AcceptableInputs() : %s nTxFee < 0", tx.GetHash().ToString().substr(0,10).c_str());
+                {
+                    return error("%s : %s nTxFee < 0", __func__,
+                                 tx.GetHash().ToString().substr(0,10).c_str());
+                }
 
                 // enforce transaction fees for every block
                 if (nTxFee < tx.GetMinFee())
-                    return error("AcceptableInputs() : %s not paying required fee=%s, paid=%s", tx.GetHash().ToString().substr(0,10).c_str(), FormatMoney(tx.GetMinFee()).c_str(), FormatMoney(nTxFee).c_str());
+                {
+                    return error("%s : %s not paying required fee=%s, paid=%s", __func__,
+                                 tx.GetHash().ToString().substr(0,10).c_str(),
+                                 FormatMoney(tx.GetMinFee()).c_str(),
+                                 FormatMoney(nTxFee).c_str());
+                }
 
                 nFees += nTxFee;
+
                 if (!MoneyRange(nFees))
-                    return error("AcceptableInputs() : nFees out of range");
+                    return error("%s : nFees out of range", __func__);
             }
         }
     }
@@ -674,12 +744,11 @@ int GetInputAge(CTxIn& vin)
     CTransaction tx;
     uint256 hashBlock;
     bool fFound = GetTransaction(prevHash, tx, hashBlock);
+
     if(fFound)
     {
         if(mapBlockIndex.find(hashBlock) != mapBlockIndex.end())
-        {
             return pindexBest->nHeight - mapBlockIndex[hashBlock]->nHeight;
-        }
         else
             return 0;
     }
@@ -1018,12 +1087,12 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
                                                           pindexBest->pprev->nChainTrust) :
                                                           pindexBest->nChainTrust;
 
-    LogPrintf("InvalidChainFound: invalid block=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n",
+    LogPrintf("%s : invalid block=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n", __func__,
               pindexNew->GetBlockHash().ToString().substr(0,20).c_str(), pindexNew->nHeight,
               CBigNum(pindexNew->nChainTrust).ToString().c_str(), nBestInvalidBlockTrust.Get64(),
               DateTimeStrFormat("%x %H:%M:%S", pindexNew->GetBlockTime()).c_str());
 
-    LogPrintf("InvalidChainFound:  current best=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n",
+    LogPrintf("%s : current best=%s  height=%d  trust=%s  blocktrust=%d  date=%s\n", __func__,
               hashBestChain.ToString().substr(0,20).c_str(), nBestHeight,
               CBigNum(pindexBest->nChainTrust).ToString().c_str(),
               nBestBlockTrust.Get64(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
@@ -3650,7 +3719,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         CSyncCheckpoint checkpoint;
         vRecv >> checkpoint;
 
-        if(fDebug) LogPrintf("checkpoint - Received: hash=%s", checkpoint.hashCheckpoint.ToString());
+        if (fDebug)
+            LogPrintf("checkpoint - Received: hash=%s", checkpoint.hashCheckpoint.ToString());
 
         if (checkpoint.ProcessSyncCheckpoint(pfrom))
         {
