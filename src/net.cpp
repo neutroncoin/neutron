@@ -949,8 +949,8 @@ void CConnman::ThreadSocketHandler2()
         // Disconnect nodes
         {
             LOCK(cs_vNodes);
-            // Disconnect unused nodes
             vector<CNode*> vNodesCopy = vNodes;
+
             BOOST_FOREACH(CNode* pnode, vNodesCopy)
             {
                 if (pnode->fDisconnect ||
@@ -969,6 +969,7 @@ void CConnman::ThreadSocketHandler2()
                     // hold in disconnected pool until all refs are released
                     if (pnode->fNetworkNode || pnode->fInbound)
                         pnode->Release();
+
                     vNodesDisconnected.push_back(pnode);
                 }
             }
@@ -983,21 +984,26 @@ void CConnman::ThreadSocketHandler2()
                     bool fDelete = false;
                     {
                         TRY_LOCK(pnode->cs_vSend, lockSend);
+
                         if (lockSend)
                         {
                             TRY_LOCK(pnode->cs_vRecvMsg, lockRecv);
+
                             if (lockRecv)
                             {
                                 TRY_LOCK(pnode->cs_mapRequests, lockReq);
+
                                 if (lockReq)
                                 {
                                     TRY_LOCK(pnode->cs_inventory, lockInv);
+
                                     if (lockInv)
                                         fDelete = true;
                                 }
                             }
                         }
                     }
+
                     if (fDelete)
                     {
                         vNodesDisconnected.remove(pnode);
@@ -1031,25 +1037,31 @@ void CConnman::ThreadSocketHandler2()
         SOCKET hSocketMax = 0;
         bool have_fds = false;
 
-        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket) {
+        BOOST_FOREACH(SOCKET hListenSocket, vhListenSocket)
+        {
             FD_SET(hListenSocket, &fdsetRecv);
             hSocketMax = max(hSocketMax, hListenSocket);
             have_fds = true;
         }
+
         {
             LOCK(cs_vNodes);
+
             BOOST_FOREACH(CNode* pnode, vNodes)
             {
                 if (pnode->hSocket == INVALID_SOCKET)
                     continue;
                 {
                     TRY_LOCK(pnode->cs_vSend, lockSend);
-                    if (lockSend) {
+
+                    if (lockSend)
+                    {
                         // do not read, if draining write queue
                         if (!pnode->vSendMsg.empty())
                             FD_SET(pnode->hSocket, &fdsetSend);
                         else
                             FD_SET(pnode->hSocket, &fdsetRecv);
+
                         FD_SET(pnode->hSocket, &fdsetError);
                         hSocketMax = max(hSocketMax, pnode->hSocket);
                         have_fds = true;
@@ -1062,17 +1074,21 @@ void CConnman::ThreadSocketHandler2()
         int nSelect = select(have_fds ? hSocketMax + 1 : 0,
                              &fdsetRecv, &fdsetSend, &fdsetError, &timeout);
         vnThreadsRunning[THREAD_SOCKETHANDLER]++;
+
         if (fShutdown)
             return;
+
         if (nSelect == SOCKET_ERROR)
         {
             if (have_fds)
             {
                 int nErr = WSAGetLastError();
                 LogPrintf("socket select error %d\n", nErr);
+
                 for (unsigned int i = 0; i <= hSocketMax; i++)
                     FD_SET(i, &fdsetRecv);
             }
+
             FD_ZERO(&fdsetSend);
             FD_ZERO(&fdsetError);
             MilliSleep(timeout.tv_usec/1000);
@@ -1094,14 +1110,18 @@ void CConnman::ThreadSocketHandler2()
 
             {
                 LOCK(cs_vNodes);
+
                 BOOST_FOREACH(CNode* pnode, vNodes)
+                {
                     if (pnode->fInbound)
                         nInbound++;
+                }
             }
 
             if (hSocket == INVALID_SOCKET)
             {
                 int nErr = WSAGetLastError();
+
                 if (nErr != WSAEWOULDBLOCK)
                     LogPrintf("socket error accept failed: %d\n", nErr);
             }
@@ -1119,6 +1139,7 @@ void CConnman::ThreadSocketHandler2()
                 LogPrintf("accepted connection %s\n", addr.ToString().c_str());
                 CNode* pnode = new CNode(hSocket, addr, "", true);
                 pnode->AddRef();
+
                 {
                     LOCK(cs_vNodes);
                     vNodes.push_back(pnode);
@@ -1131,6 +1152,7 @@ void CConnman::ThreadSocketHandler2()
         {
             LOCK(cs_vNodes);
             vNodesCopy = vNodes;
+
             BOOST_FOREACH(CNode* pnode, vNodesCopy)
                 pnode->AddRef();
         }
@@ -1147,6 +1169,7 @@ void CConnman::ThreadSocketHandler2()
             if (FD_ISSET(pnode->hSocket, &fdsetRecv) || FD_ISSET(pnode->hSocket, &fdsetError))
             {
                 TRY_LOCK(pnode->cs_vRecvMsg, lockRecv);
+
                 if (lockRecv)
                 {
                     if (pnode->GetTotalRecvSize() > ReceiveFloodSize())
@@ -1206,9 +1229,8 @@ void CConnman::ThreadSocketHandler2()
                     SocketSendData(pnode);
             }
 
-            //
             // Inactivity checking
-            //
+
             if (pnode->vSendMsg.empty())
                 pnode->nLastSendEmpty = GetTime();
 
@@ -1233,6 +1255,7 @@ void CConnman::ThreadSocketHandler2()
         }
         {
             LOCK(cs_vNodes);
+
             BOOST_FOREACH(CNode* pnode, vNodesCopy)
                 pnode->Release();
         }

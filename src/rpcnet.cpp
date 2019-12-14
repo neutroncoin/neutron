@@ -279,8 +279,10 @@ UniValue sendalert(const UniValue& params, bool fHelp)
     alert.nMaxVer = params[3].get_int();
     alert.nPriority = params[4].get_int();
     alert.nID = params[5].get_int();
+
     if (params.size() > 6)
         alert.nCancel = params[6].get_int();
+
     alert.nVersion = PROTOCOL_VERSION;
     alert.nRelayUntil = GetAdjustedTime() + 365*24*60*60;
     alert.nExpiration = GetAdjustedTime() + 365*24*60*60;
@@ -291,15 +293,17 @@ UniValue sendalert(const UniValue& params, bool fHelp)
 
     vector<unsigned char> vchPrivKey = ParseHex(params[1].get_str());
     key.SetPrivKey(CPrivKey(vchPrivKey.begin(), vchPrivKey.end())); // if key is not correct openssl may crash
+
     if (!key.Sign(Hash(alert.vchMsg.begin(), alert.vchMsg.end()), alert.vchSig))
-        throw runtime_error(
-            "Unable to sign alert, check private key?\n");
+        throw runtime_error("Unable to sign alert, check private key?\n");
+
     if(!alert.ProcessAlert())
-        throw runtime_error(
-            "Failed to process alert.\n");
+        throw runtime_error("Failed to process alert.\n");
+
     // Relay alert
     {
         LOCK(cs_vNodes);
+
         BOOST_FOREACH(CNode* pnode, vNodes)
             alert.RelayTo(pnode);
     }
@@ -316,9 +320,6 @@ UniValue sendalert(const UniValue& params, bool fHelp)
     return result;
 }
 
-/*
-+    Used for updating/reading spork settings on the network
-+*/
 UniValue spork(const UniValue& params, bool fHelp)
 {
     if (params.size() == 1 && params[0].get_str() == "show") {
