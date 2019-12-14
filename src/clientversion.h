@@ -1,36 +1,26 @@
 // Copyright (c) 2009-2014 The Bitcoin developers
+// Copyright (c) 2015-2019 The Neutron Developers
+//
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #ifndef BITCOIN_CLIENTVERSION_H
 #define BITCOIN_CLIENTVERSION_H
 
-//
 // client versioning
-//
 
 // These need to be macros, as clientversion.cpp's and neutron*-res.rc's voodoo requires it
 #define CLIENT_VERSION_MAJOR       3
 #define CLIENT_VERSION_MINOR       0
-#define CLIENT_VERSION_REVISION    9
+#define CLIENT_VERSION_REVISION    10
 #define CLIENT_VERSION_BUILD       0
 
-/**
- * Copyright year (2009-this)
- * Todo: update this when changing our copyright comments in the source
- */
 #define COPYRIGHT_YEAR 2019
 
 // Converts the parameter X to a string after macro replacement on X has been performed.
 // Don't merge these into one macro!
 #define STRINGIZE(X) DO_STRINGIZE(X)
 #define DO_STRINGIZE(X) #X
-
-/**
- * neutrond-res.rc includes this file, but it cannot cope with real c++ code.
- * WINDRES_PREPROC is defined to indicate that its pre-processor is running.
- * Anything other than a define should be guarded below.
- */
 
 #if !defined(WINDRES_PREPROC)
 
