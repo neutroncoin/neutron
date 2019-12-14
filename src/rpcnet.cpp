@@ -23,7 +23,7 @@ UniValue getconnectioncount(const UniValue& params, bool fHelp)
     }
 
     LOCK(cs_vNodes);
-    return (int)vNodes.size();
+    return (int) vNodes.size();
 }
 
 UniValue getpeerinfo(const UniValue& params, bool fHelp)

@@ -1006,10 +1006,15 @@ void CConnman::ThreadSocketHandler2()
                 }
             }
         }
-        if (vNodes.size() != nPrevNodeCount)
+
         {
-            nPrevNodeCount = vNodes.size();
-            uiInterface.NotifyNumConnectionsChanged(vNodes.size());
+            LOCK(cs_vNodes);
+
+            if (vNodes.size() != nPrevNodeCount)
+            {
+                nPrevNodeCount = vNodes.size();
+                uiInterface.NotifyNumConnectionsChanged(vNodes.size());
+            }
         }
 
         // Find which sockets have data to receive
@@ -1235,8 +1240,6 @@ void CConnman::ThreadSocketHandler2()
         MilliSleep(10);
     }
 }
-
-
 
 #ifdef USE_UPNP
 void ThreadMapPort(void* parg)
@@ -1979,6 +1982,7 @@ void ThreadMessageHandler2(void* parg)
             boost::this_thread::interruption_point();
         }
 
+        //TODO: Why is the copy locking the main array?
         {
             LOCK(cs_vNodes);
 
@@ -2413,7 +2417,11 @@ void CConnman::Stop()
     //     DeleteNode(pnode);
     // }
 
-    vNodes.clear();
+    {
+        LOCK(cs_vNodes);
+        vNodes.clear();
+    }
+
     // vNodesDisconnected.clear();
     // vhListenSocket.clear();
 
@@ -2537,9 +2545,7 @@ void RelayDarkSendFinalTransaction(const int sessionID, const CTransaction& txNe
     LOCK(cs_vNodes);
 
     BOOST_FOREACH(CNode* pnode, vNodes)
-    {
         pnode->PushMessage("dsf", sessionID, txNew);
-    }
 }
 
 void RelayDarkSendIn(const std::vector<CTxIn>& in, const int64_t& nAmount,
@@ -2563,9 +2569,7 @@ void RelayDarkSendStatus(const int sessionID, const int newState, const int newE
     LOCK(cs_vNodes);
 
     BOOST_FOREACH(CNode* pnode, vNodes)
-    {
         pnode->PushMessage("dssu", sessionID, newState, newEntriesCount, newAccepted, error);
-    }
 }
 
 void RelayDarkSendElectionEntry(const CTxIn vin, const CService addr, const std::vector<unsigned char> vchSig,
@@ -2613,19 +2617,17 @@ void RelayDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned 
 void SendDarkSendElectionEntryPing(const CTxIn vin, const std::vector<unsigned char> vchSig, const int64_t nNow, const bool stop)
 {
     LOCK(cs_vNodes);
+
     BOOST_FOREACH(CNode* pnode, vNodes)
-    {
         pnode->PushMessage(NetMsgType::DSEEP, vin, vchSig, nNow, stop);
-    }
 }
 
 void RelayDarkSendCompletedTransaction(const int sessionID, const bool error, const std::string errorMessage)
 {
     LOCK(cs_vNodes);
+
     BOOST_FOREACH(CNode* pnode, vNodes)
-    {
         pnode->PushMessage("dsc", sessionID, error, errorMessage);
-    }
 }
 
 

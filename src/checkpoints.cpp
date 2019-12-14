@@ -233,6 +233,8 @@ namespace Checkpoints
             // relay the checkpoint
             if (!checkpointMessage.IsNull())
             {
+                LOCK(cs_vNodes);
+
                 BOOST_FOREACH(CNode* pnode, vNodes)
                     checkpointMessage.RelayTo(pnode);
             }
