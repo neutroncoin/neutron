@@ -190,6 +190,7 @@ extern UniValue masternodelist(const UniValue& params, bool fHelp);
 extern UniValue masternodecount(const UniValue& params, bool fHelp);
 
 // in rpcdump.cpp
+extern UniValue importaddress(const UniValue& params, bool fHelp);
 extern UniValue importprivkey(const UniValue& params, bool fHelp);
 extern UniValue importwallet(const UniValue& params, bool fHelp);
 extern UniValue dumpprivkey(const UniValue& params, bool fHelp);
