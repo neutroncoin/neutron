@@ -52,6 +52,12 @@ bool CWalletDB::EraseName(const string& strAddress)
     return Erase(make_pair(string("name"), strAddress));
 }
 
+bool CWalletDB::WriteWatchOnly(const CTxDestination &dest)
+{
+    nWalletDBUpdated++;
+    return Write(std::make_pair(std::string("watch"), CBitcoinAddress(dest).ToString()), '1');
+}
+
 bool CWalletDB::ReadAccount(const string& strAccount, CAccount& account)
 {
     account.SetNull();
@@ -296,11 +302,33 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
                     wss.fAnyUnordered = true;
             }
         }
+
+        else if (strType == "watch")
+        {
+            std::string strAddress;
+            ssKey >> strAddress;
+            char fYes;
+            ssValue >> fYes;
+            if (fYes == '1')
+                pwallet->LoadWatchOnly(CBitcoinAddress(strAddress).Get());
+
+            // Watch-only addresses have no birthday information for now,
+            // so set the wallet birthday to the beginning of time.
+            pwallet->nTimeFirstKey = 1;
+        }
         else if (strType == "key" || strType == "wkey")
         {
-            vector<unsigned char> vchPubKey;
+            CPubKey vchPubKey;
             ssKey >> vchPubKey;
+            if (!vchPubKey.IsValid())
+            {
+                strErr = "Error reading wallet database: CPubKey corrupt";
+                return false;
+            }
             CKey key;
+            CPrivKey pkey;
+            uint256 hash = 0;
+
             if (strType == "key")
             {
                 wss.nKeys++;
