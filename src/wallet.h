@@ -96,6 +96,16 @@ private:
     // the maximum wallet format version: memory-only variable that specifies to what version this wallet may be upgraded
     int nWalletMaxVersion;
 
+// Used to keep track of spent outpoints, and
+// detect and report conflicts (double-spends or
+// mutated transactions where the mutant gets mined).
+typedef std::multimap<COutPoint, uint256> TxSpends;
+TxSpends mapTxSpends;
+void AddToSpends(const COutPoint& outpoint, const uint256& wtxid);
+void AddToSpends(const uint256& wtxid);
+
+void SyncMetaData(std::pair<TxSpends::iterator, TxSpends::iterator>);
+
 public:
     mutable CCriticalSection cs_wallet;
 
@@ -200,6 +210,11 @@ public:
     bool AddCScript(const CScript& redeemScript);
     bool LoadCScript(const CScript& redeemScript) { return CCryptoKeyStore::AddCScript(redeemScript); }
 
+	// Adds a watch-only address to the store, and saves it to disk.
+    bool AddWatchOnly(const CTxDestination &dest);
+    // Adds a watch-only address to the store, without saving it to disk (used by LoadWallet)
+    bool LoadWatchOnly(const CTxDestination &dest);
+    
     bool Unlock(const SecureString& strWalletPassphrase, bool anonimizeOnly = false);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
@@ -277,11 +292,20 @@ public:
 
     bool IsMine(const CTxIn& txin) const;
     int64_t GetDebit(const CTxIn& txin) const;
-    bool IsMine(const CTxOut& txout) const;
+    bool IsMine(const CTxOut& txout) const
+    {
+        return ::IsMine(*this, txout.scriptPubKey);
+    }
     int64_t GetCredit(const CTxOut& txout) const;
     bool IsChange(const CTxOut& txout) const;
     int64_t GetChange(const CTxOut& txout) const;
-    bool IsMine(const CTransaction& tx) const;
+    bool IsMine(const CTransaction& tx) const
+    {
+        BOOST_FOREACH(const CTxOut& txout, tx.vout)
+            if (IsMine(txout))
+                return true;
+        return false;
+    }
     bool IsFromMe(const CTransaction& tx) const;
     int64_t GetDebit(const CTransaction& tx) const;
     int64_t GetCredit(const CTransaction& tx) const;
