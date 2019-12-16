@@ -432,6 +432,7 @@ static const CRPCCommand vRPCCommands[] =
     { "getreceivedbyaccount",   &getreceivedbyaccount,   false,      false },
     { "getreceivedbyaddress",   &getreceivedbyaddress,   false,      false },
     { "gettransaction",         &gettransaction,         false,      false },
+    { "importaddress",          &importaddress,          false,      false },
     { "importprivkey",          &importprivkey,          false,      false },
     { "importwallet",           &importwallet,           false,      false },
     { "keypoolrefill",          &keypoolrefill,          true,       false },
