@@ -7,6 +7,8 @@
 
 #include "primitives/block.h"
 #include "db.h"
+#include "keystore.h"
+
 #include "base58.h"
 
 class CKeyPool;
@@ -150,6 +152,8 @@ public:
         nWalletDBUpdated++;
         return Write(std::make_pair(std::string("cscript"), hash), redeemScript, false);
     }
+
+    bool WriteWatchOnly(const CTxDestination &dest);
 
     bool WriteBestBlock(const CBlockLocator& locator)
     {
