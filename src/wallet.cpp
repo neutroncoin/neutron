@@ -744,10 +744,12 @@ bool CWallet::IsDenominated(const CTransaction& tx) const
     return ret;
 }
 
-bool CWallet::IsMine(const CTxOut& txout) const
-{
-    return ::IsMine(*this, txout.scriptPubKey);
-}
+
+//NEED TO ADDRESS THE MULTIPLES HERE FOR WATCHONLY
+//bool CWallet::IsMine(const CTxOut& txout) const
+//{
+//    return ::IsMine(*this, txout.scriptPubKey);
+//}
 
 int64_t CWallet::GetCredit(const CTxOut& txout) const
 {
@@ -783,13 +785,14 @@ int64_t CWallet::GetChange(const CTxOut& txout) const
     return (IsChange(txout) ? txout.nValue : 0);
 }
 
-bool CWallet::IsMine(const CTransaction& tx) const
-{
-    BOOST_FOREACH(const CTxOut& txout, tx.vout)
-        if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
-            return true;
-    return false;
-}
+//NEED TO ADDRESS THE MULTIPLES HERE FOR WATCHONLY
+//bool CWallet::IsMine(const CTransaction& tx) const
+//{
+//    BOOST_FOREACH(const CTxOut& txout, tx.vout)
+//        if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
+//            return true;
+//    return false;
+//}
 
 bool CWallet::IsFromMe(const CTransaction& tx) const
 {
