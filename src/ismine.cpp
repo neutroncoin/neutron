@@ -39,34 +39,53 @@ public:
 
 bool IsMine(const CKeyStore &keystore, const CTxDestination &dest)
 {
-    return boost::apply_visitor(CKeyStoreIsMineVisitor(&keystore), dest);
+    if (boost::apply_visitor(CKeyStoreIsMineVisitor(&keystore), dest))
+        return ISMINE_SPENDABLE;
+    if (keystore.HaveWatchOnly(dest))
+        return ISMINE_WATCH_ONLY;
+    return ISMINE_NO;
 }
 
 bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
 {
     std::vector<valtype> vSolutions;
     txnouttype whichType;
-    if (!Solver(scriptPubKey, whichType, vSolutions))
-        return false;
+    if (!Solver(scriptPubKey, whichType, vSolutions)) {
+        if (keystore.HaveWatchOnly(scriptPubKey.GetID()))
+            return ISMINE_WATCH_ONLY;
+        return ISMINE_NO;
+    }
 
     CKeyID keyID;
     switch (whichType)
     {
     case TX_NONSTANDARD:
     case TX_NULL_DATA:
-        return false;
+        break;
     case TX_PUBKEY:
         keyID = CPubKey(vSolutions[0]).GetID();
-        return keystore.HaveKey(keyID);
+        if (keystore.HaveKey(keyID))
+            return ISMINE_SPENDABLE;
+        if (keystore.HaveWatchOnly(keyID))
+            return ISMINE_WATCH_ONLY;
+        break;
     case TX_PUBKEYHASH:
         keyID = CKeyID(uint160(vSolutions[0]));
-        return keystore.HaveKey(keyID);
+        if (keystore.HaveKey(keyID))
+            return ISMINE_SPENDABLE;
+        if (keystore.HaveWatchOnly(keyID))
+            return ISMINE_WATCH_ONLY;
+        break;
     case TX_SCRIPTHASH:
     {
+        CScriptID scriptID = CScriptID(uint160(vSolutions[0]));
         CScript subscript;
-        if (!keystore.GetCScript(CScriptID(uint160(vSolutions[0])), subscript))
-            return false;
-        return IsMine(keystore, subscript);
+        if (keystore.GetCScript(scriptID, subscript)) {
+            return IsMine(keystore, subscript);
+        }
+        if (keystore.HaveWatchOnly(scriptID))
+            return ISMINE_WATCH_ONLY;
+        break;
     }
     case TX_MULTISIG:
     {
@@ -76,8 +95,13 @@ bool IsMine(const CKeyStore &keystore, const CScript& scriptPubKey)
         // them) enable spend-out-from-under-you attacks, especially
         // in shared-wallet situations.
         std::vector<valtype> keys(vSolutions.begin()+1, vSolutions.begin()+vSolutions.size()-1);
-        return HaveKeys(keys, keystore) == keys.size();
+        if (HaveKeys(keys, keystore) == keys.size())
+            return ISMINE_SPENDABLE;
+        break;
     }
     }
-    return false;
+
+    if (keystore.HaveWatchOnly(scriptPubKey.GetID()))
+        return ISMINE_WATCH_ONLY;
+    return ISMINE_NO;
 }
