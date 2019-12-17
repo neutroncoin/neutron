@@ -15,7 +15,12 @@ bool CKeyStore::GetPubKey(const CKeyID &address, CPubKey &vchPubKeyOut) const
     return true;
 }
 
-bool CBasicKeyStore::AddKey(const CKey& key)
+bool CKeyStore::AddKey(const CKey& key)
+{
+    return AddKeyPubKey(key, key.GetPubKey());
+}
+
+bool CBasicKeyStore::AddKeyPubKey(const CKey& key, const CPubKey &pubkey)
 {
     bool fCompressed = false;
     CSecret secret = key.GetSecret(fCompressed);
@@ -221,4 +226,18 @@ bool CCryptoKeyStore::EncryptKeys(CKeyingMaterial& vMasterKeyIn)
         mapKeys.clear();
     }
     return true;
+}
+
+//*Watch-Only//
+bool CBasicKeyStore::AddWatchOnly(const CTxDestination &dest)
+{
+    LOCK(cs_KeyStore);
+    setWatchOnly.insert(dest);
+    return true;
+}
+
+bool CBasicKeyStore::HaveWatchOnly(const CTxDestination &dest) const
+{
+    LOCK(cs_KeyStore);
+    return setWatchOnly.count(dest) > 0;
 }
