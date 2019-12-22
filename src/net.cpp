@@ -119,8 +119,8 @@ void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
 
     if (fDebug)
     {
-        LogPrintf("Getting blocks from index at [%d] with hash %s [isInitialBlockDownload = %d]\n",
-                  pindexBegin->nHeight, pindexBegin->phashBlock->ToString().c_str(),
+        LogPrintf("%s : getting blocks from index at [%d] with hash %s [isInitialBlockDownload = %d]\n",
+                  __func__, pindexBegin->nHeight, pindexBegin->phashBlock->ToString().c_str(),
                   IsInitialBlockDownload());
     }
 
@@ -135,12 +135,15 @@ bool GetLocal(CService& addr, const CNetAddr *paddrPeer)
 
     int nBestScore = -1;
     int nBestReachability = -1;
+
     {
         LOCK(cs_mapLocalHost);
+
         for (map<CNetAddr, LocalServiceInfo>::iterator it = mapLocalHost.begin(); it != mapLocalHost.end(); it++)
         {
             int nScore = (*it).second.nScore;
             int nReachability = (*it).first.GetReachabilityFrom(paddrPeer);
+
             if (nReachability > nBestReachability || (nReachability == nBestReachability && nScore > nBestScore))
             {
                 addr = CService((*it).first, (*it).second.nPort);
@@ -156,31 +159,38 @@ bool GetLocal(CService& addr, const CNetAddr *paddrPeer)
 // get best local address for a particular peer as a CAddress
 CAddress GetLocalAddress(const CNetAddr *paddrPeer)
 {
-    CAddress ret(CService("0.0.0.0",0),0);
+    CAddress ret(CService("0.0.0.0", 0), 0);
     CService addr;
+
     if (GetLocal(addr, paddrPeer))
     {
         ret = CAddress(addr);
         ret.nServices = nLocalServices;
         ret.nTime = GetAdjustedTime();
     }
+
     return ret;
 }
 
 bool RecvLine(SOCKET hSocket, string& strLine)
 {
     strLine = "";
+
     while (true)
     {
         char c;
         int nBytes = recv(hSocket, &c, 1, 0);
+
         if (nBytes > 0)
         {
             if (c == '\n')
                 continue;
+
             if (c == '\r')
                 return true;
+
             strLine += c;
+
             if (strLine.size() >= 9000)
                 return true;
         }
@@ -188,30 +198,35 @@ bool RecvLine(SOCKET hSocket, string& strLine)
         {
             if (fShutdown)
                 return false;
+
             if (nBytes < 0)
             {
                 int nErr = WSAGetLastError();
+
                 if (nErr == WSAEMSGSIZE)
                     continue;
+
                 if (nErr == WSAEWOULDBLOCK || nErr == WSAEINTR || nErr == WSAEINPROGRESS)
                 {
                     MilliSleep(10);
                     continue;
                 }
             }
+
             if (!strLine.empty())
                 return true;
+
             if (nBytes == 0)
             {
                 // socket closed
-                LogPrintf("socket closed\n");
+                LogPrintf("%s : socket closed\n", __func__);
                 return false;
             }
             else
             {
                 // socket error
                 int nErr = WSAGetLastError();
-                LogPrintf("recv failed: %d\n", nErr);
+                LogPrintf("%s : recv failed: %d\n", __func__, nErr);
                 return false;
             }
         }
@@ -260,7 +275,8 @@ bool AddLocal(const CService& addr, int nScore)
     if (IsLimited(addr))
         return false;
 
-    LogPrintf("AddLocal(%s,%i)\n", addr.ToString().c_str(), nScore);
+    LogPrintf("%s : adding new address %s, score:%i\n", __func__,
+              addr.ToString().c_str(), nScore);
 
     {
         LOCK(cs_mapLocalHost);
@@ -286,7 +302,7 @@ bool AddLocal(const CNetAddr &addr, int nScore)
     return AddLocal(CService(addr, GetListenPort()), nScore);
 }
 
-/** Make a particular network entirely off-limits (no automatic connects to it) */
+// make a particular network entirely off-limits (no automatic connects to it)
 void SetLimited(enum Network net, bool fLimited)
 {
     if (net == NET_UNROUTABLE)
@@ -307,7 +323,7 @@ bool IsLimited(const CNetAddr &addr)
     return IsLimited(addr.GetNetwork());
 }
 
-/** vote for a local address */
+// vote for a local address
 bool SeenLocal(const CService& addr)
 {
     {
@@ -323,14 +339,12 @@ bool SeenLocal(const CService& addr)
     return true;
 }
 
-/** check whether a given address is potentially local */
 bool IsLocal(const CService& addr)
 {
     LOCK(cs_mapLocalHost);
     return mapLocalHost.count(addr) > 0;
 }
 
-/** check whether a given address is in a network we can probably connect to */
 bool IsReachable(const CNetAddr& addr)
 {
     LOCK(cs_mapLocalHost);
@@ -697,12 +711,12 @@ void CConnman::SweepBanned()
     LOCK(cs_setBanned);
     banmap_t::iterator it = setBanned.begin();
 
-    while(it != setBanned.end())
+    while (it != setBanned.end())
     {
         CSubNet subNet = (*it).first;
         CBanEntry banEntry = (*it).second;
 
-        if(now > banEntry.nBanUntil)
+        if (now > banEntry.nBanUntil)
         {
             setBanned.erase(it++);
             setBannedIsDirty = true;
@@ -894,7 +908,7 @@ void SocketSendData(CNode *pnode)
 
                 if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
                 {
-                    LogPrintf("socket send error %d\n", nErr);
+                    LogPrintf("%s : socket send error %d\n", __func__, nErr);
                     pnode->CloseSocketDisconnect();
                 }
             }
@@ -916,7 +930,7 @@ void SocketSendData(CNode *pnode)
 void CConnman::ThreadSocketHandler()
 {
     // Make this thread recognisable as the networking thread
-    RenameThread("Neutron-net");
+    RenameThread("neutron-net");
 
     try
     {
@@ -927,7 +941,7 @@ void CConnman::ThreadSocketHandler()
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_SOCKETHANDLER]--;
-        PrintException(&e, "ThreadSocketHandler()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
@@ -935,12 +949,12 @@ void CConnman::ThreadSocketHandler()
         throw; // support pthread_cancel()
     }
 
-    LogPrintf("ThreadSocketHandler exited\n");
+    LogPrintf("%s : exited\n", __func__);
 }
 
 void CConnman::ThreadSocketHandler2()
 {
-    LogPrintf("ThreadSocketHandler started\n");
+    LogPrintf("%s : started\n", __func__);
     list<CNode*> vNodesDisconnected;
     unsigned int nPrevNodeCount = 0;
 
@@ -1123,7 +1137,7 @@ void CConnman::ThreadSocketHandler2()
                 int nErr = WSAGetLastError();
 
                 if (nErr != WSAEWOULDBLOCK)
-                    LogPrintf("socket error accept failed: %d\n", nErr);
+                    LogPrintf("%s : socket error accept failed: %d\n", __func__, nErr);
             }
             else if (nInbound >= GetArg("-maxconnections", 125) - MAX_OUTBOUND_CONNECTIONS)
             {
@@ -1131,12 +1145,13 @@ void CConnman::ThreadSocketHandler2()
             }
             else if (IsBanned(addr))
             {
-                LogPrintf("connection from %s dropped (banned)\n", addr.ToString().c_str());
+                LogPrintf("%s : connection from %s dropped (banned)\n", __func__,
+                          addr.ToString().c_str());
                 CloseSocket(hSocket);
             }
             else
             {
-                LogPrintf("accepted connection %s\n", addr.ToString().c_str());
+                LogPrintf("%s : accepted connection %s\n", __func__, addr.ToString().c_str());
                 CNode* pnode = new CNode(hSocket, addr, "", true);
                 pnode->AddRef();
 
@@ -1175,7 +1190,8 @@ void CConnman::ThreadSocketHandler2()
                     if (pnode->GetTotalRecvSize() > ReceiveFloodSize())
                     {
                         if (!pnode->fDisconnect)
-                            LogPrintf("socket recv flood control disconnect (%u bytes)\n", pnode->GetTotalRecvSize());
+                            LogPrintf("%s : socket recv flood control disconnect (%u bytes)\n",
+                                      __func__, pnode->GetTotalRecvSize());
 
                         pnode->CloseSocketDisconnect();
                     }
@@ -1196,7 +1212,7 @@ void CConnman::ThreadSocketHandler2()
                         {
                             // socket closed gracefully
                             if (!pnode->fDisconnect)
-                                LogPrintf("socket closed\n");
+                                LogPrintf("%s : socket closed\n", __func__);
 
                             pnode->CloseSocketDisconnect();
                         }
@@ -1208,7 +1224,7 @@ void CConnman::ThreadSocketHandler2()
                             if (nErr != WSAEWOULDBLOCK && nErr != WSAEMSGSIZE && nErr != WSAEINTR && nErr != WSAEINPROGRESS)
                             {
                                 if (!pnode->fDisconnect)
-                                    LogPrintf("socket recv error %d\n", nErr);
+                                    LogPrintf("%s: socket recv error %d\n", __func__, nErr);
 
                                 pnode->CloseSocketDisconnect();
                             }
@@ -1238,17 +1254,18 @@ void CConnman::ThreadSocketHandler2()
             {
                 if (pnode->nLastRecv == 0 || pnode->nLastSend == 0)
                 {
-                    LogPrintf("socket no message in first 60 seconds, %d %d\n", pnode->nLastRecv != 0, pnode->nLastSend != 0);
+                    LogPrintf("%s : socket no message in first 60 seconds, %d %d\n", __func__,
+                              pnode->nLastRecv != 0, pnode->nLastSend != 0);
                     pnode->fDisconnect = true;
                 }
                 else if (GetTime() - pnode->nLastSend > 90*60 && GetTime() - pnode->nLastSendEmpty > 90*60)
                 {
-                    LogPrintf("socket not sending\n");
+                    LogPrintf("%s : socket not sending\n", __func__);
                     pnode->fDisconnect = true;
                 }
                 else if (GetTime() - pnode->nLastRecv > 90*60)
                 {
-                    LogPrintf("socket inactivity timeout\n");
+                    LogPrintf("%s : socket inactivity timeout\n", __func__);
                     pnode->fDisconnect = true;
                 }
             }
@@ -1279,12 +1296,12 @@ void ThreadMapPort(void* parg)
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_UPNP]--;
-        PrintException(&e, "ThreadMapPort()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
         vnThreadsRunning[THREAD_UPNP]--;
-        PrintException(NULL, "ThreadMapPort()");
+        PrintException(NULL, __func__);
     }
 
     LogPrintf("%s : exited\n", __func__);
@@ -1324,16 +1341,16 @@ void ThreadMapPort2(void* parg)
             r = UPNP_GetExternalIPAddress(urls.controlURL, data.first.servicetype, externalIPAddress);
 
             if(r != UPNPCOMMAND_SUCCESS)
-                LogPrintf("UPnP: GetExternalIPAddress() returned %d\n", r);
+                LogPrintf("%s : GetExternalIPAddress() returned %d\n", __func__, r);
             else
             {
                 if(externalIPAddress[0])
                 {
-                    LogPrintf("UPnP: ExternalIPAddress = %s\n", externalIPAddress);
+                    LogPrintf("%s : externalIPAddress = %s\n", __func__, externalIPAddress);
                     AddLocal(CNetAddr(externalIPAddress), LOCAL_UPNP);
                 }
                 else
-                    LogPrintf("UPnP: GetExternalIPAddress failed.\n");
+                    LogPrintf("%s : GetExternalIPAddress() failed\n", __func__);
             }
         }
 
@@ -1383,8 +1400,8 @@ void ThreadMapPort2(void* parg)
 #endif
 
                 if(r!=UPNPCOMMAND_SUCCESS)
-                    LogPrintf("AddPortMapping(%s, %s, %s) failed with code %d (%s)\n",
-                              port.c_str(), port.c_str(), lanaddr, r, strupnperror(r));
+                    LogPrintf("%s : AddPortMapping(%s, %s, %s) failed with code %d (%s)\n",
+                              __func__, port.c_str(), port.c_str(), lanaddr, r, strupnperror(r));
                 else
                     LogPrintf("%s : UPnP port mapping successful.\n", __func__);;
             }
@@ -1547,12 +1564,12 @@ void CConnman::ThreadOpenConnections()
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-        PrintException(&e, "ThreadOpenConnections()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
         vnThreadsRunning[THREAD_OPENCONNECTIONS]--;
-        PrintException(NULL, "ThreadOpenConnections()");
+        PrintException(NULL, __func__);
     }
 
     LogPrintf("%s : exited\n", __func__);
@@ -1582,7 +1599,7 @@ void CConnman::ProcessOneShot()
 
 void CConnman::ThreadStakeMiner(CWallet *pwallet)
 {
-    LogPrintf("ThreadStakeMiner started\n");
+    LogPrintf("%s : started\n", __func__);
 
     try
     {
@@ -1593,12 +1610,12 @@ void CConnman::ThreadStakeMiner(CWallet *pwallet)
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_STAKE_MINER]--;
-        PrintException(&e, "ThreadStakeMiner()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
         vnThreadsRunning[THREAD_STAKE_MINER]--;
-        PrintException(NULL, "ThreadStakeMiner()");
+        PrintException(NULL, __func__);
     }
 
     LogPrintf("%s : exiting, %d threads remaining\n", __func__, vnThreadsRunning[THREAD_STAKE_MINER]);
@@ -1765,12 +1782,12 @@ void CConnman::ThreadOpenAddedConnections()
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_ADDEDCONNECTIONS]--;
-        PrintException(&e, "ThreadOpenAddedConnections()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
         vnThreadsRunning[THREAD_ADDEDCONNECTIONS]--;
-        PrintException(NULL, "ThreadOpenAddedConnections()");
+        PrintException(NULL, __func__);
     }
 
     LogPrintf("%s : exited\n", __func__);
@@ -1925,12 +1942,12 @@ void ThreadMessageHandler(void* parg)
     catch (std::exception& e)
     {
         vnThreadsRunning[THREAD_MESSAGEHANDLER]--;
-        PrintException(&e, "ThreadMessageHandler()");
+        PrintException(&e, __func__);
     }
     catch (...)
     {
         vnThreadsRunning[THREAD_MESSAGEHANDLER]--;
-        PrintException(NULL, "ThreadMessageHandler()");
+        PrintException(NULL, __func__);
     }
 
     LogPrintf("%s : exited\n", __func__);
@@ -2043,7 +2060,8 @@ bool BindListenPort(const CService &addrBind, string& strError)
     int ret = WSAStartup(MAKEWORD(2,2), &wsadata);
     if (ret != NO_ERROR)
     {
-        strError = strprintf("Error: TCP/IP socket library failed to start (WSAStartup returned error %d)", ret);
+        strError = strprintf("%s : [ERROR] TCP/IP socket library failed to start "
+                             "(WSAStartup returned error %d)", __func__, ret);
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
@@ -2054,7 +2072,8 @@ bool BindListenPort(const CService &addrBind, string& strError)
     socklen_t len = sizeof(sockaddr);
     if (!addrBind.GetSockAddr((struct sockaddr*)&sockaddr, &len))
     {
-        strError = strprintf("Error: bind address family for %s not supported", addrBind.ToString().c_str());
+        strError = strprintf("%s : [ERROR] bind address family for %s not supported",
+                             __func__, addrBind.ToString().c_str());
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
@@ -2062,7 +2081,8 @@ bool BindListenPort(const CService &addrBind, string& strError)
     SOCKET hListenSocket = socket(((struct sockaddr*)&sockaddr)->sa_family, SOCK_STREAM, IPPROTO_TCP);
     if (hListenSocket == INVALID_SOCKET)
     {
-        strError = strprintf("Error: Couldn't open socket for incoming connections (socket returned error %d)", WSAGetLastError());
+        strError = strprintf("%s : [ERROR] couldn't open socket for incoming connections "
+                             "(socket returned error %d)", __func__, WSAGetLastError());
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
@@ -2085,14 +2105,16 @@ bool BindListenPort(const CService &addrBind, string& strError)
     if (fcntl(hListenSocket, F_SETFL, O_NONBLOCK) == SOCKET_ERROR)
 #endif
     {
-        strError = strprintf("Error: Couldn't set properties on socket for incoming connections (error %d)", WSAGetLastError());
+        strError = strprintf("%s : [ERROR] couldn't set properties on socket for incoming "
+                             "connections (error %d)", __func__, WSAGetLastError());
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
 
     // some systems don't have IPV6_V6ONLY but are always v6only; others do have the option
     // and enable it by default or not. Try to enable it, if possible.
-    if (addrBind.IsIPv6()) {
+    if (addrBind.IsIPv6())
+    {
 #ifdef IPV6_V6ONLY
 #ifdef WIN32
         setsockopt(hListenSocket, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&nOne, sizeof(int));
@@ -2111,10 +2133,13 @@ bool BindListenPort(const CService &addrBind, string& strError)
     if (::bind(hListenSocket, (struct sockaddr*)&sockaddr, len) == SOCKET_ERROR)
     {
         int nErr = WSAGetLastError();
+
         if (nErr == WSAEADDRINUSE)
-            strError = strprintf(_("Unable to bind to %s on this computer. Neutron is probably already running."), addrBind.ToString().c_str());
+            strError = strprintf(_("%s : unable to bind to %s on this computer. Neutron is probably "
+                                   "already running."), __func__, addrBind.ToString().c_str());
         else
-            strError = strprintf(_("Unable to bind to %s on this computer (bind returned error %d, %s)"), addrBind.ToString().c_str(), nErr, strerror(nErr));
+            strError = strprintf(_("%s : unable to bind to %s on this computer (bind returned error "
+                                   "%d, %s)"), __func__, addrBind.ToString().c_str(), nErr, strerror(nErr));
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
@@ -2123,7 +2148,8 @@ bool BindListenPort(const CService &addrBind, string& strError)
     // Listen for incoming connections
     if (listen(hListenSocket, SOMAXCONN) == SOCKET_ERROR)
     {
-        strError = strprintf("Error: Listening for incoming connections failed (listen returned error %d)", WSAGetLastError());
+        strError = strprintf("%s : [ERROR] listening for incoming connections failed (listen "
+                             "returned error %d)", __func__, WSAGetLastError());
         LogPrintf("%s\n", strError.c_str());
         return false;
     }
