@@ -855,10 +855,10 @@ CBlockIndex* FindBlockByHeight(int nHeight)
         abs(nHeight - pblockindexFBBHLast->nHeight))
         pblockindex = pblockindexFBBHLast;
 
-    while (pblockindex->nHeight > nHeight)
+    while (pblockindex->pprev && pblockindex->nHeight > nHeight)
         pblockindex = pblockindex->pprev;
 
-    while (pblockindex->nHeight < nHeight)
+    while (pblockindex->pnext && pblockindex->nHeight < nHeight)
         pblockindex = pblockindex->pnext;
 
     pblockindexFBBHLast = pblockindex;
