@@ -17,6 +17,7 @@ namespace boost {
 
 extern CWallet* pwalletMain;
 extern CConnman* shared_connman;
+extern CCriticalSection cs_Shutdown;
 
 void StartShutdown();
 bool ShutdownRequested();

@@ -1984,10 +1984,12 @@ void ThreadMessageHandler2(void* parg)
                 continue;
 
             // Receive messages
+            if (!fShutdown)
             {
                 TRY_LOCK(pnode->cs_vRecvMsg, lockRecv);
+                TRY_LOCK(cs_Shutdown, lockShutdown);
 
-                if (lockRecv)
+                if (lockRecv && lockShutdown)
                 {
                     if (!ProcessMessages(pnode))
                         pnode->CloseSocketDisconnect();
@@ -2002,21 +2004,21 @@ void ThreadMessageHandler2(void* parg)
                     }
                 }
             }
-
-            if (fShutdown)
+            else
                 return;
 
             boost::this_thread::interruption_point();
 
             // Send messages
+            if (!fShutdown)
             {
                 TRY_LOCK(pnode->cs_vSend, lockSend);
+                TRY_LOCK(cs_Shutdown, lockShutdown);
 
-                if (lockSend)
+                if (lockSend && lockShutdown)
                     SendMessages(pnode, pnode == pnodeTrickle);
             }
-
-            if (fShutdown)
+            else
                 return;
 
             boost::this_thread::interruption_point();
