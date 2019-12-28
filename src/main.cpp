@@ -4091,7 +4091,8 @@ bool ProcessMessages(CNode* pfrom)
     if (!pfrom->vRecvGetData.empty()) return fOk;
 
     std::deque<CNetMessage>::iterator it = pfrom->vRecvMsg.begin();
-    while (!pfrom->fDisconnect && it != pfrom->vRecvMsg.end()) {
+    while (!pfrom->fDisconnect && it != pfrom->vRecvMsg.end())
+    {
         // Don't bother if send buffer is too full to respond anyway
         if (pfrom->nSendSize >= SendBufferSize())
             break;
@@ -4112,22 +4113,25 @@ bool ProcessMessages(CNode* pfrom)
         it++;
 
         // Scan for message start
-        if (memcmp(msg.hdr.pchMessageStart, pchMessageStart, sizeof(pchMessageStart)) != 0) {
-            LogPrintf("PROCESSMESSAGE: INVALID MESSAGESTART %s peer=%d\n", SanitizeString(msg.hdr.GetCommand()), pfrom->id);
+        if (memcmp(msg.hdr.pchMessageStart, pchMessageStart, sizeof(pchMessageStart)) != 0)
+        {
+            LogPrintf("PROCESSMESSAGE: INVALID MESSAGESTART %s peer=%d\n",
+                      SanitizeString(msg.hdr.GetCommand()), pfrom->id);
             fOk = false;
             break;
         }
 
         // Read header
         CMessageHeader& hdr = msg.hdr;
+
         if (!hdr.IsValid())
         {
-            LogPrintf("PROCESSMESSAGE: ERRORS IN HEADER %s peer=%d\n", SanitizeString(hdr.GetCommand()), pfrom->id);
+            LogPrintf("PROCESSMESSAGE: ERRORS IN HEADER %s peer=%d\n",
+                      SanitizeString(hdr.GetCommand()), pfrom->id);
             continue;
         }
-        string strCommand = hdr.GetCommand();
 
-        // Message size
+        string strCommand = hdr.GetCommand();
         unsigned int nMessageSize = hdr.nMessageSize;
 
         // Checksum
@@ -4154,32 +4158,43 @@ bool ProcessMessages(CNode* pfrom)
         catch (const std::ios_base::failure& e)
         {
             pfrom->PushMessage(NetMsgType::REJECT, strCommand, REJECT_MALFORMED, string("error parsing message"));
+
             if (strstr(e.what(), "end of data"))
             {
                 // Allow exceptions from under-length message on vRecv
-                LogPrintf("%s(%s, %u bytes): Exception '%s' caught, normally caused by a message being shorter than its stated length\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
+                LogPrintf("%s(%s, %u bytes): Exception '%s' caught, normally caused by a message"
+                          "being shorter than its stated length\n", __func__, SanitizeString(strCommand),
+                          nMessageSize, e.what());
             }
             else if (strstr(e.what(), "size too large"))
             {
                 // Allow exceptions from over-long size
-                LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__, SanitizeString(strCommand), nMessageSize, e.what());
+                LogPrintf("%s(%s, %u bytes): Exception '%s' caught\n", __func__,
+                          SanitizeString(strCommand), nMessageSize, e.what());
             }
             else
             {
                 PrintExceptionContinue(&e, "ProcessMessages()");
             }
         }
-        catch (const boost::thread_interrupted&) {
+        catch (const boost::thread_interrupted&)
+        {
             throw;
         }
-        catch (const std::exception& e) {
+        catch (const std::exception& e)
+        {
             PrintExceptionContinue(&e, "ProcessMessages()");
-        } catch (...) {
+        }
+        catch (...)
+        {
             PrintExceptionContinue(NULL, "ProcessMessages()");
         }
 
         if (!fRet)
-            LogPrintf("%s(%s, %u bytes) FAILED peer=%d\n", __func__, SanitizeString(strCommand), nMessageSize, pfrom->id);
+        {
+            LogPrintf("%s(%s, %u bytes) FAILED peer=%d\n", __func__, SanitizeString(strCommand),
+                      nMessageSize, pfrom->id);
+        }
 
         break;
     }

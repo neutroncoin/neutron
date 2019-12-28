@@ -135,7 +135,7 @@ bool ShutdownRequested()
 
 void Interrupt(boost::thread_group& threadGroup)
 {
-    LogPrintf("%s: In progress...\n", __func__);
+    LogPrintf("%s: in progress...\n", __func__);
 
     if (g_connman)
         g_connman->Interrupt();
@@ -145,7 +145,7 @@ void Interrupt(boost::thread_group& threadGroup)
 /** Preparing steps before shutting down or restarting the wallet */
 bool PrepareShutdown()
 {
-    LogPrintf("%s: In progress...\n", __func__);
+    LogPrintf("%s: in progress...\n", __func__);
     TRY_LOCK(cs_Shutdown, lockShutdown);
 
     if (!lockShutdown)
@@ -158,7 +158,7 @@ bool PrepareShutdown()
     /// for example if the data directory was found to be locked.
     /// Be sure that anything that writes files or flushes caches only does this if the respective
     /// module was initialized.
-    RenameThread("Neutron-shutoff");
+    RenameThread("neutron-shutoff");
 
     fShutdown = true;
     nTransactionsUpdated++;
@@ -174,15 +174,15 @@ bool PrepareShutdown()
     NewThread(ExitTimeout, NULL);
     MilliSleep(50);
 
-    LogPrintf("Neutron exited\n\n");
+    LogPrintf("neutron exited\n\n");
     return true;
 }
 
 void Shutdown()
 {
-    LogPrintf("%s: In progress...\n", __func__);
+    LogPrintf("%s: in progress...\n", __func__);
 
-    if(!fRequestRestart)
+    if (!fRequestRestart)
     {
         if (PrepareShutdown())
         {
