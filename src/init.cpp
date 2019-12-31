@@ -89,7 +89,6 @@ CCriticalSection cs_Shutdown;
 //
 
 std::atomic<bool> fRequestShutdown(false);
-std::atomic<bool> fRequestRestart(false);
 
 void WaitForShutdown(boost::thread_group* threadGroup)
 {
@@ -145,22 +144,15 @@ void Interrupt(boost::thread_group& threadGroup)
 /** Preparing steps before shutting down or restarting the wallet */
 bool PrepareShutdown()
 {
-    LogPrintf("%s: in progress...\n", __func__);
-    TRY_LOCK(cs_Shutdown, lockShutdown);
-
-    if (!lockShutdown)
+    if (fShutdown)
         return false;
+    else
+        fShutdown = true;
 
-    // fRequestShutdown = true; // Needed when we shutdown the wallet
-    // fRestartRequested = true; // Needed when we restart the wallet
-
-    /// Note: Shutdown() must be able to handle cases in which AppInit2() failed part of the way,
-    /// for example if the data directory was found to be locked.
-    /// Be sure that anything that writes files or flushes caches only does this if the respective
-    /// module was initialized.
+    LOCK(cs_Shutdown);
+    LogPrintf("%s: in progress...\n", __func__);
     RenameThread("neutron-shutoff");
 
-    fShutdown = true;
     nTransactionsUpdated++;
     CTxDB().Close();
     bitdb.Flush(false);
@@ -182,8 +174,9 @@ void Shutdown()
 {
     LogPrintf("%s: in progress...\n", __func__);
 
-    if (!fRequestRestart)
     {
+        LOCK(cs_Shutdown);
+
         if (PrepareShutdown())
         {
             MilliSleep(200);
@@ -191,13 +184,7 @@ void Shutdown()
         }
     }
 
-    {
-        // Wait for shutdown in other thread to complete
-        LOCK(cs_Shutdown);
-    }
-
 #ifndef QT_GUI
-    // ensure non-UI client gets exited here, but let Bitcoin-Qt reach 'return 0;' in bitcoin.cpp
     exit(0);
 #endif
 
