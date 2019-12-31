@@ -58,12 +58,6 @@ CConnman* shared_connman;
 
 CCriticalSection cs_Shutdown;
 
-//////////////////////////////////////////////////////////////////////////////
-//
-// Shutdown
-//
-
-//
 // Thread management and startup/shutdown:
 //
 // The network-processing threads are all part of a thread group
@@ -86,7 +80,6 @@ CCriticalSection cs_Shutdown;
 // Shutdown for Qt is very similar, only it uses a QTimer to detect
 // fRequestShutdown getting set, and then does the normal Qt
 // shutdown thing.
-//
 
 std::atomic<bool> fRequestShutdown(false);
 
@@ -518,19 +511,22 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     fTestNet = GetBoolArg("-testnet");
 
-    if (mapArgs.count("-bind")) {
+    if (mapArgs.count("-bind"))
+    {
         // when specifying an explicit binding address, you want to listen on it
         // even when -connect or -proxy is specified
         SoftSetBoolArg("-listen", true);
     }
 
-    if (mapArgs.count("-connect") && mapMultiArgs["-connect"].size() > 0) {
+    if (mapArgs.count("-connect") && mapMultiArgs["-connect"].size() > 0)
+    {
         // when only connecting to trusted nodes, do not seed via DNS, or listen by default
         SoftSetBoolArg("-dnsseed", false);
         SoftSetBoolArg("-listen", false);
     }
 
-    if (mapArgs.count("-proxy")) {
+    if (mapArgs.count("-proxy"))
+    {
         // to protect privacy, do not listen by default if a proxy server is specified
         SoftSetBoolArg("-listen", false);
     }
@@ -541,33 +537,38 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         SoftSetBoolArg("-discover", false);
     }
 
-    if (mapArgs.count("-externalip")) {
+    if (mapArgs.count("-externalip"))
+    {
         // if an explicit public IP is specified, do not try to find others
         SoftSetBoolArg("-discover", false);
     }
 
-    if (GetBoolArg("-salvagewallet")) {
+    if (GetBoolArg("-salvagewallet"))
+    {
         // Rewrite just private keys: rescan to find transactions
         SoftSetBoolArg("-rescan", true);
     }
 
     // Make sure enough file descriptors are available
-    int nBind = std::max(
-                (mapMultiArgs.count("-bind") ? mapMultiArgs.at("-bind").size() : 0) +
-                (mapMultiArgs.count("-whitebind") ? mapMultiArgs.at("-whitebind").size() : 0), size_t(1));
+    int nBind = std::max((mapMultiArgs.count("-bind") ? mapMultiArgs.at("-bind").size() : 0) +
+                         (mapMultiArgs.count("-whitebind") ? mapMultiArgs.at("-whitebind").size() : 0), size_t(1));
+
     nUserMaxConnections = GetArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS);
     nMaxConnections = std::max(nUserMaxConnections, 0);
 
     // Trim requested connection counts, to fit into system limitations
     nMaxConnections = std::max(std::min(nMaxConnections, (int)(FD_SETSIZE - nBind - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS)), 0);
     nFD = RaiseFileDescriptorLimit(nMaxConnections + MIN_CORE_FILEDESCRIPTORS + MAX_ADDNODE_CONNECTIONS);
+
     if (nFD < MIN_CORE_FILEDESCRIPTORS)
         return InitError(_("Not enough file descriptors available."));
+
     nMaxConnections = std::min(nFD - MIN_CORE_FILEDESCRIPTORS - MAX_ADDNODE_CONNECTIONS, nMaxConnections);
 
-    if (nMaxConnections < nUserMaxConnections) {
-        // InitWarning(strprintf(_("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
-        LogPrintf("[AppInit2] Reducing -maxconnections from %d to %d, because of system limitations.", nUserMaxConnections, nMaxConnections);
+    if (nMaxConnections < nUserMaxConnections)
+    {
+        LogPrintf("[AppInit2] Reducing -maxconnections from %d to %d, because of system limitations.",
+                  nUserMaxConnections, nMaxConnections);
     }
 
     // ********************************************************* Step 3: parameter-to-internal-flags
@@ -597,6 +598,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #if !defined(QT_GUI)
     fServer = true;
 #endif
+
     fPrintToConsole = GetBoolArg("-printtoconsole");
     fPrintToDebugger = GetBoolArg("-printtodebugger");
     fLogTimestamps = GetBoolArg("-logtimestamps");
@@ -606,6 +608,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (mapArgs.count("-timeout"))
     {
         int nNewTimeout = GetArg("-timeout", 5000);
+
         if (nNewTimeout > 0 && nNewTimeout < 600000)
             nConnectTimeout = nNewTimeout;
     }
@@ -614,6 +617,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         if (!ParseMoney(mapArgs["-paytxfee"], nTransactionFee))
             return InitError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s'"), mapArgs["-paytxfee"].c_str()));
+
         if (nTransactionFee > 0.25 * COIN)
             InitWarning(_("Warning: -paytxfee is set very high! This is the transaction fee you will pay if you send a transaction."));
     }
@@ -635,10 +639,15 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     std::string strWalletFileName = GetArg("-wallet", "wallet.dat");
 
     // strWalletFileName must be a plain filename without a directory
-    if (strWalletFileName != boost::filesystem::basename(strWalletFileName) + boost::filesystem::extension(strWalletFileName))
-        return InitError(strprintf(_("Wallet %s resides outside data directory %s."), strWalletFileName.c_str(), strDataDir.c_str()));
+    if (strWalletFileName != boost::filesystem::basename(strWalletFileName) +
+        boost::filesystem::extension(strWalletFileName))
+    {
+        return InitError(strprintf(_("Wallet %s resides outside data directory %s."),
+                                     strWalletFileName.c_str(), strDataDir.c_str()));
+    }
 
-    if (!LockDataDirectory(true)) {
+    if (!LockDataDirectory(true))
+    {
         // Detailed error printed inside LockDataDirectory
         return false;
     }
@@ -649,7 +658,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         fprintf(stdout, "Neutron server starting\n");
 
         // Daemonize
-        if (daemon(1, 0)) { // don't chdir (1), do close FDs (0)
+        if (daemon(1, 0))
+        {
             LogPrintf("[AppInit2] Error: daemon() failed: %s\n", strerror(errno));
             return false;
         }
@@ -658,21 +668,23 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 #endif
     }
 
-    if (!LockDataDirectory(false)) {
-        // Detailed error printed inside LockDataDirectory
+    if (!LockDataDirectory(false))
         return false;
-    }
 
     if (GetBoolArg("-shrinkdebugfile", !fDebug))
         ShrinkDebugFile();
+
     LogPrintf("[AppInit2] Neutron version %s (%s)\n", FormatFullVersion().c_str(), CLIENT_DATE.c_str());
     LogPrintf("[AppInit2] Using OpenSSL version %s\n", SSLeay_version(SSLEAY_VERSION));
     LogPrintf("[AppInit2] Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
     LogPrintf("[AppInit2] Using Boost version %s\n", BOOST_VERSION_NUM.c_str());
+
     if (!fLogTimestamps)
         LogPrintf("[AppInit2] Startup time: %s\n", DateTimeStrFormat("%x %H:%M:%S", GetTime()).c_str());
+
     LogPrintf("[AppInit2] Default data directory %s\n", GetDefaultDataDir().string().c_str());
     LogPrintf("[AppInit2] Used data directory %s\n", strDataDir.c_str());
+
     std::ostringstream strErrors;
 
     if (mapArgs.count("-sporkkey"))
@@ -712,14 +724,19 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (filesystem::exists(GetDataDir() / strWalletFileName))
     {
         CDBEnv::VerifyResult r = bitdb.Verify(strWalletFileName, CWalletDB::Recover);
+
         if (r == CDBEnv::RECOVER_OK)
         {
             string msg = strprintf(_("Warning: wallet.dat corrupt, data salvaged!"
                                      " Original wallet.dat saved as wallet.{timestamp}.bak in %s; if"
                                      " your balance or transactions are incorrect you should"
                                      " restore from a backup."), strDataDir.c_str());
-            uiInterface.ThreadSafeMessageBox(msg, _("Neutron"), CClientUIInterface::OK | CClientUIInterface::ICON_EXCLAMATION | CClientUIInterface::MODAL);
+
+            uiInterface.ThreadSafeMessageBox(msg, _("Neutron"), CClientUIInterface::OK |
+                                             CClientUIInterface::ICON_EXCLAMATION |
+                                             CClientUIInterface::MODAL);
         }
+
         if (r == CDBEnv::RECOVER_FAIL)
             return InitError(_("wallet.dat corrupt, salvage failed"));
     }
@@ -727,24 +744,36 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     // ********************************************************* Step 6: network initialization
 
     assert(!g_connman);
-    g_connman = std::unique_ptr<CConnman>(new CConnman(GetRand(std::numeric_limits<uint64_t>::max()), GetRand(std::numeric_limits<uint64_t>::max())));
+    g_connman = std::unique_ptr<CConnman>(new CConnman(GetRand(std::numeric_limits<uint64_t>::max()),
+                                                       GetRand(std::numeric_limits<uint64_t>::max())));
     CConnman& connman = *g_connman;
     shared_connman = &connman;
 
     // Check for -socks - as this is a privacy risk to continue, exit here
     if (IsArgSet("-socks"))
-        return InitError(_("Unsupported argument -socks found. Setting SOCKS version isn't possible anymore, only SOCKS5 proxies are supported."));
+    {
+        return InitError(_("Unsupported argument -socks found. Setting SOCKS version isn't "
+                           "possible anymore, only SOCKS5 proxies are supported."));
+    }
 
-    if (mapArgs.count("-onlynet")) {
+    if (mapArgs.count("-onlynet"))
+    {
         std::set<enum Network> nets;
-        BOOST_FOREACH(std::string snet, mapMultiArgs["-onlynet"]) {
+
+        BOOST_FOREACH(std::string snet, mapMultiArgs["-onlynet"])
+        {
             enum Network net = ParseNetwork(snet);
+
             if (net == NET_UNROUTABLE)
                 return InitError(strprintf(_("Unknown network specified in -onlynet: '%s'"), snet.c_str()));
+
             nets.insert(net);
         }
-        for (int n = 0; n < NET_MAX; n++) {
-            enum Network net = (enum Network)n;
+
+        for (int n = 0; n < NET_MAX; n++)
+        {
+            enum Network net = (enum Network) n;
+
             if (!nets.count(net))
                 SetLimited(net);
         }
@@ -752,8 +781,11 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     CService addrProxy;
     bool fProxy = false;
-    if (mapArgs.count("-proxy")) {
+
+    if (mapArgs.count("-proxy"))
+    {
         addrProxy = CService(mapArgs["-proxy"], 9050);
+
         if (!addrProxy.IsValid())
             return InitError(strprintf(_("Invalid -proxy address: '%s'"), mapArgs["-proxy"].c_str()));
 
@@ -764,14 +796,18 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     }
 
     // -tor can override normal proxy, -notor disables tor entirely
-    if (!(mapArgs.count("-tor") && mapArgs["-tor"] == "0") && (fProxy || mapArgs.count("-tor"))) {
+    if (!(mapArgs.count("-tor") && mapArgs["-tor"] == "0") && (fProxy || mapArgs.count("-tor")))
+    {
         CService addrOnion;
+
         if (!mapArgs.count("-tor"))
             addrOnion = addrProxy;
         else
             addrOnion = CService(mapArgs["-tor"], 9050);
+
         if (!addrOnion.IsValid())
             return InitError(strprintf(_("Invalid -tor address: '%s'"), mapArgs["-tor"].c_str()));
+
         SetProxy(NET_TOR, addrOnion);
         SetReachable(NET_TOR);
     }
@@ -780,39 +816,54 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     fListen = GetBoolArg("-listen", DEFAULT_LISTEN);
     fDiscover = GetBoolArg("-discover", true);
     fNameLookup = GetBoolArg("-dns", true);
+
 #ifdef USE_UPNP
     fUseUPnP = GetBoolArg("-upnp", USE_UPNP);
 #endif
 
     bool fBound = false;
+
     if (fListen)
     {
         std::string strError;
-        if (mapArgs.count("-bind")) {
-            BOOST_FOREACH(std::string strBind, mapMultiArgs["-bind"]) {
+
+        if (mapArgs.count("-bind"))
+        {
+            BOOST_FOREACH(std::string strBind, mapMultiArgs["-bind"])
+            {
                 CService addrBind;
+
                 if (!Lookup(strBind.c_str(), addrBind, GetListenPort(), false))
                     return InitError(strprintf(_("Cannot resolve -bind address: '%s'"), strBind.c_str()));
+
                 fBound |= Bind(addrBind);
             }
-        } else {
+        }
+        else
+        {
             struct in_addr inaddr_any;
             inaddr_any.s_addr = INADDR_ANY;
+
             if (!IsLimited(NET_IPV6))
                 fBound |= Bind(CService(in6addr_any, GetListenPort()), false);
+
             if (!IsLimited(NET_IPV4))
                 fBound |= Bind(CService(inaddr_any, GetListenPort()), !fBound);
         }
+
         if (!fBound)
             return InitError(_("Failed to listen on any port. Use -listen=0 if you want this."));
     }
 
     if (mapArgs.count("-externalip"))
     {
-        BOOST_FOREACH(string strAddr, mapMultiArgs["-externalip"]) {
+        BOOST_FOREACH(string strAddr, mapMultiArgs["-externalip"])
+        {
             CService addrLocal(strAddr, GetListenPort(), fNameLookup);
+
             if (!addrLocal.IsValid())
                 return InitError(strprintf(_("Cannot resolve -externalip address: '%s'"), strAddr.c_str()));
+
             AddLocal(CService(strAddr, GetListenPort(), fNameLookup), LOCAL_MANUAL);
         }
     }
@@ -855,9 +906,9 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     uiInterface.InitMessage(_("Loading block index..."));
     nStart = GetTimeMillis();
+
     if (!LoadBlockIndex())
         return InitError(_("Error loading blkindex.dat"));
-
 
     // As LoadBlockIndex can take several minutes, it's possible the user
     // requested to kill the GUI during the last operation. If so, exit.
@@ -867,6 +918,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         LogPrintf("[AppInit2] Shutdown requested. Exiting.\n");
         return false;
     }
+
     LogPrintf("[AppInit2]  block index %15dms\n", GetTimeMillis() - nStart);
 
     if (GetBoolArg("-printblockindex") || GetBoolArg("-printblocktree"))
@@ -875,17 +927,17 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         return false;
     }
     else
-    {
         PrintBlockInfo();
-    }
 
     if (mapArgs.count("-printblock"))
     {
         string strMatch = mapArgs["-printblock"];
         int nFound = 0;
+
         for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
         {
             uint256 hash = (*mi).first;
+
             if (strncmp(hash.ToString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
             {
                 CBlockIndex* pindex = (*mi).second;
@@ -897,19 +949,21 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
                 nFound++;
             }
         }
+
         if (nFound == 0)
             LogPrintf("[AppInit2] No blocks matching %s were found\n", strMatch.c_str());
+
         return false;
     }
 
     // ********************************************************* Step 8: load wallet
 
     uiInterface.InitMessage(_("Loading wallet..."));
-
     nStart = GetTimeMillis();
     bool fFirstRun = true;
     pwalletMain = new CWallet(strWalletFileName);
     DBErrors nLoadWalletRet = pwalletMain->LoadWallet(fFirstRun);
+
     if (nLoadWalletRet != DB_LOAD_OK)
     {
         if (nLoadWalletRet == DB_CORRUPT)
@@ -935,6 +989,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     if (GetBoolArg("-upgradewallet", fFirstRun))
     {
         int nMaxVersion = GetArg("-upgradewallet", 0);
+
         if (nMaxVersion == 0) // the -upgradewallet without argument case
         {
             LogPrintf("[AppInit2] Performing wallet upgrade to %i\n", FEATURE_LATEST);
@@ -943,8 +998,10 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
         else
             LogPrintf("[AppInit2] Allowing wallet upgrade up to %i\n", nMaxVersion);
+
         if (nMaxVersion < pwalletMain->GetVersion())
             strErrors << _("Cannot downgrade wallet") << "\n";
+
         pwalletMain->SetMaxVersion(nMaxVersion);
     }
 
@@ -952,10 +1009,12 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         // Create new keyUser and set as default key
         RandAddSeedPerfmon();
-
         CPubKey newDefaultKey;
-        if (pwalletMain->GetKeyFromPool(newDefaultKey, false)) {
+
+        if (pwalletMain->GetKeyFromPool(newDefaultKey, false))
+        {
             pwalletMain->SetDefaultKey(newDefaultKey);
+
             if (!pwalletMain->SetAddressBookName(pwalletMain->vchDefaultKey.GetID(), ""))
                 strErrors << _("Cannot write default address") << "\n";
         }
@@ -965,24 +1024,30 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     LogPrintf("[AppInit2]  wallet      %15dms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);
-
     CBlockIndex *pindexRescan = pindexBest;
+
     if (GetBoolArg("-rescan"))
         pindexRescan = pindexGenesisBlock;
     else
     {
         CWalletDB walletdb(strWalletFileName);
         CBlockLocator locator;
+
         if (walletdb.ReadBestBlock(locator))
             pindexRescan = locator.GetBlockIndex();
     }
-    if (pindexBest != pindexRescan && pindexBest && pindexRescan && pindexBest->nHeight > pindexRescan->nHeight)
+
+    if (pindexBest != pindexRescan && pindexBest && pindexRescan &&
+        pindexBest->nHeight > pindexRescan->nHeight)
     {
         uiInterface.InitMessage(_("Rescanning..."));
-        LogPrintf("[AppInit2] Rescanning last %i blocks (from block %i)...\n", pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+
+        LogPrintf("[AppInit2] Rescanning last %i blocks (from block %i)...\n",
+                  pindexBest->nHeight - pindexRescan->nHeight, pindexRescan->nHeight);
+
         nStart = GetTimeMillis();
         pwalletMain->ScanForWalletTransactions(pindexRescan, true);
-        LogPrintf("[AppInit2]  rescan      %15dms\n", GetTimeMillis() - nStart);
+        LogPrintf("[AppInit2] rescan %15dms\n", GetTimeMillis() - nStart);
     }
 
     // ********************************************************* Step 9: import blocks
@@ -994,6 +1059,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         BOOST_FOREACH(string strFile, mapMultiArgs["-loadblock"])
         {
             FILE *file = fopen(strFile.c_str(), "rb");
+
             if (file)
                 LoadExternalBlockFile(file);
         }
@@ -1001,11 +1067,14 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     }
 
     filesystem::path pathBootstrap = GetDataDir() / "bootstrap.dat";
-    if (filesystem::exists(pathBootstrap)) {
-        uiInterface.InitMessage(_("Importing bootstrap blockchain data file."));
 
+    if (filesystem::exists(pathBootstrap))
+    {
+        uiInterface.InitMessage(_("Importing bootstrap blockchain data file."));
         FILE *file = fopen(pathBootstrap.string().c_str(), "rb");
-        if (file) {
+
+        if (file)
+        {
             filesystem::path pathBootstrapOld = GetDataDir() / "bootstrap.dat.old";
             LoadExternalBlockFile(file);
             RenameOver(pathBootstrap, pathBootstrapOld);
@@ -1018,44 +1087,53 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         return false;
 
     string mnConfErr = "";
+
     if (!masternodeConfig.read(mnConfErr))
         return InitError("Masternode Conf Error: " + mnConfErr);
 
     fMasterNode = GetBoolArg("-masternode", false);
-    if(fMasterNode) {
+
+    if (fMasterNode)
+    {
         LogPrintf("[AppInit2] IS NEUTRON MASTER NODE\n");
         strMasterNodeAddr = GetArg("-masternodeaddr", "");
 
         LogPrintf("[AppInit2]  addr %s\n", strMasterNodeAddr.c_str());
 
-        if(!strMasterNodeAddr.empty()){
+        if (!strMasterNodeAddr.empty())
+        {
             CService addrTest = CService(strMasterNodeAddr);
-            if (!addrTest.IsValid()) {
-                return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
-            }
 
-            if (addrTest.GetPort() != GetDefaultPort())  {
-                std::string errorMessage = strprintf("Invalid -masternodeaddr port %u detected in neutron.conf (only %d is supported for mainnet)", addrTest.GetPort(), GetDefaultPort());
+            if (!addrTest.IsValid())
+                return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
+
+            if (addrTest.GetPort() != GetDefaultPort())
+            {
+                std::string errorMessage = strprintf("Invalid -masternodeaddr port %u detected in neutron.conf "
+                                                     "(only %d is supported for mainnet)",
+                                                     addrTest.GetPort(), GetDefaultPort());
                 return InitError(errorMessage);
             }
         }
 
         strMasterNodePrivKey = GetArg("-masternodeprivkey", "");
-        if(!strMasterNodePrivKey.empty()){
-            std::string errorMessage;
 
+        if (!strMasterNodePrivKey.empty())
+        {
+            std::string errorMessage;
             CKey key;
             CPubKey pubkey;
 
-            if(!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey))
-            {
+            if (!darkSendSigner.SetKey(strMasterNodePrivKey, errorMessage, key, pubkey))
                 return InitError(_("Invalid masternodeprivkey. Please see documenation."));
-            }
 
             activeMasternode.pubKeyMasternode = pubkey;
 
-        } else {
-            return InitError(_("You must specify a masternodeprivkey in the configuration. Please see documentation for help."));
+        }
+        else
+        {
+            return InitError(_("You must specify a masternodeprivkey in the configuration. "
+                               "Please see documentation for help."));
         }
     }
 
@@ -1094,16 +1172,14 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     darkSendDenominations.push_back( (10          * COIN)+10000 );
     darkSendDenominations.push_back( (1           * COIN)+1000 );
     darkSendDenominations.push_back( (.1          * COIN)+100 );
+
     /* Disabled till we need them
     darkSendDenominations.push_back( (.01      * COIN)+10 );
     darkSendDenominations.push_back( (.001     * COIN)+1 );
     */
 
     darkSendPool.InitCollateralAddress();
-
     threadGroup.create_thread(boost::bind(&ThreadCheckDarkSend, boost::ref(*g_connman)));
-
-
     RandAddSeedPerfmon();
 
     //// debug print
@@ -1119,7 +1195,8 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     connOptions.nMaxAddnode = MAX_ADDNODE_CONNECTIONS;
     connOptions.nMaxFeeler = 1;
 
-    if (!connman.Start(scheduler, connOptions)) {
+    if (!connman.Start(scheduler, connOptions))
+    {
         InitError(_("Error: could not start node"));
         return false;
     }
@@ -1136,7 +1213,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
      // Add wallet transactions that aren't already in a block to mapTransactions
     pwalletMain->ReacceptWalletTransactions();
-
 
 #if !defined(QT_GUI)
     // // Loop until process is exit()ed from shutdown() function,
