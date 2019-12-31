@@ -2441,7 +2441,7 @@ void CConnman::Stop()
         fAddressesInitialized = false;
     }
 
-    LogPrintf("%s : closing sockets\n, __func__");
+    LogPrintf("%s : closing sockets\n", __func__);
 
     // Close sockets
     {
