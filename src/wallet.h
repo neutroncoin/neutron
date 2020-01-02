@@ -242,6 +242,7 @@ public:
     int64_t GetImmatureBalance() const;
     int64_t GetStake() const;
     int64_t GetNewMint() const;
+    int64_t GetTotal() const;
 
     CAmount GetAnonymizedBalance() const;
     double GetAverageAnonymizedRounds() const;

@@ -1675,6 +1675,11 @@ int64_t CWallet::GetNewMint() const
     return nTotal;
 }
 
+int64_t CWallet::GetTotal() const
+{
+    return this->GetBalance() + this->GetNewMint() + this->GetStake();
+}
+
 bool CWallet::MintableCoins()
 {
     CAmount nBalance = GetBalance();
