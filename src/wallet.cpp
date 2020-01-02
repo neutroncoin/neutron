@@ -1,5 +1,7 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -23,11 +25,6 @@ using namespace std;
 unsigned int nStakeSplitAge = 1 * 24 * 60 * 60;
 int64_t nStakeCombineThreshold = 1000 * COIN;
 
-/** @defgroup mapWallet
- *
- * @{
- */
-
 struct CompareValueOnly
 {
     bool operator()(const pair<int64_t, pair<const CWalletTx*, unsigned int> >& t1,
@@ -44,12 +41,19 @@ std::string COutput::ToString() const
 
 int COutput::Priority() const
 {
-    if(tx->vout[i].nValue == DARKSEND_FEE) return -20000;
-    BOOST_FOREACH(int64_t d, darkSendDenominations)
-        if(tx->vout[i].nValue == d) return 10000;
-    if(tx->vout[i].nValue < 1*COIN) return 20000;
+    if (tx->vout[i].nValue == DARKSEND_FEE)
+        return -20000;
 
-    //nondenom return largest first
+    BOOST_FOREACH(int64_t d, darkSendDenominations)
+    {
+        if (tx->vout[i].nValue == d)
+            return 10000;
+    }
+
+    if(tx->vout[i].nValue < 1*COIN)
+        return 20000;
+
+    // nondenom return largest first
     return -(tx->vout[i].nValue/COIN);
 }
 
@@ -70,11 +74,13 @@ CPubKey CWallet::GenerateNewKey()
     // Create new metadata
     int64_t nCreationTime = GetTime();
     mapKeyMetadata[pubkey.GetID()] = CKeyMetadata(nCreationTime);
+
     if (!nTimeFirstKey || nCreationTime < nTimeFirstKey)
         nTimeFirstKey = nCreationTime;
 
     if (!AddKey(key))
         throw std::runtime_error("CWallet::GenerateNewKey() : AddKey failed");
+
     return key.GetPubKey();
 }
 
@@ -84,10 +90,13 @@ bool CWallet::AddKey(const CKey& key)
 
     if (!CCryptoKeyStore::AddKey(key))
         return false;
+
     if (!fFileBacked)
         return true;
+
     if (!IsCrypted())
         return CWalletDB(strWalletFile).WriteKey(pubkey, key.GetPrivKey(), mapKeyMetadata[pubkey.GetID()]);
+
     return true;
 }
 
@@ -95,15 +104,19 @@ bool CWallet::AddCryptedKey(const CPubKey &vchPubKey, const vector<unsigned char
 {
     if (!CCryptoKeyStore::AddCryptedKey(vchPubKey, vchCryptedSecret))
         return false;
+
     if (!fFileBacked)
         return true;
+
     {
         LOCK(cs_wallet);
+
         if (pwalletdbEncryption)
             return pwalletdbEncryption->WriteCryptedKey(vchPubKey, vchCryptedSecret, mapKeyMetadata[vchPubKey.GetID()]);
         else
             return CWalletDB(strWalletFile).WriteCryptedKey(vchPubKey, vchCryptedSecret, mapKeyMetadata[vchPubKey.GetID()]);
     }
+
     return false;
 }
 
@@ -125,14 +138,17 @@ bool CWallet::AddCScript(const CScript& redeemScript)
 {
     if (!CCryptoKeyStore::AddCScript(redeemScript))
         return false;
+
     if (!fFileBacked)
         return true;
+
     return CWalletDB(strWalletFile).WriteCScript(Hash160(redeemScript), redeemScript);
 }
 
 // optional setting to unlock wallet for staking only
 // serves to disable the trivial sendmoney when OS account compromised
 // provides no real security
+
 bool fWalletUnlockStakingOnly = false;
 
 bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool anonymizeOnly)
@@ -146,14 +162,21 @@ bool CWallet::Unlock(const SecureString& strWalletPassphrase, bool anonymizeOnly
     CCrypter crypter;
     CKeyingMaterial vMasterKey;
     fWalletUnlockAnonymizeOnly = anonymizeOnly;
+
     {
         LOCK(cs_wallet);
+
         BOOST_FOREACH(const MasterKeyMap::value_type& pMasterKey, mapMasterKeys)
         {
-            if(!crypter.SetKeyFromPassphrase(strWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+            if (!crypter.SetKeyFromPassphrase(strWalletPassphrase, pMasterKey.second.vchSalt,
+                                             pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+            {
                 return false;
+            }
+
             if (!crypter.Decrypt(pMasterKey.second.vchCryptedKey, vMasterKey))
                 return false;
+
             if (CCryptoKeyStore::Unlock(vMasterKey))
                 return true;
         }
@@ -172,34 +195,57 @@ bool CWallet::ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase,
 
         CCrypter crypter;
         CKeyingMaterial vMasterKey;
+
         BOOST_FOREACH(MasterKeyMap::value_type& pMasterKey, mapMasterKeys)
         {
-            if(!crypter.SetKeyFromPassphrase(strOldWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+            if(!crypter.SetKeyFromPassphrase(strOldWalletPassphrase, pMasterKey.second.vchSalt,
+                                             pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+            {
                 return false;
+            }
+
             if (!crypter.Decrypt(pMasterKey.second.vchCryptedKey, vMasterKey))
                 return false;
+
             if (CCryptoKeyStore::Unlock(vMasterKey))
             {
                 int64_t nStartTime = GetTimeMillis();
-                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
-                pMasterKey.second.nDeriveIterations = pMasterKey.second.nDeriveIterations * (100 / ((double)(GetTimeMillis() - nStartTime)));
 
+                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt,
+                                             pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
+
+                pMasterKey.second.nDeriveIterations = pMasterKey.second.nDeriveIterations *
+                                                      (100 / ((double) (GetTimeMillis() - nStartTime)));
                 nStartTime = GetTimeMillis();
-                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
-                pMasterKey.second.nDeriveIterations = (pMasterKey.second.nDeriveIterations + pMasterKey.second.nDeriveIterations * 100 / ((double)(GetTimeMillis() - nStartTime))) / 2;
+
+                crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt,
+                                             pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod);
+
+                pMasterKey.second.nDeriveIterations = (pMasterKey.second.nDeriveIterations +
+                                                       pMasterKey.second.nDeriveIterations * 100 /
+                                                       ((double)(GetTimeMillis() - nStartTime))) / 2;
 
                 if (pMasterKey.second.nDeriveIterations < 25000)
                     pMasterKey.second.nDeriveIterations = 25000;
 
-                LogPrintf("Wallet passphrase changed to an nDeriveIterations of %i\n", pMasterKey.second.nDeriveIterations);
+                LogPrintf("%s: wallet passphrase changed to an nDeriveIterations of %i\n",
+                          __func__, pMasterKey.second.nDeriveIterations);
 
-                if (!crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt, pMasterKey.second.nDeriveIterations, pMasterKey.second.nDerivationMethod))
+                if (!crypter.SetKeyFromPassphrase(strNewWalletPassphrase, pMasterKey.second.vchSalt,
+                                                  pMasterKey.second.nDeriveIterations,
+                                                  pMasterKey.second.nDerivationMethod))
+                {
                     return false;
+                }
+
                 if (!crypter.Encrypt(vMasterKey, pMasterKey.second.vchCryptedKey))
                     return false;
+
                 CWalletDB(strWalletFile).WriteMasterKey(pMasterKey.first, pMasterKey.second);
+
                 if (fWasLocked)
                     Lock();
+
                 return true;
             }
         }
@@ -231,8 +277,10 @@ bool CWallet::SetMinVersion(enum WalletFeature nVersion, CWalletDB* pwalletdbIn,
     if (fFileBacked)
     {
         CWalletDB* pwalletdb = pwalletdbIn ? pwalletdbIn : new CWalletDB(strWalletFile);
+
         if (nWalletVersion > 40000)
             pwalletdb->WriteMinVersion(nWalletVersion);
+
         if (!pwalletdbIn)
             delete pwalletdb;
     }
@@ -1109,8 +1157,10 @@ int64_t CWalletTx::GetCredit(bool fUseCache) const
     // GetBalance can assume transactions in mapWallet won't change
     if (fUseCache && fCreditCached)
         return nCreditCached;
+
     nCreditCached = pwallet->GetCredit(*this);
     fCreditCached = true;
+
     return nCreditCached;
 }
 
@@ -1130,6 +1180,7 @@ int64_t CWalletTx::GetAvailableCredit(bool fUseCache) const
         {
             const CTxOut &txout = vout[i];
             nCredit += pwallet->GetCredit(txout);
+
             if (!MoneyRange(nCredit))
                 throw std::runtime_error("CWalletTx::GetAvailableCredit() : value out of range");
         }
@@ -1137,6 +1188,7 @@ int64_t CWalletTx::GetAvailableCredit(bool fUseCache) const
 
     nAvailableCreditCached = nCredit;
     fAvailableCreditCached = true;
+
     return nCredit;
 }
 
@@ -1144,8 +1196,10 @@ int64_t CWalletTx::GetChange() const
 {
     if (fChangeCached)
         return nChangeCached;
+
     nChangeCached = pwallet->GetChange(*this);
     fChangeCached = true;
+
     return nChangeCached;
 }
 
@@ -1247,22 +1301,17 @@ void CWallet::ResendWalletTransactions(bool fForce)
     }
 }
 
-
-
-/** @defgroup Actions
- *
- * @{
- */
-
-
 int64_t CWallet::GetBalance() const
 {
     int64_t nTotal = 0;
+
     {
         LOCK(cs_wallet);
+
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
+
             if (pcoin->IsTrusted())
                 nTotal += pcoin->GetAvailableCredit();
         }
@@ -1308,12 +1357,12 @@ CAmount CWallet::GetDenominatedBalance(bool onlyDenom, bool onlyUnconfirmed) con
 
             for (unsigned int i = 0; i < pcoin->vout.size(); i++)
             {
-				//isminetype mine = IsMine(pcoin->vout[i]);
-		//bool mine = IsMine(pcoin->vout[i]);
-                //COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
-		//COutput out = COutput(pcoin, i, nDepth, mine);
+		// isminetype mine = IsMine(pcoin->vout[i]);
+		// bool mine = IsMine(pcoin->vout[i]);
+                // COutput out = COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO);
+		// COutput out = COutput(pcoin, i, nDepth, mine);
 
-                //if(IsSpent(out.tx->GetHash(), i)) continue;
+                // if(IsSpent(out.tx->GetHash(), i)) continue;
 		if(pcoin->IsSpent(i)) continue;
                 if(!IsMine(pcoin->vout[i])) continue;
                 if(onlyDenom != CDarkSendPool::IsDenominatedAmount(pcoin->vout[i].nValue)) continue;
@@ -1331,13 +1380,16 @@ int64_t CWallet::GetUnconfirmedBalance() const
     int64_t nTotal = 0;
     {
         LOCK(cs_wallet);
+
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
+
             if (!pcoin->IsFinal() || (!pcoin->IsTrusted() && pcoin->GetDepthInMainChain() == 0))
                 nTotal += pcoin->GetAvailableCredit();
         }
     }
+
     return nTotal;
 }
 
@@ -1346,23 +1398,28 @@ int64_t CWallet::GetImmatureBalance() const
     int64_t nTotal = 0;
     {
         LOCK(cs_wallet);
+
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx& pcoin = (*it).second;
+
             if (pcoin.IsCoinBase() && pcoin.GetBlocksToMaturity() > 0 && pcoin.IsInMainChain())
                 nTotal += GetCredit(pcoin);
         }
     }
+
     return nTotal;
 }
 
 // populate vCoins with vector of spendable COutputs
-void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl, AvailableCoinsType coin_type, bool useIX) const
+void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl,
+                             AvailableCoinsType coin_type, bool useIX) const
 {
     vCoins.clear();
 
     {
         LOCK(cs_wallet);
+
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
@@ -1380,52 +1437,68 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 continue;
 
             int nDepth = pcoin->GetDepthInMainChain();
+
             if (nDepth < 0)
                 continue;
 
-            /* for (unsigned int i = 0; i < pcoin->vout.size(); i++)
-                if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) && pcoin->vout[i].nValue >= nMinimumInputValue &&
-                (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
-                    vCoins.push_back(COutput(pcoin, i, nDepth)); */
+            // for (unsigned int i = 0; i < pcoin->vout.size(); i++)
+            //     if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) && pcoin->vout[i].nValue >= nMinimumInputValue &&
+            //         (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
+            //         vCoins.push_back(COutput(pcoin, i, nDepth));
 
-	        if (useIX && nDepth < 6)
+            if (useIX && nDepth < 6)
                 continue;
 
-            for (unsigned int i = 0; i < pcoin->vout.size(); i++) {
+            for (unsigned int i = 0; i < pcoin->vout.size(); i++)
+            {
                 bool found = false;
-                if(coin_type == ONLY_DENOMINATED) {
+
+                if(coin_type == ONLY_DENOMINATED)
+                {
                     //should make this a vector
-
                     found = CDarkSendPool::IsDenominatedAmount(pcoin->vout[i].nValue);
-                } else if(coin_type == ONLY_NONDENOMINATED || coin_type == ONLY_NONDENOMINATED_NOTMN) {
-                    found = true;
-                    if (IsCollateralAmount(pcoin->vout[i].nValue)) continue; // do not use collateral amounts
-                    found = !CDarkSendPool::IsDenominatedAmount(pcoin->vout[i].nValue);
-                    if(found && coin_type == ONLY_NONDENOMINATED_NOTMN) found = (pcoin->vout[i].nValue != 500*COIN); // do not use MN funds
-                } else {
-                    found = true;
                 }
-                if(!found) continue;
+                else if(coin_type == ONLY_NONDENOMINATED || coin_type == ONLY_NONDENOMINATED_NOTMN)
+                {
+                    found = true;
 
-				//isminetype mine = IsMine(pcoin->vout[i]);
-		        bool mine = IsMine(pcoin->vout[i]);
+                    if (IsCollateralAmount(pcoin->vout[i].nValue))
+                        continue; // do not use collateral amounts
 
-                //if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
-                //    !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue > 0 &&
-                //    (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
-                //        vCoins.push_back(COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO));
-		        //if (!(IsSpent(wtxid, i)) && mine &&
-		        if (!(pcoin->IsSpent(i)) && mine &&
+                    found = !CDarkSendPool::IsDenominatedAmount(pcoin->vout[i].nValue);
+
+                    if(found && coin_type == ONLY_NONDENOMINATED_NOTMN)
+                        found = (pcoin->vout[i].nValue != 500 * COIN); // do not use MN funds
+                }
+                else
+                    found = true;
+
+                if(!found)
+                    continue;
+
+		//isminetype mine = IsMine(pcoin->vout[i]);
+	        bool mine = IsMine(pcoin->vout[i]);
+
+                // if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
+                //     !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue > 0 &&
+                //     (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
+                //     vCoins.push_back(COutput(pcoin, i, nDepth, (mine & ISMINE_SPENDABLE) != ISMINE_NO));
+		// if (!(IsSpent(wtxid, i)) && mine &&
+
+	        if (!(pcoin->IsSpent(i)) && mine &&
                     !IsLockedCoin((*it).first, i) && pcoin->vout[i].nValue > 0 &&
                     (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
+                {
                         vCoins.push_back(COutput(pcoin, i, nDepth, mine));
+                }
             }
 
         }
     }
 }
 
-void CWallet::AvailableCoinsMN(vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl, AvailableCoinsType coin_type, bool useIX) const
+void CWallet::AvailableCoinsMN(vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl,
+                               AvailableCoinsType coin_type, bool useIX) const
 {
     vCoins.clear();
 
@@ -1570,18 +1643,19 @@ bool less_then_denom(const COutput& out1, const COutput& out2)
     return (!found1 && found2);
 }
 
-
-// ppcoin: total coins staked (non-spendable until maturity)
 int64_t CWallet::GetStake() const
 {
     int64_t nTotal = 0;
     LOCK(cs_wallet);
+
     for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
     {
         const CWalletTx* pcoin = &(*it).second;
+
         if (pcoin->IsCoinStake() && pcoin->GetBlocksToMaturity() > 0 && pcoin->GetDepthInMainChain() > 0)
             nTotal += CWallet::GetCredit(*pcoin);
     }
+
     return nTotal;
 }
 
@@ -1589,12 +1663,15 @@ int64_t CWallet::GetNewMint() const
 {
     int64_t nTotal = 0;
     LOCK(cs_wallet);
+
     for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
     {
         const CWalletTx* pcoin = &(*it).second;
+
         if (pcoin->IsCoinBase() && pcoin->GetBlocksToMaturity() > 0 && pcoin->GetDepthInMainChain() > 0)
             nTotal += CWallet::GetCredit(*pcoin);
     }
+
     return nTotal;
 }
 
