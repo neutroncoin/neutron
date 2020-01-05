@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2015-2019 The Neutron Developers
+// Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -990,6 +990,7 @@ void CConnman::ThreadSocketHandler2()
 
             // Delete disconnected nodes
             list<CNode*> vNodesDisconnectedCopy = vNodesDisconnected;
+
             BOOST_FOREACH(CNode* pnode, vNodesDisconnectedCopy)
             {
                 // wait until threads are done using it
@@ -1097,7 +1098,7 @@ void CConnman::ThreadSocketHandler2()
             if (have_fds)
             {
                 int nErr = WSAGetLastError();
-                LogPrintf("socket select error %d\n", nErr);
+                LogPrintf("%s : socket select error %d\n", __func__, nErr);
 
                 for (unsigned int i = 0; i <= hSocketMax; i++)
                     FD_SET(i, &fdsetRecv);
@@ -1105,7 +1106,7 @@ void CConnman::ThreadSocketHandler2()
 
             FD_ZERO(&fdsetSend);
             FD_ZERO(&fdsetError);
-            MilliSleep(timeout.tv_usec/1000);
+            MilliSleep(timeout.tv_usec / 1000);
         }
 
         // Accept new connections
@@ -1120,7 +1121,7 @@ void CConnman::ThreadSocketHandler2()
 
             if (hSocket != INVALID_SOCKET)
                 if (!addr.SetSockAddr((const struct sockaddr*)&sockaddr))
-                    LogPrintf("Warning: Unknown socket family\n");
+                    LogPrintf("%s : [WARNING] unknown socket family\n", __func__);
 
             {
                 LOCK(cs_vNodes);
@@ -1258,18 +1259,19 @@ void CConnman::ThreadSocketHandler2()
                               pnode->nLastRecv != 0, pnode->nLastSend != 0);
                     pnode->fDisconnect = true;
                 }
-                else if (GetTime() - pnode->nLastSend > 90*60 && GetTime() - pnode->nLastSendEmpty > 90*60)
+                else if (GetTime() - pnode->nLastSend > 90 * 60 && GetTime() - pnode->nLastSendEmpty > 90 * 60)
                 {
                     LogPrintf("%s : socket not sending\n", __func__);
                     pnode->fDisconnect = true;
                 }
-                else if (GetTime() - pnode->nLastRecv > 90*60)
+                else if (GetTime() - pnode->nLastRecv > 90 * 60)
                 {
                     LogPrintf("%s : socket inactivity timeout\n", __func__);
                     pnode->fDisconnect = true;
                 }
             }
         }
+
         {
             LOCK(cs_vNodes);
 
@@ -1838,6 +1840,7 @@ void CConnman::ThreadOpenAddedConnections2()
             }
         }
     }
+
     while (true)
     {
         vector<vector<CService> > vservConnectAddresses = vservAddressesToAdd;
