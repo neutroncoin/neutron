@@ -1038,6 +1038,13 @@ void CConnman::ThreadSocketHandler2()
             }
         }
 
+
+        // Make sure we periodically flush the banlist
+        static unsigned int ticks = 0;
+
+        if (++ticks % 100 == 0)
+            SweepBanned();
+
         // Find which sockets have data to receive
         struct timeval timeout;
         timeout.tv_sec  = 0;
