@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2016 The Bitcoin Core developers
-// Copyright (c) 2016-2019 The Neutron Developers
+// Copyright (c) 2016-2020 The Neutron Developers
 //
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -31,9 +31,12 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
 {
     if ((nFile < 1) || (nFile == (unsigned int) -1))
         return NULL;
+
     FILE* file = fopen(BlockFilePath(nFile).string().c_str(), pszMode);
+
     if (!file)
         return NULL;
+
     if (nBlockPos != 0 && !strchr(pszMode, 'a') && !strchr(pszMode, 'w'))
     {
         if (fseek(file, nBlockPos, SEEK_SET) != 0)
@@ -42,6 +45,7 @@ FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszM
             return NULL;
         }
     }
+
     return file;
 }
 
@@ -50,37 +54,44 @@ static unsigned int nCurrentBlockFile = 1;
 FILE* AppendBlockFile(unsigned int& nFileRet)
 {
     nFileRet = 0;
+
     while (true)
     {
         FILE* file = OpenBlockFile(nCurrentBlockFile, 0, "ab");
+
         if (!file)
             return NULL;
+
         if (fseek(file, 0, SEEK_END) != 0)
             return NULL;
+
         // FAT32 file size max 4GB, fseek and ftell max 2GB, so we must stay under 2GB
-        if (ftell(file) < (long)(0x7F000000 - MAX_SIZE))
+        if (ftell(file) < (long) (0x7F000000 - MAX_SIZE))
         {
             nFileRet = nCurrentBlockFile;
             return file;
         }
+
         fclose(file);
         nCurrentBlockFile++;
     }
 }
 
+// Once this function has returned false it should remain so most of the time
+static std::atomic<bool> latchToFalse{false};
+
+void DelatchIsInitialBlockDownload()
+{
+    latchToFalse.store(false, std::memory_order_relaxed);
+}
+
 bool IsInitialBlockDownload()
 {
-    // Once this function has returned false, it must remain false.
-    static std::atomic<bool> latchToFalse{false};
-
     // Optimization: pre-test latch before taking the lock.
     if (latchToFalse.load(std::memory_order_relaxed))
         return false;
 
     LOCK(cs_main);
-
-    if (latchToFalse.load(std::memory_order_relaxed))
-        return false;
 
     if (pindexBest == NULL)
         return true;
@@ -107,14 +118,15 @@ bool IsInitialBlockDownload()
 
     LogPrintf("[InitialBlockDownload] Leaving InitialBlockDownload (latching to false)\n");
     latchToFalse.store(true, std::memory_order_relaxed);
+
     return false;
 }
 
-//! Guess how far we are in the verification process at the given block index
+// Guess how far we are in the verification process at the given block index
 double GuessVerificationProgress(CBlockIndex *pindex)
 {
     if (pindex == NULL || pindexBest == NULL)
         return 0.0;
 
-    return (float)pindex->nHeight / (float)pindexBest->nHeight;
+    return (float) pindex->nHeight / (float) pindexBest->nHeight;
 }

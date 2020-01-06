@@ -19,6 +19,7 @@ class CBlockIndex;
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
 
+void DelatchIsInitialBlockDownload();
 bool IsInitialBlockDownload();
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
