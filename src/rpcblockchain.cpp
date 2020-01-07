@@ -1,6 +1,6 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2015-2019 The Neutron Developers
+// Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -12,6 +12,7 @@
 #include "wallet.h"
 #include "txmempool.h"
 #include "txdb-leveldb.h"
+#include "validation.h"
 
 using namespace std;
 
@@ -350,7 +351,8 @@ UniValue getblockversionstats(const UniValue& params, bool fHelp) {
     return results;
 }
 
-UniValue invalidateblock(const UniValue& params, bool fHelp) {
+UniValue invalidateblock(const UniValue& params, bool fHelp)
+{
     if (fHelp || params.size() != 1)
         throw runtime_error(
                 "invalidateblock <block #>\n"
@@ -358,10 +360,8 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
 
     int nHeight = params[0].get_int();
 
-    if (pindexBest->nHeight < nHeight) {
+    if (pindexBest->nHeight < nHeight)
         throw runtime_error("Specified block number is in the future.");
-    }
-
 
     CBlockIndex* pindexTarget = NULL;
 
@@ -378,17 +378,17 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
         if (!block.ReadFromDisk(pindex))
             throw runtime_error("block.ReadFromDisk failed");
 
-        if (pindex->nHeight == nHeight) {
+        if (pindex->nHeight == nHeight)
+        {
             pindexTarget = pindex;
             break;
-        } else if (pindex->nHeight < nHeight) {
-            break;
         }
+        else if (pindex->nHeight < nHeight)
+            break;
     }
 
-    if (pindexTarget == NULL) {
+    if (pindexTarget == NULL)
         throw runtime_error("Block not found");
-    }
 
     if (fDebug)
         LogPrintf("invalidateblock : *** stopped on block %d\n", pindexTarget->nHeight);
@@ -404,8 +404,10 @@ UniValue invalidateblock(const UniValue& params, bool fHelp) {
         LogPrintf("invalidateblock : *** calling SetBestChain...\n");
 
     CTxDB txdb;
+    DelatchIsInitialBlockDownload();
     block.SetBestChain(txdb, pindexTarget);
     Checkpoints::ResetSyncCheckpoint();
+
     return true;
 }
 
