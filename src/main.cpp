@@ -3499,7 +3499,8 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         msg << boost::format("%s : must initially send a version") % __func__;
 
         // Must have a version message before anything else
-        pfrom->Misbehaving(msg.str(), 1);
+        // pfrom->Misbehaving(msg.str(), 1);
+        // TODO: Add back the misbehavior when we have made sure the protocol comforms to this requirement
         return false;
     }
     else if (strCommand == NetMsgType::VERACK)
