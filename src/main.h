@@ -1,9 +1,12 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-#ifndef BITCOIN_MAIN_H
-#define BITCOIN_MAIN_H
+
+#ifndef NEUTRON_MAIN_H
+#define NEUTRON_MAIN_H
 
 #include "amount.h"
 #include "clientversion.h"
@@ -13,9 +16,7 @@
 #include "script.h"
 #include "scrypt.h"
 #include "streams.h"
-//#include "txmempool.h"
 #include "validation.h"
-
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
@@ -44,9 +45,10 @@ class CTxMemPool;
 #define START_MASTERNODE_PAYMENTS_TESTNET 2000
 #define START_MASTERNODE_PAYMENTS 1432123200
 
-static const int64_t DARKSEND_COLLATERAL = (25000*COIN);
-static const int64_t DARKSEND_FEE = (0.0025000*COIN);
-static const int64_t DARKSEND_POOL_MAX = (250000.99*COIN);
+static const int64_t MNPAYEE_MAX_BLOCK_AGE = (15 * 60); // 15 minutes
+static const int64_t DARKSEND_COLLATERAL = (25000 * COIN);
+static const int64_t DARKSEND_FEE = (0.0025000  *COIN);
+static const int64_t DARKSEND_POOL_MAX = (250000.99 * COIN);
 
 /** Maximum length of reject messages. */ // TODO: NTRN - move to validation.h eventually
 static const unsigned int MAX_REJECT_MESSAGE_LENGTH = 111;
@@ -132,7 +134,6 @@ class CReserveKey;
 class CTxDB;
 class CTxIndex;
 
-
 void RegisterWallet(CWallet* pwalletIn);
 void UnregisterWallet(CWallet* pwalletIn);
 void SyncWithWallets(const CTransaction& tx, const CBlock* pblock = NULL, bool fUpdate = false, bool fConnect = true);
@@ -143,16 +144,8 @@ bool LoadBlockIndex(bool fAllowNew=true);
 void PrintBlockTree();
 void PrintBlockInfo();
 CBlockIndex* FindBlockByHeight(int nHeight);
-/** See whether the protocol update is enforced for connected nodes */
 int ActiveProtocol();
-/** Process protocol messages received from a given node */
 bool ProcessMessages(CNode* pfrom);
-/**
- * Send queued protocol messages to be sent to a give node.
- *
- * @param[in]   pto             The node which we are sending messages to.
- * @param[in]   fSendTrickle    When true send the trickled data, otherwise trickle the data until true.
- */
 bool SendMessages(CNode* pto, bool fSendTrickle);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
@@ -169,7 +162,6 @@ const CBlockIndex* GetLastBlockIndex(const CBlockIndex* pindex, bool fProofOfSta
 
 void ResendWalletTransactions(bool fForce = false);
 
-
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue);
 int64_t GetDeveloperPayment(int64_t nBlockValue);
 CScript GetDeveloperScript();
@@ -179,13 +171,9 @@ int GetInputAge(CTxIn& vin);
 
 bool AbortNode(const std::string &msg, const std::string &userMessage="");
 
-
-
-
-
 bool GetWalletFile(CWallet* pwallet, std::string &strWalletFileOut);
 
-/** Position on disk for a particular transaction. */
+// Position on disk for a particular transaction
 class CDiskTxPos
 {
 public:
@@ -1339,8 +1327,6 @@ public:
     }
 };
 
-
-
 /** Used to marshal pointers into hashes for db storage. */
 class CDiskBlockIndex : public CBlockIndex
 {
@@ -1434,10 +1420,7 @@ public:
     }
 };
 
-
-
-
 extern CTxMemPool mempool;
 extern bool isMasternodeListSynced;
 
-#endif
+#endif /* NEUTRON_MAIN_H */

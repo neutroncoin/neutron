@@ -1479,7 +1479,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     if (fJustCheck)
     {
         // FetchInputs treats CDiskTxPos(1,1,1) as a special "refer to memorypool" indicator
-        // Since we're just checking the block and not actually connecting it, it might not (and probably shouldn't) be on the disk to get the transaction from
+        // Since we're just checking the block and not actually connecting it,
+        // it might not (and probably shouldn't) be on the disk to get the transaction from
         nTxPos = 1;
     }
     else
@@ -1659,7 +1660,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             }
 
             // check payee once masternode list obtained
-            if (isMasternodeListSynced)
+            if (isMasternodeListSynced && MNPAYEE_MAX_BLOCK_AGE > GetTime() - pindex->GetBlockTime())
             {
                 if (masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee))
                 {
@@ -1725,7 +1726,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             }
             else
             {
-                LogPrintf("ConnectBlock() : Masternode list not yet synced - (CountEnabled=%d)\n", mnodeman.CountEnabled());
+                LogPrintf("ConnectBlock() : Masternode list not yet synced or block too old"
+                          " (CountEnabled=%d)\n", mnodeman.CountEnabled());
             }
 
             // check developer payment
@@ -2367,6 +2369,7 @@ bool CBlock::AcceptBlock()
 
     // Check for duplicate
     uint256 hash = GetHash();
+
     //if (mapBlockIndex.count(hash))
     //    return error("AcceptBlock() : block already in mapBlockIndex");
 
