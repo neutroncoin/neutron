@@ -69,8 +69,8 @@ void init_blockindex(leveldb::Options& options, bool fRemoveOld = false) {
 
     if (!status.ok())
     {
-        throw runtime_error(strprintf("init_blockindex(): error opening database environment %s",
-                            status.ToString().c_str()));
+        throw runtime_error(strprintf("%s : error opening database environment %s",
+                            __func__, status.ToString().c_str()));
     }
 }
 
@@ -354,7 +354,7 @@ static CBlockIndex *InsertBlockIndex(uint256 hash)
     CBlockIndex* pindexNew = new CBlockIndex();
 
     if (!pindexNew)
-        throw runtime_error("%s : new CBlockIndex failed", __func__);
+        throw runtime_error(strprintf("%s : new CBlockIndex failed", __func__));
 
     mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
     pindexNew->phashBlock = &((*mi).first);
