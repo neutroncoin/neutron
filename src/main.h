@@ -21,7 +21,6 @@
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 
-
 #include <iostream>
 #include <list>
 
@@ -1327,7 +1326,7 @@ public:
     }
 };
 
-/** Used to marshal pointers into hashes for db storage. */
+// Used to marshal pointers into hashes for db storage
 class CDiskBlockIndex : public CBlockIndex
 {
 private:
@@ -1363,6 +1362,7 @@ public:
         READWRITE(nMoneySupply);
         READWRITE(nFlags);
         READWRITE(nStakeModifier);
+
         if (IsProofOfStake())
         {
             READWRITE(prevoutStake);
@@ -1373,6 +1373,7 @@ public:
             const_cast<CDiskBlockIndex*>(this)->prevoutStake.SetNull();
             const_cast<CDiskBlockIndex*>(this)->nStakeTime = 0;
         }
+
         READWRITE(hashProof);
 
         // block header
@@ -1399,18 +1400,18 @@ public:
         block.nNonce          = nNonce;
 
         const_cast<CDiskBlockIndex*>(this)->blockHash = block.GetHash();
-
         return blockHash;
     }
 
     std::string ToString() const
     {
         std::string str = "CDiskBlockIndex(";
+
         str += CBlockIndex::ToString();
-        str += strprintf("\n                hashBlock=%s, hashPrev=%s, hashNext=%s)",
-            GetBlockHash().ToString().c_str(),
-            hashPrev.ToString().c_str(),
-            hashNext.ToString().c_str());
+        str += strprintf("\n    hashBlock=%s, hashPrev=%s, hashNext=%s,", GetBlockHash().ToString().c_str(),
+                         hashPrev.ToString().c_str(), hashNext.ToString().c_str());
+        str += strprintf("\n    nMoneySupply=%s, nBlockPos=%d, nHeight=%d)",
+                         FormatMoney(nMoneySupply).c_str(), nBlockPos,  nHeight);
         return str;
     }
 
