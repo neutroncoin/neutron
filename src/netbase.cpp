@@ -468,7 +468,7 @@ bool static ConnectSocketDirectly(const CService &addrConnect, SOCKET& hSocketRe
 
     if (!addrConnect.GetSockAddr((struct sockaddr*)&sockaddr, &len))
     {
-        LogPrintf("%s : cannot connect to %s: unsupported network\n", __func__, addrConnect.ToString())
+        LogPrintf("%s : cannot connect to %s: unsupported network\n", __func__, addrConnect.ToString());
         return false;
     }
 
