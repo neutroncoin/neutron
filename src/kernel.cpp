@@ -358,7 +358,13 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
 
     // Now check if proof-of-stake hash meets target protocol
     if (CBigNum(hashProofOfStake) > bnCoinDayWeight * bnTargetPerCoinDay)
+    {
+        LogPrintf("%s : [ERROR] hashProofOfStake=%s > bnCoinDayWeight=%s * bnTargetPerCoinDay=%s\n",
+                  __func__, hashProofOfStake.ToString().c_str(), bnCoinDayWeight.ToString().c_str(),
+                  bnTargetPerCoinDay.ToString().c_str());
+
         return false;
+    }
 
     if (fDebug && !fPrintProofOfStake)
     {
