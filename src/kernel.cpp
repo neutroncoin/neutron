@@ -1,5 +1,5 @@
 // Copyright (c) 2012-2013 The PPCoin developers
-// Copyright (c) 2015-2019 The Neutron Developers
+// Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -22,27 +22,24 @@ static std::map<int, unsigned int> mapStakeModifierCheckpoints =
 static std::map<int, unsigned int> mapStakeModifierCheckpointsTestNet =
     boost::assign::map_list_of(0, 0xfd11f4e7);
 
-// Get time weight
 int64_t GetWeight(int64_t nIntervalBeginning, int64_t nIntervalEnd)
 {
     // Kernel hash weight starts from 0 at the min age
     // this change increases active coins participating the hash and helps
     // to secure the network when proof-of-stake difficulty is low
-
-    return min(nIntervalEnd - nIntervalBeginning - nStakeMinAge, (int64_t)nStakeMaxAge);
+    return min(nIntervalEnd - nIntervalBeginning - nStakeMinAge, (int64_t) nStakeMaxAge);
 }
 
-// Get the last stake modifier and its generation time from a given block
 static bool GetLastStakeModifier(const CBlockIndex* pindex, uint64_t& nStakeModifier, int64_t& nModifierTime)
 {
     if (!pindex)
-        return error("GetLastStakeModifier: null pindex");
+        return error("%s : null pindex", __func__);
 
     while (pindex && pindex->pprev && !pindex->GeneratedStakeModifier())
         pindex = pindex->pprev;
 
     if (!pindex->GeneratedStakeModifier())
-        return error("GetLastStakeModifier: no generation at genesis block");
+        return error("%s : no generation at genesis block", __func__);
 
     nStakeModifier = pindex->nStakeModifier;
     nModifierTime = pindex->GetBlockTime();
@@ -68,7 +65,7 @@ static int64_t GetStakeModifierSelectionInterval()
     return nSelectionInterval;
 }
 
-// select a block from the candidate blocks in vSortedByTimestamp, excluding
+// Select a block from the candidate blocks in vSortedByTimestamp, excluding
 // already selected blocks in vSelectedBlocks, and with timestamp up to nSelectionIntervalStop.
 static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedByTimestamp, map<uint256,
                                       const CBlockIndex*>& mapSelectedBlocks, int64_t nSelectionIntervalStop,
@@ -81,7 +78,10 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
     BOOST_FOREACH(const PAIRTYPE(int64_t, uint256)& item, vSortedByTimestamp)
     {
         if (!mapBlockIndex.count(item.second))
-            return error("SelectBlockFromCandidates: failed to find block index for candidate block %s", item.second.ToString().c_str());
+        {
+            return error("%s : failed to find block index for candidate block %s",
+                         __func__, item.second.ToString().c_str());
+        }
 
         const CBlockIndex* pindex = mapBlockIndex[item.second];
 
@@ -117,7 +117,7 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
     }
 
     if (fDebug && GetBoolArg("-printstakemodifier"))
-        LogPrintf("SelectBlockFromCandidates: selection hash=%s\n", hashBest.ToString().c_str());
+        LogPrintf("%s : selection hash=%s\n", __func__, hashBest.ToString().c_str());
 
     return fSelected;
 }
@@ -151,10 +151,10 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     int64_t nModifierTime = 0;
 
     if (!GetLastStakeModifier(pindexPrev, nStakeModifier, nModifierTime))
-        return error("ComputeNextStakeModifier: unable to get last modifier");
+        return error("%s : unable to get last modifier", __func__);
 
     if (fDebug)
-        LogPrintf("ComputeNextStakeModifier: prev modifier=%s time=%s\n",
+        LogPrintf("%s : prev modifier=%s time=%s\n", __func__,
                   boost::lexical_cast<std::string>(nStakeModifier).c_str(),
                   DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nModifierTime).c_str());
 
@@ -190,7 +190,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
 
         // select a block from the candidates of current round
         if (!SelectBlockFromCandidates(vSortedByTimestamp, mapSelectedBlocks, nSelectionIntervalStop, nStakeModifier, &pindex))
-            return error("ComputeNextStakeModifier: unable to select block at round %d", nRound);
+            return error("%s : unable to select block at round %d", __func__, nRound);
 
         // write the entropy bit of the selected block
         nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
@@ -199,7 +199,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         mapSelectedBlocks.insert(make_pair(pindex->GetBlockHash(), pindex));
 
         if (fDebug && GetBoolArg("-printstakemodifier"))
-            LogPrintf("ComputeNextStakeModifier: selected round %d stop=%s height=%d bit=%d\n",
+            LogPrintf("%s : selected round %d stop=%s height=%d bit=%d\n", __func__,
                       nRound, DateTimeStrFormat(nSelectionIntervalStop).c_str(), pindex->nHeight,
                       pindex->GetStakeEntropyBit());
     }
@@ -208,6 +208,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     if (fDebug && GetBoolArg("-printstakemodifier"))
     {
         string strSelectionMap = "";
+
         // '-' indicates proof-of-work blocks not selected
         strSelectionMap.insert(0, pindexPrev->nHeight - nHeightFirstCandidate + 1, '-');
         pindex = pindexPrev;
@@ -228,11 +229,16 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
             strSelectionMap.replace(item.second->nHeight - nHeightFirstCandidate, 1, item.second->IsProofOfStake()? "S" : "W");
         }
 
-        LogPrintf("ComputeNextStakeModifier: selection height [%d, %d] map %s\n", nHeightFirstCandidate, pindexPrev->nHeight, strSelectionMap.c_str());
+        LogPrintf("%s : selection height [%d, %d] map %s\n", __func__, nHeightFirstCandidate,
+                  pindexPrev->nHeight, strSelectionMap.c_str());
     }
 
     if (fDebug)
-        LogPrintf("ComputeNextStakeModifier: new modifier=%s time=%s\n", boost::lexical_cast<std::string>(nStakeModifierNew).c_str(), DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
+    {
+        LogPrintf("%s : new modifier=%s time=%s\n", __func__,
+                  boost::lexical_cast<std::string>(nStakeModifierNew).c_str(),
+                  DateTimeStrFormat("%Y-%m-%d %H:%M:%S", pindexPrev->GetBlockTime()).c_str());
+    }
 
     nStakeModifier = nStakeModifierNew;
     fGeneratedStakeModifier = true;
@@ -247,7 +253,7 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
     nStakeModifier = 0;
 
     if (!mapBlockIndex.count(hashBlockFrom))
-        return error("GetKernelStakeModifier() : block not indexed");
+        return error("%s : block not indexed", __func__);
 
     const CBlockIndex* pindexFrom = mapBlockIndex[hashBlockFrom];
     nStakeModifierHeight = pindexFrom->nHeight;
@@ -262,8 +268,9 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
         {   // reached best block; may happen if node is behind on block chain
             if (fPrintProofOfStake || (pindex->GetBlockTime() + nStakeMinAge - nStakeModifierSelectionInterval > GetAdjustedTime()))
             {
-                return error("GetKernelStakeModifier() : reached best block %s at height %d from block %s",
-                    pindex->GetBlockHash().ToString().c_str(), pindex->nHeight, hashBlockFrom.ToString().c_str());
+                return error("%s : reached best block %s at height %d from block %s", __func__,
+                             pindex->GetBlockHash().ToString().c_str(), pindex->nHeight,
+                             hashBlockFrom.ToString().c_str());
             }
             else
                 return false;
@@ -302,18 +309,18 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
 //   block/tx hash should not be used here as they can be generated in vast
 //   quantities so as to generate blocks faster, degrading the system back into
 //   a proof-of-work situation.
-//
+
 bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset,
                           const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx,
                           uint256& hashProofOfStake, uint256& targetProofOfStake, bool fPrintProofOfStake)
 {
     if (nTimeTx < txPrev.nTime)  // Transaction timestamp violation
-        return error("CheckStakeKernelHash() : nTime violation");
+        return error("%s : nTime violation", __func__);
 
     unsigned int nTimeBlockFrom = blockFrom.GetBlockTime();
 
     if (nTimeBlockFrom + nStakeMinAge > nTimeTx) // Min age requirement
-        return error("CheckStakeKernelHash() : min age violation");
+        return error("%s : min age violation", __func__);
 
     CBigNum bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
@@ -334,26 +341,26 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
     int nStakeModifierHeight = 0;
     int64_t nStakeModifierTime = 0;
 
-    if (!GetKernelStakeModifier(hashBlockFrom, nStakeModifier, nStakeModifierHeight, nStakeModifierTime, fPrintProofOfStake))
+    if (!GetKernelStakeModifier(hashBlockFrom, nStakeModifier, nStakeModifierHeight,
+                                nStakeModifierTime, fPrintProofOfStake))
         return false;
 
     ss << nStakeModifier;
-
     ss << nTimeBlockFrom << nTxPrevOffset << txPrev.nTime << prevout.n << nTimeTx;
     hashProofOfStake = Hash(ss.begin(), ss.end());
 
     if (fPrintProofOfStake)
     {
-        LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
-            boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
-            DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
-            mapBlockIndex[hashBlockFrom]->nHeight,
-            DateTimeStrFormat("%Y-%m-%d %H:%M:%S", blockFrom.GetBlockTime()).c_str());
+        LogPrintf("%s : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
+                  __func__, boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
+                  DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
+                  mapBlockIndex[hashBlockFrom]->nHeight, DateTimeStrFormat("%Y-%m-%d %H:%M:%S",
+                  blockFrom.GetBlockTime()).c_str());
 
-        LogPrintf("CheckStakeKernelHash() : check modifier=%s nTimeBlockFrom=%u prevoutHash=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
-            boost::lexical_cast<std::string>(nStakeModifier).c_str(),
-            nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
-            hashProofOfStake.ToString().c_str());
+        LogPrintf("%s : check modifier=%s nTimeBlockFrom=%u prevoutHash=%u nTimeTxPrev=%u nPrevout=%u "
+                  "nTimeTx=%u hashProof=%s\n", __func__, boost::lexical_cast<std::string>(nStakeModifier).c_str(),
+                  nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
+                  hashProofOfStake.ToString().c_str());
     }
 
     // Now check if proof-of-stake hash meets target protocol
@@ -363,21 +370,27 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
                   __func__, hashProofOfStake.ToString().c_str(), bnCoinDayWeight.ToString().c_str(),
                   bnTargetPerCoinDay.ToString().c_str());
 
-        return false;
+        if (POS_HASHCHECK_MAX_BLOCK_AGE > GetTime() - blockFrom.GetBlockTime())
+            return false;
+        else
+        {
+            LogPrintf("%s : skipping target protocol check on old POS block %d\n", __func__,
+                      mapBlockIndex[hashBlockFrom]->nHeight);
+        }
     }
 
     if (fDebug && !fPrintProofOfStake)
     {
-        LogPrintf("CheckStakeKernelHash() : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
-            boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
-            DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
-            mapBlockIndex[hashBlockFrom]->nHeight,
-            DateTimeStrFormat("%Y-%m-%d %H:%M:%S", blockFrom.GetBlockTime()).c_str());
+        LogPrintf("%s : using modifier %s at height=%d timestamp=%s for block from height=%d timestamp=%s\n",
+                  __func__, boost::lexical_cast<std::string>(nStakeModifier).c_str(), nStakeModifierHeight,
+                  DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nStakeModifierTime).c_str(),
+                  mapBlockIndex[hashBlockFrom]->nHeight, DateTimeStrFormat("%Y-%m-%d %H:%M:%S",
+                  blockFrom.GetBlockTime()).c_str());
 
-        LogPrintf("CheckStakeKernelHash() : pass modifier=%s nTimeBlockFrom=%u nTxPrevOffset=%u nTimeTxPrev=%u nPrevout=%u nTimeTx=%u hashProof=%s\n",
-            boost::lexical_cast<std::string>(nStakeModifier).c_str(),
-            nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
-            hashProofOfStake.ToString().c_str());
+        LogPrintf("%s : pass modifier=%s nTimeBlockFrom=%u nTxPrevOffset=%u nTimeTxPrev=%u nPrevout=%u "
+                  "nTimeTx=%u hashProof=%s\n", __func__, boost::lexical_cast<std::string>(nStakeModifier).c_str(),
+                  nTimeBlockFrom, nTxPrevOffset, txPrev.nTime, prevout.n, nTimeTx,
+                  hashProofOfStake.ToString().c_str());
     }
 
     return true;
@@ -387,7 +400,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
 bool CheckProofOfStake(const CTransaction& tx, unsigned int nBits, uint256& hashProofOfStake, uint256& targetProofOfStake)
 {
     if (!tx.IsCoinStake())
-        return error("CheckProofOfStake() : called on non-coinstake %s", tx.GetHash().ToString().c_str());
+        return error("%s : called on non-coinstake %s", __func__, tx.GetHash().ToString().c_str());
 
     // Kernel (input 0) must match the stake hash target per coin age (nBits)
     const CTxIn& txin = tx.vin[0];
@@ -398,20 +411,31 @@ bool CheckProofOfStake(const CTransaction& tx, unsigned int nBits, uint256& hash
     CTxIndex txindex;
 
     if (!txPrev.ReadFromDisk(txdb, txin.prevout, txindex))
-        return tx.DoS(1, error("CheckProofOfStake() : INFO: read txPrev failed"));  // previous transaction not in main chain, may occur during initial download
+    {
+        // previous transaction not in main chain, may occur during initial download
+        return tx.DoS(1, error("%s : read txPrev failed", __func__));
+    }
 
     // Verify signature
     if (!VerifySignature(txPrev, tx, 0, 0))
-        return tx.DoS(100, error("CheckProofOfStake() : VerifySignature failed on coinstake %s", tx.GetHash().ToString().c_str()));
+    {
+        return tx.DoS(100, error("%s : VerifySignature failed on coinstake %s",
+                                 __func__, tx.GetHash().ToString().c_str()));
+    }
 
     // Read block header
     CBlock block;
 
     if (!block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false))
-        return fDebug? error("CheckProofOfStake() : read block failed") : false; // unable to read block of previous transaction
+        return fDebug? error("%s : read block failed", __func__) : false; // unable to read block of previous transaction
 
-    if (!CheckStakeKernelHash(nBits, block, txindex.pos.nTxPos - txindex.pos.nBlockPos, txPrev, txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug))
-        return tx.DoS(1, error("CheckProofOfStake() : INFO: check kernel failed on coinstake %s, hashProof=%s", tx.GetHash().ToString().c_str(), hashProofOfStake.ToString().c_str())); // may occur during initial download or if behind on block chain sync
+    if (!CheckStakeKernelHash(nBits, block, txindex.pos.nTxPos - txindex.pos.nBlockPos, txPrev,
+                              txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug))
+    {
+        // may occur during initial download or if behind on block chain sync
+        return tx.DoS(1, error("%s : check kernel failed on coinstake %s, hashProof=%s", __func__,
+                               tx.GetHash().ToString().c_str(), hashProofOfStake.ToString().c_str()));
+    }
 
     return true;
 }
@@ -426,7 +450,7 @@ bool CheckCoinStakeTimestamp(int64_t nTimeBlock, int64_t nTimeTx)
 // Get stake modifier checksum
 unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex)
 {
-    //assert (pindex->pprev || pindex->GetBlockHash() == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
+    // assert (pindex->pprev || pindex->GetBlockHash() == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet));
     // Hash previous checksum with flags, hashProofOfStake and nStakeModifier
     CDataStream ss(SER_GETHASH, 0);
 
