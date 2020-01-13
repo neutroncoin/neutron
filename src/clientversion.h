@@ -1,5 +1,5 @@
 // Copyright (c) 2009-2014 The Bitcoin developers
-// Copyright (c) 2015-2019 The Neutron Developers
+// Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -12,10 +12,10 @@
 // These need to be macros, as clientversion.cpp's and neutron*-res.rc's voodoo requires it
 #define CLIENT_VERSION_MAJOR       3
 #define CLIENT_VERSION_MINOR       0
-#define CLIENT_VERSION_REVISION    12
+#define CLIENT_VERSION_REVISION    13
 #define CLIENT_VERSION_BUILD       0
 
-#define COPYRIGHT_YEAR 2019
+#define COPYRIGHT_YEAR 2020
 
 // Converts the parameter X to a string after macro replacement on X has been performed.
 // Don't merge these into one macro!
