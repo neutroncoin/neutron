@@ -328,7 +328,7 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
 
     uint256 hashBlockFrom = blockFrom.GetHash();
 
-    CBigNum bnCoinDayWeight = CBigNum(nValueIn) * GetWeight((int64_t)txPrev.nTime, (int64_t)nTimeTx) / COIN / (24 * 60 * 60);
+    CBigNum bnCoinDayWeight = CBigNum(nValueIn) * GetWeight((int64_t) txPrev.nTime, (int64_t )nTimeTx) / COIN / (24 * 60 * 60);
 
     if (fTestNet)
         bnCoinDayWeight *= 1000;
@@ -366,16 +366,14 @@ bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned 
     // Now check if proof-of-stake hash meets target protocol
     if (CBigNum(hashProofOfStake) > bnCoinDayWeight * bnTargetPerCoinDay)
     {
-        LogPrintf("%s : [ERROR] hashProofOfStake=%s > bnCoinDayWeight=%s * bnTargetPerCoinDay=%s\n",
-                  __func__, hashProofOfStake.ToString().c_str(), bnCoinDayWeight.ToString().c_str(),
-                  bnTargetPerCoinDay.ToString().c_str());
-
-        if (POS_HASHCHECK_MAX_BLOCK_AGE > GetTime() - blockFrom.GetBlockTime())
+        if (POS_HASHCHECK_MAX_BLOCK_AGE > GetTime() - nTimeTx)
             return false;
         else
         {
-            LogPrintf("%s : skipping target protocol check on old POS block %d\n", __func__,
-                      mapBlockIndex[hashBlockFrom]->nHeight);
+            LogPrintf("%s : skipping target protocol check on old POS block %d, time=%d "
+                      "GetTime()=%d nTimeTx=%d\n", __func__,
+                      mapBlockIndex[hashBlockFrom]->nHeight, GetTime() - nTimeTx,
+                      GetTime(), nTimeTx);
         }
     }
 
