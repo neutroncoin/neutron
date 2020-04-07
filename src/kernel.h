@@ -12,7 +12,7 @@
 extern unsigned int nModifierInterval; // time to elapse before new modifier is computed
 
 static const int MODIFIER_INTERVAL_RATIO = 3;
-static const int64_t POS_HASHCHECK_MAX_BLOCK_AGE = (30 * 60); // 30 minutes
+static const int64_t POS_HASHCHECK_MAX_BLOCK_AGE = (60 * 60 * 24 * 2); // 2 days
 
 bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeModifier,
 		              bool& fGeneratedStakeModifier);
