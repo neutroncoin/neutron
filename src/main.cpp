@@ -2312,10 +2312,6 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
                 return DoS(100, error("%s : more than one coinstake", __func__));
         }
 
-        // Check coinstake timestamp
-        if (!CheckCoinStakeTimestamp(GetBlockTime(), (int64_t)vtx[1].nTime))
-            return DoS(50, error("%s : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", __func__, GetBlockTime(), vtx[1].nTime));
-
         // Neutron: check proof-of-stake block signature
         if (fCheckSig && !CheckBlockSignature())
             return DoS(100, error("%s : bad proof-of-stake block signature", __func__));
@@ -2395,6 +2391,11 @@ bool CBlock::AcceptBlock()
     if (GetBlockTime() <= pindexPrev->GetPastTimeLimit() ||
         FutureDrift(GetBlockTime()) < pindexPrev->GetBlockTime())
         return error("AcceptBlock() : block's timestamp is too early");
+
+    // Check coinstake timestamp
+    if (IsProofOfStake() && !CheckCoinStakeTimestamp(nHeight, GetBlockTime(), (int64_t)vtx[1].nTime))
+        return DoS(50, error("AcceptBlock() : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", GetBlockTime(), vtx[1].nTime));
+
 
     // Check that all transactions are finalized
     BOOST_FOREACH(const CTransaction& tx, vtx)
@@ -2687,8 +2688,9 @@ bool CBlock::SignBlock_POW(const CKeyStore& keystore)
 
         if (!Solver(txout.scriptPubKey, whichType, vSolutions))
             continue;
-        CKey key;
+
         // Sign
+        CKey key;
         valtype& vchPubKey = vSolutions[0];
         CScript scriptPubKey;
 
@@ -2696,9 +2698,12 @@ bool CBlock::SignBlock_POW(const CKeyStore& keystore)
         {
             if (!keystore.GetKey(Hash160(vchPubKey), key))
                 continue;
+
             if (key.GetPubKey() != vchPubKey)
                 continue;
+
             hashMerkleRoot = BuildMerkleTree();
+
             if(!key.Sign(GetHash(), vchBlockSig))
                 continue;
 
@@ -2707,16 +2712,20 @@ bool CBlock::SignBlock_POW(const CKeyStore& keystore)
 
         if (whichType == TX_PUBKEYHASH) // pay to address type
         {
-            // convert to pay to public key type
+            // Convert to pay to public key type
             if (!keystore.GetKey(uint160(vSolutions[0]), key))
             {
                 if (fDebug && GetBoolArg("-printcoinstake"))
-                    LogPrintf("CreateCoinStake : failed to get key for kernel type=%d\n", whichType);
+                    LogPrintf("%s : failed to get key for kernel type=%d\n", __func__, whichType);
+
                 continue;  // unable to find corresponding public key
             }
+
             if (key.GetPubKey() != vchPubKey)
                 continue;
+
             hashMerkleRoot = BuildMerkleTree();
+
             if(!key.Sign(GetHash(), vchBlockSig))
                 continue;
 
@@ -2727,16 +2736,14 @@ bool CBlock::SignBlock_POW(const CKeyStore& keystore)
     LogPrintf("Sign failed\n");
     return false;
 }
-// neutron: attempt to generate suitable proof-of-stake
+
 bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
 {
-    // if we are trying to sign
-    //    something except proof-of-stake block template
+    // if we are trying to sign something except POS block template
     if (!vtx[0].vout[0].IsEmpty())
         return false;
 
-    // if we are trying to sign
-    //    a complete proof-of-stake block
+    // if we are trying to sign a complete POS block
     if (IsProofOfStake())
         return true;
 
@@ -2744,6 +2751,10 @@ bool CBlock::SignBlock(CWallet& wallet, int64_t nFees)
 
     CKey key;
     CTransaction txCoinStake;
+
+    if (GetPOSProtocolVersion(nBestHeight + 1) == 2)
+        txCoinStake.nTime &= ~STAKE_TIMESTAMP_MASK;
+
     int64_t nSearchTime = txCoinStake.nTime; // search to current time
 
     if (nSearchTime > nLastCoinStakeSearchTime)

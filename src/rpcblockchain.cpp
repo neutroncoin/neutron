@@ -13,6 +13,7 @@
 #include "txmempool.h"
 #include "txdb-leveldb.h"
 #include "validation.h"
+#include "kernel.h"
 
 using namespace std;
 
@@ -97,7 +98,15 @@ double GetPoSKernelPS()
         pindex = pindex->pprev;
     }
 
-    return nStakesTime ? dStakeKernelsTriedAvg / nStakesTime : 0;
+    double result = 0;
+
+    if (nStakesTime)
+        result = dStakeKernelsTriedAvg / nStakesTime;
+
+    if (GetPOSProtocolVersion(nBestHeight) == 2)
+        result *= STAKE_TIMESTAMP_MASK + 1;
+
+    return result;
 }
 
 UniValue blockToJSON(const CBlock& block, const CBlockIndex* blockindex, bool fPrintTransactionDetail)
