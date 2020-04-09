@@ -39,7 +39,6 @@ map<uint256, CBlockIndex*> mapBlockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Starting Difficulty: results with 0,000244140625 proof-of-work difficulty
-CBigNum bnProofOfStakeLimit(~uint256(0) >> 20);
 CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 2);
 
 static const int64_t nTargetTimespan = 20 * 60;  // Neutron - every 20mins
@@ -992,9 +991,9 @@ unsigned int ComputeMaxBits(CBigNum bnTargetLimit, unsigned int nBase, int64_t n
 
 // Minimum amount of stake that could possibly be required nTime after
 // minimum proof-of-stake required was nBase
-unsigned int ComputeMinStake(unsigned int nBase, int64_t nTime, unsigned int nBlockTime)
+unsigned int ComputeMinStake(int height, unsigned int nBase, int64_t nTime, unsigned int nBlockTime)
 {
-    return ComputeMaxBits(bnProofOfStakeLimit, nBase, nTime);
+    return ComputeMaxBits(GetPOSLimit(height), nBase, nTime);
 }
 
 // ppcoin: find last block index up to pindex
@@ -1015,7 +1014,7 @@ unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime)
 
 unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
 {
-    CBigNum bnTargetLimit = fProofOfStake ? bnProofOfStakeLimit : bnProofOfWorkLimit;
+    CBigNum bnTargetLimit = fProofOfStake ? GetPOSLimit(pindexLast->nHeight) : bnProofOfWorkLimit;
 
     if (pindexLast == NULL)
         return bnTargetLimit.GetCompact(); // Genesis block
@@ -2543,8 +2542,17 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
 
         if (pblock->IsProofOfStake())
         {
-            bnRequired.SetCompact(ComputeMinStake(GetLastBlockIndex(pcheckpoint, true)->nBits,
-                                                                    deltaTime, pblock->nTime));
+            map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(pblock->hashPrevBlock);
+            int height = 0; // presume zero, relaxing the check if the height can't be determined
+
+            if (mi != mapBlockIndex.end())
+            {
+                CBlockIndex* pindexPrev = (*mi).second;
+                height = pindexPrev->nHeight + 1;
+            }
+
+            bnRequired.SetCompact(ComputeMinStake(height, GetLastBlockIndex(pcheckpoint, true)->nBits,
+                                                  deltaTime, pblock->nTime));
         }
         else
         {

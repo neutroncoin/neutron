@@ -91,6 +91,7 @@ static const uint256 hashGenesisBlockTestNet("0x3c81f5a39588ff6112bf55343ef61b99
 inline int64_t PastDrift(int64_t nTime)   { return nTime - 10 * 60; } // up to 10 minutes from the past
 inline int64_t FutureDrift(int64_t nTime) { return nTime + 10 * 60; } // up to 10 minutes from the future
 inline int GetPOSProtocolVersion(int nHeight) { return 1; }
+inline CBigNum GetPOSLimit(int nHeight) { return CBigNum(~uint256(0) >> (GetPOSProtocolVersion(nHeight) == 2 ? 34 : 20));}
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
@@ -153,7 +154,7 @@ unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfS
 int64_t GetProofOfWorkReward(int64_t nFees, int nHeight);
 int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight);
 unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime);
-unsigned int ComputeMinStake(unsigned int nBase, int64_t nTime, unsigned int nBlockTime);
+unsigned int ComputeMinStake(int height, unsigned int nBase, int64_t nTime, unsigned int nBlockTime);
 int GetNumBlocksOfPeers();
 std::string GetWarnings(std::string strFor);
 bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock);
