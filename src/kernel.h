@@ -17,13 +17,13 @@ static const int64_t POS_HASHCHECK_MAX_BLOCK_AGE = (60 * 60 * 24 * 2); // 2 days
 bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeModifier,
 		              bool& fGeneratedStakeModifier);
 
-bool CheckStakeKernelHash(unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset,
-		          const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx,
-			  uint256& hashProofOfStake, uint256& targetProofOfStake,
+bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBlock& blockFrom,
+		          unsigned int nTxPrevOffset, const CTransaction& txPrev, const COutPoint& prevout,
+			  unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake,
 			  bool fPrintProofOfStake=false);
 
-bool CheckProofOfStake(const CTransaction& tx, unsigned int nBits, uint256& hashProofOfStake,
-		       uint256& targetProofOfStake);
+bool CheckProofOfStake(CBlockIndex* pindexPrev, const CTransaction& tx, unsigned int nBits,
+		       uint256& hashProofOfStake, uint256& targetProofOfStake);
 
 bool CheckCoinStakeTimestamp(int64_t nTimeBlock, int64_t nTimeTx);
 unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex);

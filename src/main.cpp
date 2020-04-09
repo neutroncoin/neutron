@@ -2415,7 +2415,7 @@ bool CBlock::AcceptBlock()
     {
         uint256 targetProofOfStake;
 
-        if (!CheckProofOfStake(vtx[1], nBits, hashProof, targetProofOfStake))
+        if (!CheckProofOfStake(pindexPrev, vtx[1], nBits, hashProof, targetProofOfStake))
         {
             LogPrintf("%s : [WARNING] check proof-of-stake failed for block %s\n", __func__, hash.ToString().c_str());
 

@@ -90,6 +90,7 @@ static const uint256 hashGenesisBlockTestNet("0x3c81f5a39588ff6112bf55343ef61b99
 
 inline int64_t PastDrift(int64_t nTime)   { return nTime - 10 * 60; } // up to 10 minutes from the past
 inline int64_t FutureDrift(int64_t nTime) { return nTime + 10 * 60; } // up to 10 minutes from the future
+inline int GetPOSProtocolVersion(int nHeight) { return 1; }
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;

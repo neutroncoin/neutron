@@ -89,7 +89,7 @@ LIBS+= \
 #
 
 
-DEBUGFLAGS=
+DEBUGFLAGS=-fPIE -ggdb
 
 
 ifeq (${ARCH}, i686)

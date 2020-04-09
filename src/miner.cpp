@@ -526,14 +526,15 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
     uint256 hashBlock = pblock->GetHash();
 
     if(!pblock->IsProofOfStake())
-        return error("CheckStake() : %s is not a proof-of-stake block", hashBlock.GetHex().c_str());
+        return error("%s : %s is not a proof-of-stake block", __func__, hashBlock.GetHex().c_str());
 
     // verify hash target and signature of coinstake tx
-    if (!CheckProofOfStake(pblock->vtx[1], pblock->nBits, proofHash, hashTarget))
-        return error("CheckStake() : proof-of-stake checking failed");
+    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], pblock->vtx[1], pblock->nBits, proofHash, hashTarget))
+        return error("%s : proof-of-stake checking failed", __func__);
 
     //// debug print
-    LogPrintf("CheckStake() : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", hashBlock.GetHex().c_str(), proofHash.GetHex().c_str(), hashTarget.GetHex().c_str());
+    LogPrintf("%s : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", __func__,
+              hashBlock.GetHex().c_str(), proofHash.GetHex().c_str(), hashTarget.GetHex().c_str());
     pblock->print();
     LogPrintf("out %s\n", FormatMoney(pblock->vtx[1].GetValueOut()).c_str());
 
