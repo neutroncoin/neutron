@@ -1,6 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
-// Copyright (c) 2015-2019 The Neutron Developers
+// Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -1303,24 +1303,40 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
             CTransaction& txPrev = inputs[prevout.hash].second;
 
             if (prevout.n >= txPrev.vout.size() || prevout.n >= txindex.vSpent.size())
-                return DoS(100, error("ConnectInputs() : %s prevout.n out of range %d %u %u prev tx %s\n%s", GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(), txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(), txPrev.ToString().c_str()));
+            {
+                return DoS(100, error("%s : %s prevout.n out of range %d %u %u prev tx %s\n%s", __func__,
+                                      GetHash().ToString().substr(0,10).c_str(), prevout.n, txPrev.vout.size(),
+                                      txindex.vSpent.size(), prevout.hash.ToString().substr(0,10).c_str(),
+                                      txPrev.ToString().c_str()));
+            }
 
             // If prev is coinbase or coinstake, check that it's matured
             if (txPrev.IsCoinBase() || txPrev.IsCoinStake())
-                for (const CBlockIndex* pindex = pindexBlock; pindex && pindexBlock->nHeight - pindex->nHeight < nCoinbaseMaturity; pindex = pindex->pprev)
+            {
+                for (const CBlockIndex* pindex = pindexBlock;
+                     pindex && pindexBlock->nHeight - pindex->nHeight < nCoinbaseMaturity; pindex = pindex->pprev)
+                {
                     if (pindex->nBlockPos == txindex.pos.nBlockPos && pindex->nFile == txindex.pos.nFile)
-                        return error("ConnectInputs() : tried to spend %s at depth %d", txPrev.IsCoinBase() ? "coinbase" : "coinstake", pindexBlock->nHeight - pindex->nHeight);
+                    {
+                        return error("%s : tried to spend %s at depth %d", __func__,
+                                     txPrev.IsCoinBase() ? "coinbase" : "coinstake",
+                                     pindexBlock->nHeight - pindex->nHeight);
+                    }
+                }
+            }
 
             // ppcoin: check transaction timestamp
             if (txPrev.nTime > nTime)
-                return DoS(100, error("ConnectInputs() : transaction timestamp earlier than input transaction"));
+                return DoS(100, error("%s : transaction timestamp earlier than input transaction", __func__));
 
             // Check for negative or overflow input values
             nValueIn += txPrev.vout[prevout.n].nValue;
+
             if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return DoS(100, error("ConnectInputs() : txin values out of range"));
+                return DoS(100, error("%s : txin values out of range", __func__));
 
         }
+
         // The first loop above does all the inexpensive checks.
         // Only if ALL inputs pass do we perform expensive ECDSA signature checks.
         // Helps prevent CPU exhaustion attacks.
@@ -1339,7 +1355,9 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
                 if (txAlreadyUsed != nullptr)
                     *txAlreadyUsed = true;
 
-                return fMiner ? false : error("ConnectInputs() : %s prev tx already used at %s", GetHash().ToString().substr(0,10).c_str(), txindex.vSpent[prevout.n].ToString().c_str());
+                return fMiner ? false : error("%s : %s prev tx already used at %s", __func__,
+                                              GetHash().ToString().substr(0,10).c_str(),
+                                              txindex.vSpent[prevout.n].ToString().c_str());
             }
 
             // Skip ECDSA signature verification when connecting blocks (fBlock=true)
@@ -1349,9 +1367,7 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
             {
                 // Verify signature
                 if (!VerifySignature(txPrev, *this, i, 0))
-                {
-                    return DoS(100,error("ConnectInputs() : %s VerifySignature failed", GetHash().ToString().substr(0,10).c_str()));
-                }
+                    return DoS(100,error("%s : %s VerifySignature failed", __func__, GetHash().ToString().substr(0,10).c_str()));
             }
 
             // Mark outpoints as spent
@@ -1367,20 +1383,26 @@ bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTx
         if (!IsCoinStake())
         {
             if (nValueIn < GetValueOut())
-                return DoS(100, error("ConnectInputs() : %s value in < value out", GetHash().ToString().substr(0,10).c_str()));
+                return DoS(100, error("%s : %s value in < value out", __func__, GetHash().ToString().substr(0,10).c_str()));
 
             // Tally transaction fees
             int64_t nTxFee = nValueIn - GetValueOut();
+
             if (nTxFee < 0)
-                return DoS(100, error("ConnectInputs() : %s nTxFee < 0", GetHash().ToString().substr(0,10).c_str()));
+                return DoS(100, error("%s : %s nTxFee < 0", __func__, GetHash().ToString().substr(0,10).c_str()));
 
             // enforce transaction fees for every block
             if (nTxFee < GetMinFee())
-                return fBlock? DoS(100, error("ConnectInputs() : %s not paying required fee=%s, paid=%s", GetHash().ToString().substr(0,10).c_str(), FormatMoney(GetMinFee()).c_str(), FormatMoney(nTxFee).c_str())) : false;
+            {
+                return fBlock? DoS(100, error("%s : %s not paying required fee=%s, paid=%s", __func__,
+                                              GetHash().ToString().substr(0,10).c_str(), FormatMoney(GetMinFee()).c_str(),
+                                              FormatMoney(nTxFee).c_str())) : false;
+            }
 
             nFees += nTxFee;
+
             if (!MoneyRange(nFees))
-                return DoS(100, error("ConnectInputs() : nFees out of range"));
+                return DoS(100, error("%s : nFees out of range", __func__));
         }
     }
 
@@ -1410,7 +1432,7 @@ bool CTransaction::ClientConnectInputs()
 
             // Verify signature
             if (!VerifySignature(txPrev, *this, i, 0))
-                return error("ConnectInputs() : VerifySignature failed");
+                return error("%s : VerifySignature failed", __func__);
 
             ///// this is redundant with the mempool.mapNextTx stuff,
             ///// not sure which I want to get rid of
@@ -1425,7 +1447,7 @@ bool CTransaction::ClientConnectInputs()
             nValueIn += txPrev.vout[prevout.n].nValue;
 
             if (!MoneyRange(txPrev.vout[prevout.n].nValue) || !MoneyRange(nValueIn))
-                return error("ClientConnectInputs() : txin values out of range");
+                return error("%s : txin values out of range", __func__);
         }
         if (GetValueOut() > nValueIn)
             return false;
@@ -1440,7 +1462,7 @@ bool CTransaction::ClientConnectInputs()
 bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Disconnect in reverse order
-    for (int i = vtx.size()-1; i >= 0; i--)
+    for (int i = vtx.size() - 1; i >= 0; i--)
         if (!vtx[i].DisconnectInputs(txdb))
             return false;
 
@@ -1451,7 +1473,7 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
         CDiskBlockIndex blockindexPrev(pindex->pprev);
         blockindexPrev.hashNext = 0;
         if (!txdb.WriteBlockIndex(blockindexPrev))
-            return error("DisconnectBlock() : WriteBlockIndex failed");
+            return error("%s : WriteBlockIndex failed", __func__);
     }
 
     // ppcoin: clean up wallet after disconnecting coinstake
@@ -1467,7 +1489,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
     {
         if (fDebug)
-            LogPrintf("ConnectBlock() : block check failed\n");
+            LogPrintf("%s : block check failed\n", __func__);
 
         return false;
     }
@@ -1517,13 +1539,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         {
             BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
                 if (pos.IsNull())
-                    return DoS(50, error("ConnectBlock() : tried to overwrite transaction(s)"));
+                    return DoS(50, error("%s : tried to overwrite transaction(s)", __func__));
         }
 
         nSigOps += tx.GetLegacySigOpCount();
 
         if (nSigOps > MAX_BLOCK_SIGOPS)
-            return DoS(100, error("ConnectBlock() : too many sigops"));
+            return DoS(100, error("%s : too many sigops", __func__));
 
         CDiskTxPos posThisTx(pindex->nFile, pindex->nBlockPos, nTxPos);
 
@@ -1541,7 +1563,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid))
             {
                 if (fDebug)
-                    LogPrintf("ConnectBlock() : fetchinputs failed\n");
+                    LogPrintf("%s : fetchinputs failed\n", __func__);
 
                 return false;
             }
@@ -1552,7 +1574,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             nSigOps += tx.GetP2SHSigOpCount(mapInputs);
 
             if (nSigOps > MAX_BLOCK_SIGOPS)
-                return DoS(100, error("ConnectBlock() : too many sigops"));
+                return DoS(100, error("%s : too many sigops", __func__));
 
             int64_t nTxValueIn = tx.GetValueIn(mapInputs);
             int64_t nTxValueOut = tx.GetValueOut();
@@ -1572,12 +1594,12 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                 if (reorganize && txAlreadyUsed)
                 {
                     if (fDebug)
-                        LogPrintf("ConnectBlock() : Reorganizing, did not connect previously connected inputs\n");
+                        LogPrintf("%s : Reorganizing, did not connect previously connected inputs\n", __func__);
                 }
                 else
                 {
                     if (fDebug)
-                        LogPrintf("ConnectBlock() : failed to connect inputs\n");
+                        LogPrintf("%s : failed to connect inputs\n", __func__);
 
                     return false;
                 }
@@ -1590,7 +1612,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     fEnforceMnWinner = sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT);
 
     if (fDebug && fEnforceMnWinner)
-        LogPrintf("Specific masternode winner enforcement enabled\n");
+        LogPrintf("%s : specific masternode winner enforcement enabled\n", __func__);
 
     if (IsProofOfWork())
     {
@@ -1599,8 +1621,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         // Check coinbase reward after hardcoded checkpoint
         if (pindex->nHeight > 17901 && vtx[0].GetValueOut() > nReward)
         {
-            return DoS(50, error("ConnectBlock() : coinbase reward exceeded (actual=%d vs calculated=%d)",
-                       vtx[0].GetValueOut(), nReward));
+            return DoS(50, error("%s : coinbase reward exceeded (actual=%d vs calculated=%d)",
+                                 __func__, vtx[0].GetValueOut(), nReward));
         }
 
     }
@@ -1610,14 +1632,17 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         uint64_t nCoinAge;
 
         if (!vtx[1].GetCoinAge(txdb, nCoinAge))
-            return error("ConnectBlock() : %s unable to get coin age for coinstake", vtx[1].GetHash().ToString().substr(0,10).c_str());
+        {
+            return error("%s : %s unable to get coin age for coinstake", __func__,
+                         vtx[1].GetHash().ToString().substr(0,10).c_str());
+        }
 
         int64_t nCalculatedStakeReward = GetProofOfStakeReward(nCoinAge, nFees, pindex->nHeight);
 
         if (pindex->nHeight > 17901 && nStakeReward > nCalculatedStakeReward)
         {
-            return DoS(100, error("ConnectBlock() : coinstake pays too much(actual=%d vs calculated=%d)",
-                       nStakeReward, nCalculatedStakeReward));
+            return DoS(100, error("%s : coinstake pays too much(actual=%d vs calculated=%d)", __func__,
+                                  nStakeReward, nCalculatedStakeReward));
         }
 
         // Check block rewards
@@ -1627,8 +1652,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
 
-            LogPrintf("\nConnectBlock() : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s,"
-                      " Project=%s\n", pindex->nHeight, FormatMoney(nCalculatedStakeReward),
+            LogPrintf("\n%s : *Block %d reward=%s - Expected payouts: Stake=%s, Masternode=%s, Project=%s\n",
+                      __func__, pindex->nHeight, FormatMoney(nCalculatedStakeReward),
                       FormatMoney(nRequiredStakePmt), FormatMoney(nRequiredMnPmt),
                       FormatMoney(nRequiredDevPmt));
 
@@ -1653,9 +1678,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             if (!fMnPaymentMade)
             {
                 if (pindex->nHeight >= ENFORCE_MN_PAYMENT_HEIGHT)
-                    return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay masternode expected amount"));
+                    return DoS(nDoS_PMTs, error("%s : Stake does not pay masternode expected amount", __func__));
                 else
-                    LogPrintf("ConnectBlock() : Stake does not pay masternode expected amount\n");
+                    LogPrintf("%s : Stake does not pay masternode expected amount\n", __func__);
             }
 
             // check payee once masternode list obtained
@@ -1669,7 +1694,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                     {
                         /* if the current block payment is invalid it might just be a matter of the
                            payment list being out of sync... */
-                        LogPrintf("ConnectBlock() : Possible discrepancy found in masternode payment, recalculating payee...\n");
+                        LogPrintf("%s : Possible discrepancy found in masternode payment, recalculating payee...\n", __func__);
 
                         masternodePayments.ProcessBlock(pindex->nHeight, reorganize);
                         masternodePayments.GetBlockPayee(pindex->nHeight, expectedPayee);
@@ -1689,27 +1714,27 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
                         if (fEnforceMnWinner && postponedBlocks < sporkManager.GetSporkValue(SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD))
                         {
-                            return DoS(nDoS_PMTs, error("ConnectBlock() : Stake does not pay correct masternode, "
-                                       "actual=%s required=%s, block=%d\n", hasBlockPayee ? paidMN.ToString() : "",
+                            return DoS(nDoS_PMTs, error("%s : Stake does not pay correct masternode, "
+                                       "actual=%s required=%s, block=%d\n", __func__, hasBlockPayee ? paidMN.ToString() : "",
                                        fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1));
                         }
                         else
                         {
-                            LogPrintf("ConnectBlock() : Stake does not pay correct masternode, "
-                                      "actual=%s required=%s, block=%d\n", hasBlockPayee ? paidMN.ToString() : "",
+                            LogPrintf("%s : Stake does not pay correct masternode, actual=%s required=%s, block=%d\n",
+                                      __func__, hasBlockPayee ? paidMN.ToString() : "",
                                       fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1);
                         }
                     }
                     else
                     {
-                        LogPrintf("ConnectBlock() : Stake pays correct masternode, address=%s, block=%d\n",
+                        LogPrintf("%s : Stake pays correct masternode, address=%s, block=%d\n", __func__,
                                   hasBlockPayee ? paidMN.ToString() : "", pindexBest->nHeight + 1);
                     }
                 }
                 else
                 {
                     // case: was not able to determine correct masternode payee
-                    LogPrintf("ConnectBlock() : Did not have expected masternode payee for block %d\n", pindexBest->nHeight + 1);
+                    LogPrintf("%s : Did not have expected masternode payee for block %d\n", __func__, pindexBest->nHeight + 1);
                 }
 
                 // verify correct payment addr and amount
@@ -1718,14 +1743,14 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                 if (!fValidMnPayment && postponedBlocks < sporkManager.GetSporkValue(SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD))
                 {
                     if (fEnforceMnWinner)
-                        return DoS(nDoS_PMTs, error("ConnectBlock() : Masternode payment missing or is not valid"));
+                        return DoS(nDoS_PMTs, error("%s : Masternode payment missing or is not valid", __func__));
                     else
-                        LogPrintf("ConnectBlock() : Masternode payment missing or is not valid\n");
+                        LogPrintf("%s : Masternode payment missing or is not valid\n", __func__);
                 }
             }
             else
             {
-                LogPrintf("ConnectBlock() : Masternode list not yet synced or block too old"
+                LogPrintf("%s : Masternode list not yet synced or block too old", __func__,
                           " (CountEnabled=%d)\n", mnodeman.CountEnabled());
             }
 
@@ -1743,9 +1768,15 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             if (!fValidDevPmt)
             {
                 if (pindex->nHeight >= ENFORCE_DEV_PAYMENT_HEIGHT)
-                    return DoS(nDoS_PMTs, error("ConnectBlock() : Block fails to pay dev payment of %s\n", FormatMoney(nRequiredDevPmt).c_str()));
+                {
+                    return DoS(nDoS_PMTs, error("%s : Block fails to pay dev payment of %s\n", __func__,
+                                                FormatMoney(nRequiredDevPmt).c_str()));
+                }
                 else
-                    LogPrintf("ConnectBlock() : Block does not pay %s dev payment - NOT ENFORCED\n", FormatMoney(nRequiredDevPmt).c_str());
+                {
+                    LogPrintf("%s : Block does not pay %s dev payment - NOT ENFORCED\n", __func__,
+                              FormatMoney(nRequiredDevPmt).c_str());
+                }
             }
 
             if (fDebug)
@@ -1754,7 +1785,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         }
         else
         {
-            LogPrintf("ConnectBlock() : Initial block download: skipping masternode and developer payment checks %d\n", pindexBest->nHeight+1);
+            LogPrintf("%s : Initial block download: skipping masternode and developer payment checks %d\n", __func__,
+                      pindexBest->nHeight + 1);
         }
     }
 
@@ -1763,7 +1795,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     pindex->nMoneySupply = (pindex->pprev? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
 
     if (!txdb.WriteBlockIndex(CDiskBlockIndex(pindex)))
-        return error("Connect() : WriteBlockIndex for pindex failed");
+        return error("%s : WriteBlockIndex for pindex failed", __func__);
 
     if (fJustCheck)
         return true;
@@ -1772,7 +1804,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     for (map<uint256, CTxIndex>::iterator mi = mapQueuedChanges.begin(); mi != mapQueuedChanges.end(); ++mi)
     {
         if (!txdb.UpdateTxIndex((*mi).first, (*mi).second))
-            return error("ConnectBlock() : UpdateTxIndex failed");
+            return error("%s : UpdateTxIndex failed", __func__);
     }
 
     // Update block index on disk without changing it in memory.
@@ -1783,14 +1815,15 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         blockindexPrev.hashNext = pindex->GetBlockHash();
 
         if (!txdb.WriteBlockIndex(blockindexPrev))
-            return error("ConnectBlock() : WriteBlockIndex failed");
+            return error("%s : WriteBlockIndex failed", __func__);
     }
 
     // Watch for transactions paying to me
     BOOST_FOREACH(CTransaction& tx, vtx)
         SyncWithWallets(tx, this, true);
 
-    if (!IsInitialBlockDownload()) {
+    if (!IsInitialBlockDownload())
+    {
         masternodePayments.ProcessBlock(pindex->nHeight + 1);
         masternodePayments.ProcessBlock(pindex->nHeight + 2);
         masternodePayments.ProcessBlock(pindex->nHeight + 3);
@@ -4097,14 +4130,13 @@ bool ProcessMessages(CNode* pfrom)
     //if (fDebug)
     //    LogPrintf("%s(%u messages)\n", __func__, pfrom->vRecvMsg.size());
 
-    //
     // Message format
     //  (4) message start
     //  (12) command
     //  (4) size
     //  (4) checksum
     //  (x) data
-    //
+
     bool fOk = true;
 
     if (!pfrom->vRecvGetData.empty())
@@ -4138,7 +4170,7 @@ bool ProcessMessages(CNode* pfrom)
         // Scan for message start
         if (memcmp(msg.hdr.pchMessageStart, pchMessageStart, sizeof(pchMessageStart)) != 0)
         {
-            LogPrintf("PROCESSMESSAGE: INVALID MESSAGESTART %s peer=%d\n",
+            LogPrintf("%s: INVALID MESSAGESTART %s peer=%d\n", __func__,
                       SanitizeString(msg.hdr.GetCommand()), pfrom->id);
             fOk = false;
             break;
@@ -4149,7 +4181,7 @@ bool ProcessMessages(CNode* pfrom)
 
         if (!hdr.IsValid())
         {
-            LogPrintf("PROCESSMESSAGE: ERRORS IN HEADER %s peer=%d\n",
+            LogPrintf("%s: ERRORS IN HEADER %s peer=%d\n", __func__,
                       SanitizeString(hdr.GetCommand()), pfrom->id);
             continue;
         }
