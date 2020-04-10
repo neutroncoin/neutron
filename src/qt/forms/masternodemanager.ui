@@ -101,7 +101,7 @@
              </column>
              <column>
               <property name="text">
-               <string>IP/Onion</string>
+               <string>IP</string>
               </property>
              </column>
              <column>
