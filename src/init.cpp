@@ -342,7 +342,6 @@ std::string HelpMessage()
         "  -dblogsize=<n>         " + _("Set database disk log size in megabytes (default: 100)") + "\n" +
         "  -timeout=<n>           " + _("Specify connection timeout in milliseconds (default: 5000)") + "\n" +
         "  -proxy=<ip:port>       " + _("Connect through socks proxy") + "\n" +
-        "  -tor=<ip:port>         " + _("Use proxy to reach tor hidden services (default: same as -proxy)") + "\n"
         "  -dns                   " + _("Allow DNS lookups for -addnode, -seednode and -connect") + "\n" +
         "  -port=<port>           " + _("Listen for connections on <port> (default: 32001 or testnet: 25714)") + "\n" +
         "  -maxconnections=<n>    " + _("Maintain at most <n> connections to peers (default: 125)") + "\n" +
@@ -422,12 +421,6 @@ std::string HelpMessage()
     strUsage += "  -mnconf=<file>             " + _("Specify masternode configuration file (default: masternode.conf)") + "\n";
     strUsage += "  -masternodeprivkey=<n>     " + _("Set the masternode private key") + "\n";
     strUsage += "  -masternodeaddr=<n>        " + _("Set external address:port to get to this masternode (example: address:port)") + "\n";
-
-    strUsage += "\n" + _("Darksend options:") + "\n";
-    strUsage += "  -enabledarksend=<n>          " + _("Enable use of automated darksend for funds stored in this wallet (0-1, default: 0)") + "\n";
-    strUsage += "  -darksendrounds=<n>          " + _("Use N separate masternodes to anonymize funds  (2-8, default: 2)") + "\n";
-    strUsage += "  -anonymizeNeutronamount=<n> " + _("Keep N Neutron anonymized (default: 0)") + "\n";
-    strUsage += "  -liquidityprovider=<n>       " + _("Provide liquidity to Darksend by infrequently mixing coins on a continual basis (0-100, default: 0, 1=very frequent, high fees, 100=very infrequent, low fees)") + "\n";
 
     return strUsage;
 }
@@ -1137,26 +1130,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         }
     }
 
-    // fEnableDarksend = GetBoolArg("-enabledarksend", false);
     fEnableDarksend = false;
-
-    // nDarksendRounds = GetArg("-darksendrounds", 2);
-    // if(nDarksendRounds > 16) nDarksendRounds = 16;
-    // if(nDarksendRounds < 1) nDarksendRounds = 1;
-
-    // nLiquidityProvider = GetArg("-liquidityprovider", 0); //0-100
-    // if(nLiquidityProvider != 0) {
-    //     darkSendPool.SetMinBlockSpacing(std::min(nLiquidityProvider,100)*15);
-    //     fEnableDarksend = true;
-    //     nDarksendRounds = 99999;
-    // }
-
-    // nAnonymizeNeutronAmount = GetArg("-anonymizeNeutronamount", 0);
-    // if(nAnonymizeNeutronAmount > 999999) nAnonymizeNeutronAmount = 999999;
-    // if(nAnonymizeNeutronAmount < 2) nAnonymizeNeutronAmount = 2;
-
-    // LogPrintf("Darksend rounds %d\n", nDarksendRounds);
-    // LogPrintf("Anonymize Neutron Amount %d\n", nAnonymizeNeutronAmount);
 
     /* Denominations
        A note about convertability. Within Darksend pools, each denomination
