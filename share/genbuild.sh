@@ -1,7 +1,7 @@
 #!/bin/sh
 #
-# Copyright (c) 2017-2019 The Swipp Developers
-# Copyright (c) 2019 The Neutron Developers
+# Copyright (c) 2017-2020 The Swipp Developers
+# Copyright (c) 2020 The Neutron Developers
 #
 # Distributed under the MIT/X11 software license, see the accompanying
 # file COPYING or http://www.opensource.org/licenses/mit-license.php.
