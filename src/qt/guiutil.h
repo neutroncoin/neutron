@@ -83,6 +83,24 @@ namespace GUIUtil
     // Browse backup folder
     void showBackups();
 
+    // Browse discord group
+    void discordButtonLink();
+
+    // Browse block explorer
+    void explorerButtonLink();
+
+    // Download Latests Bootstrap
+    void bootstrapButtonLink();
+
+    // Browse Neutron Support Guides
+    void supportButtonLink();
+
+    // Browse Neutron Github
+    void repoButtonLink();
+
+    // Browse Neutron's CoinMarketCap.com
+    void cmcButtonLink();
+
     /** Qt event filter that intercepts ToolTipChange events, and replaces the tooltip with a rich text
       representation if needed. This assures that Qt can word-wrap long tooltip messages.
       Tooltips longer than the provided size threshold (in characters) are wrapped.

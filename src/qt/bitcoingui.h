@@ -1,7 +1,12 @@
 #ifndef BITCOINGUI_H
 #define BITCOINGUI_H
 
+#include <QLabel>
 #include <QMainWindow>
+#include <QMap>
+#include <QMenu>
+#include <QPoint>
+#include <QPushButton>
 #include <QSystemTrayIcon>
 
 #include <stdint.h>
@@ -108,6 +113,7 @@ private:
     QAction *openLoggerAction;
     QAction *openInfoAction;
     QAction *openRPCConsoleAction;
+    QAction *openResourcesAction;
     QAction *openConfEditorAction;
     QAction *openMNConfEditorAction;
     QAction *showBackupsAction;
@@ -138,6 +144,10 @@ private:
     /** Disconnect core signals from GUI client */
     void unsubscribeFromCoreSignals();
 
+signals:
+    /** Restart handling */
+    void requestedRestart(QStringList args);
+
 public Q_SLOTS:
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
@@ -147,6 +157,9 @@ public Q_SLOTS:
        @param[in] status            current encryption status
        @see WalletModel::EncryptionStatus
     */
+    /** Get restart command-line parameters and request restart */
+    void handleRestart(QStringList args);
+
     void setEncryptionStatus(int status);
 
     /** Notify the user of an event from the core network or transaction handling code.
@@ -210,6 +223,7 @@ private Q_SLOTS:
     /** Show debug window and set focus to the appropriate tab */
     void showInfo();
     void showConsole();
+    void showResources();
 
     /** Open external (default) editor with neutron.conf */
     void showConfEditor();

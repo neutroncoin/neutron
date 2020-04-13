@@ -1,9 +1,18 @@
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "rpcconsole.h"
 #include "ui_rpcconsole.h"
 
 #include "clientmodel.h"
 #include "bitcoinrpc.h"
 #include "guiutil.h"
+#include "main.h"
+#include "util.h"
 
 #ifdef USE_UPNP
 // used to retrieve miniupnpc version
@@ -14,6 +23,7 @@
 #include <db_cxx.h>
 #endif
 
+#include <QDir>
 #include <QTime>
 #include <QTimer>
 #include <QThread>
@@ -21,6 +31,8 @@
 #include <QKeyEvent>
 #include <QUrl>
 #include <QScrollBar>
+#include <QStringList>
+#include <QDesktopServices>
 
 #include <openssl/crypto.h>
 
@@ -38,6 +50,14 @@ const int CONSOLE_SCROLLBACK = 50;
 const int CONSOLE_HISTORY = 50;
 
 const QSize ICON_SIZE(24, 24);
+
+// Repair parameters
+const QString SALVAGEWALLET("-salvagewallet");
+const QString RESCAN("-rescan");
+const QString ZAPTXES1("-zapwallettxes=1");
+const QString ZAPTXES2("-zapwallettxes=2");
+const QString UPGRADEWALLET("-upgradewallet");
+const QString REINDEX("-reindex");
 
 const struct {
     const char *url;
@@ -384,9 +404,19 @@ RPCConsole::RPCConsole(QWidget *parent) :
 
     connect(ui->clearButton, SIGNAL(clicked()), this, SLOT(clear()));
 
+    // Wallet Repair Buttons(rpcconsole.ui)
+    //connect(ui->btn_salvagewallet, SIGNAL(clicked()), this, SLOT(walletSalvage()));
+    //connect(ui->discordButton, SIGNAL(clicked()), this, SLOT(walletSalvage()));
+    //connect(ui->btn_rescan, SIGNAL(clicked()), this, SLOT(walletRescan()));
+    //connect(ui->btn_zapwallettxes1, SIGNAL(clicked()), this, SLOT(walletZaptxes1()));
+    //connect(ui->btn_zapwallettxes2, SIGNAL(clicked()), this, SLOT(walletZaptxes2()));
+    //connect(ui->btn_upgradewallet, SIGNAL(clicked()), this, SLOT(walletUpgrade()));
+    //connect(ui->btn_reindex, SIGNAL(clicked()), this, SLOT(walletReindex()));
+
     // set library version labels
 #ifdef ENABLE_WALLET
     ui->berkeleyDBVersion->setText(DbEnv::version(0, 0, 0));
+    ui->wallet_path->setText(QString::fromStdString(GetDataDir().string() + QDir::separator().toLatin1() + GetArg("-wallet", "wallet.dat")));
 #else
     ui->label_berkeleyDBVersion->hide();
     ui->berkeleyDBVersion->hide();
@@ -508,6 +538,64 @@ static QString categoryClass(int category)
     case RPCConsole::CMD_ERROR:    return "cmd-error"; break;
     default:                       return "misc";
     }
+}
+
+/** Restart wallet with "-salvagewallet" */
+void RPCConsole::walletSalvage()
+{
+    buildParameterlist(SALVAGEWALLET);
+}
+
+/** Restart wallet with "-rescan" */
+void RPCConsole::walletRescan()
+{
+    buildParameterlist(RESCAN);
+}
+
+/** Restart wallet with "-zapwallettxes=1" */
+void RPCConsole::walletZaptxes1()
+{
+    buildParameterlist(ZAPTXES1);
+}
+
+/** Restart wallet with "-zapwallettxes=2" */
+void RPCConsole::walletZaptxes2()
+{
+    buildParameterlist(ZAPTXES2);
+}
+
+/** Restart wallet with "-upgradewallet" */
+void RPCConsole::walletUpgrade()
+{
+    buildParameterlist(UPGRADEWALLET);
+}
+
+/** Restart wallet with "-reindex" */
+void RPCConsole::walletReindex()
+{
+    buildParameterlist(REINDEX);
+}
+
+/** Build command-line parameter list for restart */
+void RPCConsole::buildParameterlist(QString arg)
+{
+    // Get command-line arguments and remove the application name
+    QStringList args = QApplication::arguments();
+    args.removeFirst();
+
+    // Remove existing repair-options
+    args.removeAll(SALVAGEWALLET);
+    args.removeAll(RESCAN);
+    args.removeAll(ZAPTXES1);
+    args.removeAll(ZAPTXES2);
+    args.removeAll(UPGRADEWALLET);
+    args.removeAll(REINDEX);
+
+    // Append repair parameter to command line.
+    args.append(arg);
+
+    // Send command-line arguments to BitcoinGUI::handleRestart()
+    emit handleRestart(args);
 }
 
 void RPCConsole::clear()
@@ -696,6 +784,35 @@ void RPCConsole::on_tabWidget_currentChanged(int index)
     {
         ui->lineEdit->setFocus();
     }
+}
+void RPCConsole::on_discordButton_clicked()
+{
+    GUIUtil::discordButtonLink();
+}
+
+void RPCConsole::on_explorerButton_clicked()
+{
+    GUIUtil::explorerButtonLink();
+}
+
+void RPCConsole::on_supportButton_clicked()
+{
+    GUIUtil::supportButtonLink();
+}
+
+void RPCConsole::on_bootstrapButton_clicked()
+{
+    GUIUtil::bootstrapButtonLink();
+}
+
+void RPCConsole::on_repoButton_clicked()
+{
+    GUIUtil::repoButtonLink();
+}
+
+void RPCConsole::on_cmcButton_clicked()
+{
+    GUIUtil::cmcButtonLink();
 }
 
 void RPCConsole::on_openDebugLogfileButton_clicked()

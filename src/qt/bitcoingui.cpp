@@ -25,6 +25,7 @@
 #include "notificator.h"
 #include "guiutil.h"
 #include "rpcconsole.h"
+#include "init.h"
 #include "wallet.h"
 #include "masternodemanager.h"
 #include "loggerpage.h"
@@ -94,6 +95,7 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     lockWalletAction(0),
     aboutQtAction(0),
     openRPCConsoleAction(0),
+    openResourcesAction(0),
     openAction(0),
     trayIcon(0),
     notificator(0),
@@ -364,6 +366,8 @@ void BitcoinGUI::createActions()
     openInfoAction->setStatusTip(tr("Show diagnostic information"));
     openRPCConsoleAction = new QAction(QIcon(":/icons/debugwindow"), tr("&Debug console"), this);
     openRPCConsoleAction->setToolTip(tr("Open debugging console"));
+    openResourcesAction = new QAction(QIcon(":/icons/qrcode"), tr("&Resources"), this);
+    openResourcesAction->setToolTip(tr("Open Resources"));
     openMNConfEditorAction = new QAction(QIcon(":/icons/configure"), tr("Open &Masternode Configuration File"), this);
     openMNConfEditorAction->setStatusTip(tr("Open Masternode configuration file"));
     showBackupsAction = new QAction(QIcon(":/icons/filesave"), tr("Show &Backups"), this);
@@ -371,6 +375,7 @@ void BitcoinGUI::createActions()
     // initially disable the debug window menu items
     openInfoAction->setEnabled(false);
     openRPCConsoleAction->setEnabled(false);
+    openResourcesAction->setEnabled(false);
 
 
     exportAction = new QAction(QIcon(":/icons/export"), tr("&Export..."), this);
@@ -393,11 +398,15 @@ void BitcoinGUI::createActions()
     // Jump directly to tabs in RPC-console
     connect(openInfoAction, SIGNAL(triggered()), this, SLOT(showInfo()));
     connect(openRPCConsoleAction, SIGNAL(triggered()), this, SLOT(showConsole()));
+    connect(openResourcesAction, SIGNAL(triggered()), this, SLOT(showResources()));
 
     // Open configs and backup folder from menu
     connect(openConfEditorAction, SIGNAL(triggered()), this, SLOT(showConfEditor()));
     connect(openMNConfEditorAction, SIGNAL(triggered()), this, SLOT(showMNConfEditor()));
     connect(showBackupsAction, SIGNAL(triggered()), this, SLOT(showBackups()));
+
+    // Get restart command-line parameters and handle restart
+    connect(rpcConsole, SIGNAL(handleRestart(QStringList)), this, SLOT(handleRestart(QStringList)));
 }
 
 void BitcoinGUI::createMenuBar()
@@ -486,6 +495,8 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(addressBookAction);
     toolbar->addAction(masternodeManagerAction);
     toolbar->addAction(openRPCConsoleAction);
+    toolbar->addAction(miningReportAction);
+    toolbar->addAction(openResourcesAction);
     toolbar->addWidget(makeToolBarSpacer());
     toolbar->setOrientation(Qt::Vertical);
     toolbar->setMovable(false);
@@ -664,6 +675,12 @@ void BitcoinGUI::showInfo()
 void BitcoinGUI::showConsole()
 {
     rpcConsole->setTabFocus(RPCConsole::TAB_CONSOLE);
+    showDebugWindow();
+}
+
+void BitcoinGUI::showResources()
+{
+    rpcConsole->setTabFocus(RPCConsole::TAB_REPAIR);
     showDebugWindow();
 }
 
@@ -916,6 +933,7 @@ void BitcoinGUI::showEvent(QShowEvent *event)
     // enable the debug window when the main window shows up
     openInfoAction->setEnabled(true);
     openRPCConsoleAction->setEnabled(true);
+    openResourcesAction->setEnabled(true);
     aboutAction->setEnabled(true);
     optionsAction->setEnabled(true);
 }
@@ -1261,6 +1279,13 @@ void BitcoinGUI::unsubscribeFromCoreSignals()
     // Disconnect signals from client
     uiInterface.ThreadSafeMessageBox.disconnect(boost::bind(ThreadSafeMessageBox, this, _1, _2, _3));
     uiInterface.ThreadSafeAskFee.disconnect(boost::bind(ThreadSafeAskFee, this, _1, _2));
+}
+
+// Get restart command-line parameters and request restart
+void BitcoinGUI::handleRestart(QStringList args)
+{
+    if (!ShutdownRequested())
+        emit requestedRestart(args);
 }
 
 void BitcoinGUI::showNormalIfMinimized(bool fToggleHidden)

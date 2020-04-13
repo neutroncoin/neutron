@@ -242,6 +242,36 @@ bool isObscured(QWidget *w)
         && checkPoint(QPoint(w->width() / 2, w->height() / 2), w));
 }
 
+void discordButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("https://discord.gg/fqDt33R"));
+}
+
+void explorerButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("http://ntrn.explorer.cryptotools.pw:3001/"));
+}
+
+void bootstrapButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("http://207.148.13.214/Neutron_blockchain_latest.zip"));
+}
+
+void supportButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("https://www.neutroncoin.com/support"));
+}
+
+void repoButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("https://github.com/neutroncoin/neutron"));
+}
+
+void cmcButtonLink()
+{
+        QDesktopServices::openUrl(QUrl("https://coinmarketcap.com/currencies/neutron/"));
+}
+
 void openDebugLogfile()
 {
     boost::filesystem::path pathDebug = GetDataDir() / "debug.log";

@@ -36,7 +36,8 @@ public:
 
     enum TabTypes {
         TAB_INFO = 0,
-        TAB_CONSOLE = 1
+        TAB_CONSOLE = 1,
+        TAB_REPAIR = 2
     };
 
 protected:
@@ -47,11 +48,34 @@ private Q_SLOTS:
     void on_tabWidget_currentChanged(int index);
     /** open the debug.log from the current datadir */
     void on_openDebugLogfileButton_clicked();
+
+    /** open the discord link */
+    void on_discordButton_clicked();
+    /** open the block explorer link */
+    void on_explorerButton_clicked();
+    /** open the Neutron Support Guides link */
+    void on_supportButton_clicked();
+    /** open the Bootstrap Download link */
+    void on_bootstrapButton_clicked();
+    /** open the Neutron Github link */
+    void on_repoButton_clicked();
+    /** open the Neutron CoinMarketCap link */
+    void on_cmcButton_clicked();
+
     /** display messagebox with program parameters (same as bitcoin-qt --help) */
     void on_showCLOptionsButton_clicked();
 
 public Q_SLOTS:
     void clear();
+
+    /** Wallet repair options */
+    void walletSalvage();
+    void walletRescan();
+    void walletZaptxes1();
+    void walletZaptxes2();
+    void walletUpgrade();
+    void walletReindex();
+
     void message(int category, const QString &message, bool html = false);
     /** Set number of connections shown in the UI */
     void setNumConnections(int count);
@@ -74,6 +98,8 @@ Q_SIGNALS:
     // For RPC command executor
     void stopExecutor();
     void cmdRequest(const QString &command);
+    /** Get restart command-line parameters and handle restart */
+    void handleRestart(QStringList args);
 
 private:
     Ui::RPCConsole *ui;
@@ -85,7 +111,8 @@ private:
     QCompleter *autoCompleter;
 
     void startExecutor();
-
+    /** Build parameter list for restart */
+    void buildParameterlist(QString arg);
     /** Update UI with latest network info from model. */
     void updateNetworkState();
 };
