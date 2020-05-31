@@ -1161,13 +1161,13 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             if (!addrTest.IsValid())
                 return InitError("Invalid -masternodeaddr address: " + strMasterNodeAddr);
 
-            if (addrTest.GetPort() != GetDefaultPort())
-            {
-                std::string errorMessage = strprintf("Invalid -masternodeaddr port %u detected in neutron.conf "
-                                                     "(only %d is supported for mainnet)",
-                                                     addrTest.GetPort(), GetDefaultPort());
-                return InitError(errorMessage);
-            }
+            //if (addrTest.GetPort() != GetDefaultPort())
+            //{
+            //    std::string errorMessage = strprintf("Invalid -masternodeaddr port %u detected in neutron.conf "
+            //                                         "(only %d is supported for mainnet)",
+            //                                         addrTest.GetPort(), GetDefaultPort());
+            //    return InitError(errorMessage);
+            //}
         }
 
         strMasterNodePrivKey = GetArg("-masternodeprivkey", "");

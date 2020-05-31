@@ -800,11 +800,11 @@ void CMasternode::Check()
         return;
 
     // only accept p2p port for mainnet and testnet
-    if (addr.GetPort() != GetDefaultPort())
-    {
-        nActiveState = MASTERNODE_POS_ERROR;
-        return;
-    }
+   // if (addr.GetPort() != GetDefaultPort())
+   // {
+   //     nActiveState = MASTERNODE_POS_ERROR;
+   //     return;
+   // }
 
     if (!UpdatedWithin(MASTERNODE_REMOVAL_SECONDS))
     {
