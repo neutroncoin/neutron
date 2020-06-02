@@ -4116,12 +4116,12 @@ int ActiveProtocol()
     if (sporkManager.IsSporkActive(SPORK_11_PROTOCOL_V301_ENFORCEMENT))
     {
         if (sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT))
-            return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT_AND_MNENFORCE;
+            return MIN_PEER_PROTO_VERSION_AFTER_V4_ENFORCEMENT;
         else
-            return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT;
+            return MIN_PEER_PROTO_VERSION_AFTER_V4_ENFORCEMENT;
     }
     else
-        return MIN_PEER_PROTO_VERSION_AFTER_V3_ENFORCEMENT;
+        return MIN_PEER_PROTO_VERSION_AFTER_V301_ENFORCEMENT_AND_MNENFORCE;
 }
 
 // requires LOCK(cs_vRecvMsg)
