@@ -29,11 +29,11 @@ bool CMasternodeConfig::read(std::string& strErr) {
             return false;
         }
 
-        if (CService(ip).GetPort() != GetDefaultPort())  {
-            strErr = strprintf("Invalid port %u for masternode detected in masternode.conf (only %d is supported for mainnet)", CService(ip).GetPort(), GetDefaultPort());
-            streamConfig.close();
-            return false;
-        }
+        //if (CService(ip).GetPort() != GetDefaultPort())  {
+        //    strErr = strprintf("Invalid port %u for masternode detected in masternode.conf (only %d is supported for mainnet)", CService(ip).GetPort(), GetDefaultPort());
+      //      streamConfig.close();
+      //      return false;
+      //  }
 
         add(alias, ip, privKey, txHash, outputIndex);
     }

@@ -1765,8 +1765,8 @@ void CConnman::ThreadOpenConnections2()
                 continue;
 
             // do not allow non-default ports, unless after 50 invalid addresses selected already
-            if (addr.GetPort() != GetDefaultPort() && nTries < 50)
-                continue;
+            //if (addr.GetPort() != GetDefaultPort() && nTries < 50)
+            //    continue;
 
             addrConnect = addr;
             break;
