@@ -1750,8 +1750,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             }
             else
             {
-                LogPrintf("%s : Masternode list not yet synced or block too old", __func__,
-                          " (CountEnabled=%d)\n", mnodeman.CountEnabled());
+                LogPrintf("%s : Masternode list not yet synced or block too old "
+                          " (CountEnabled=%d)\n",__func__, mnodeman.CountEnabled());
             }
 
             // check developer payment
