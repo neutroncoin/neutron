@@ -1488,9 +1488,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     // Check it again in case a previous version let a bad block in, but skip BlockSig checking
     if (!CheckBlock(!fJustCheck, !fJustCheck, false))
     {
-        if (fDebug)
-            LogPrintf("%s : block check failed\n", __func__);
-
+        LogPrintf("%s : block check failed\n", __func__);
         return false;
     }
 
@@ -1562,9 +1560,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
             if (!tx.FetchInputs(txdb, mapQueuedChanges, true, false, mapInputs, fInvalid))
             {
-                if (fDebug)
-                    LogPrintf("%s : fetchinputs failed\n", __func__);
-
+                LogPrintf("%s : fetchinputs failed\n", __func__);
                 return false;
             }
 
@@ -1592,15 +1588,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, &txAlreadyUsed))
             {
                 if (reorganize && txAlreadyUsed)
-                {
-                    if (fDebug)
-                        LogPrintf("%s : Reorganizing, did not connect previously connected inputs\n", __func__);
-                }
+                    LogPrintf("%s : Reorganizing, did not connect previously connected inputs\n", __func__);
                 else
                 {
-                    if (fDebug)
-                        LogPrintf("%s : failed to connect inputs\n", __func__);
-
+                    LogPrintf("%s : failed to connect inputs\n", __func__);
                     return false;
                 }
             }
