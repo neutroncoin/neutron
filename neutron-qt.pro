@@ -176,6 +176,7 @@ HEADERS += src/activemasternode.h \
     src/addrman.h \
     src/alert.h \
     src/allocators.h \
+    src/backtrace.h \
     src/base58.h \
     src/bignum.h \
     src/bitcoinrpc.h \
@@ -283,6 +284,7 @@ SOURCES += src/activemasternode.cpp \
     src/addrdb.cpp \
     src/addrman.cpp \
     src/alert.cpp \
+    src/backtrace.cpp \
     src/bitcoinrpc.cpp \
     src/chainparams.cpp \
     src/checkpoints.cpp \
