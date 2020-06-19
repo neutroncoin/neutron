@@ -16,6 +16,7 @@
 #include <leveldb/filter_policy.h>
 #include <memenv/memenv.h>
 
+#include "backtrace.h"
 #include "kernel.h"
 #include "checkpoints.h"
 #include "txdb.h"
@@ -296,6 +297,12 @@ bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
 
 bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
 {
+    if (blockindex.nMoneySupply == 0)
+    {
+        LogPrintf("%s : Money supply was zero when writing index\n", __func__);
+        Backtrace::output();
+    }
+
     return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
 }
 
@@ -417,6 +424,12 @@ bool CTxDB::LoadBlockIndex()
         pindexNew->nTime          = diskindex.nTime;
         pindexNew->nBits          = diskindex.nBits;
         pindexNew->nNonce         = diskindex.nNonce;
+
+        if (pindexNew->nMoneySupply == 0)
+        {
+            LogPrintf("%s : Money supply was zero when fetched from disk index\n", __func__);
+            Backtrace::output();
+        }
 
         // Watch for genesis block
         if (pindexGenesisBlock == NULL && blockHash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
