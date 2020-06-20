@@ -4261,185 +4261,178 @@ bool ProcessMessages(CNode* pfrom)
 
 bool SendMessages(CNode* pto, bool fSendTrickle)
 {
-    TRY_LOCK(cs_main, lockMain);
+    LOCK(cs_main);
 
-    if (lockMain)
+    // Dont send anything until we get their version message
+    if (pto->nVersion == 0)
+        return true;
+
+    // Keep-alive ping. We send a nonce of zero because we don't use it anywhere right now
+    if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSendMsg.empty())
     {
-        // Dont send anything until we get their version message
-        if (pto->nVersion == 0)
-            return true;
+        uint64_t nonce = 0;
 
-        // Keep-alive ping. We send a nonce of zero because we don't use it anywhere right now
-        if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSendMsg.empty())
+        if (pto->nVersion > BIP0031_VERSION)
+            pto->PushMessage(NetMsgType::PING, nonce);
+        else
+            pto->PushMessage(NetMsgType::PING);
+    }
+
+    // Resend wallet transactions that haven't gotten in a block yet
+    ResendWalletTransactions();
+
+    // Address refresh broadcast
+    static int64_t nLastRebroadcast;
+
+    if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
+    {
         {
-            uint64_t nonce = 0;
+            LOCK(cs_vNodes);
 
-            if (pto->nVersion > BIP0031_VERSION)
-                pto->PushMessage(NetMsgType::PING, nonce);
-            else
-                pto->PushMessage(NetMsgType::PING);
-        }
-
-        // Resend wallet transactions that haven't gotten in a block yet
-        ResendWalletTransactions();
-
-        // Address refresh broadcast
-        static int64_t nLastRebroadcast;
-
-        if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
-        {
+            BOOST_FOREACH(CNode* pnode, vNodes)
             {
-                LOCK(cs_vNodes);
+                // Periodically clear setAddrKnown to allow refresh broadcasts
+                if (nLastRebroadcast)
+                    pnode->setAddrKnown.clear();
 
-                BOOST_FOREACH(CNode* pnode, vNodes)
+                // Rebroadcast our address
+                if (fListen)
                 {
-                    // Periodically clear setAddrKnown to allow refresh broadcasts
-                    if (nLastRebroadcast)
-                        pnode->setAddrKnown.clear();
+                    CAddress addr = GetLocalAddress(&pnode->addr);
 
-                    // Rebroadcast our address
-                    if (fListen)
-                    {
-                        CAddress addr = GetLocalAddress(&pnode->addr);
-
-                        if (addr.IsRoutable())
-                            pnode->PushAddress(addr);
-                    }
+                    if (addr.IsRoutable())
+                        pnode->PushAddress(addr);
                 }
             }
-
-            nLastRebroadcast = GetTime();
         }
 
-        // Message: addr
-        if (fSendTrickle)
+        nLastRebroadcast = GetTime();
+    }
+
+    // Message: addr
+    if (fSendTrickle)
+    {
+        vector<CAddress> vAddr;
+        vAddr.reserve(pto->vAddrToSend.size());
+
+        BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
         {
-            vector<CAddress> vAddr;
-            vAddr.reserve(pto->vAddrToSend.size());
-
-            BOOST_FOREACH(const CAddress& addr, pto->vAddrToSend)
+            // Returns true if wasn't already contained in the set
+            if (pto->setAddrKnown.insert(addr).second)
             {
-                // Returns true if wasn't already contained in the set
-                if (pto->setAddrKnown.insert(addr).second)
-                {
-                    vAddr.push_back(addr);
+                vAddr.push_back(addr);
 
-                    // Receiver rejects addr messages larger than 1000
-                    if (vAddr.size() >= 1000)
-                    {
-                        pto->PushMessage(NetMsgType::ADDR, vAddr);
-                        vAddr.clear();
-                    }
+                // Receiver rejects addr messages larger than 1000
+                if (vAddr.size() >= 1000)
+                {
+                    pto->PushMessage(NetMsgType::ADDR, vAddr);
+                    vAddr.clear();
                 }
             }
-
-            pto->vAddrToSend.clear();
-
-            if (!vAddr.empty())
-                pto->PushMessage(NetMsgType::ADDR, vAddr);
         }
 
-        // Message: inventory
-        vector<CInv> vInv;
-        vector<CInv> vInvWait;
+        pto->vAddrToSend.clear();
 
+        if (!vAddr.empty())
+            pto->PushMessage(NetMsgType::ADDR, vAddr);
+    }
+
+    // Message: inventory
+    vector<CInv> vInv;
+    vector<CInv> vInvWait;
+
+    {
+        LOCK(pto->cs_inventory);
+
+        vInv.reserve(pto->vInventoryToSend.size());
+        vInvWait.reserve(pto->vInventoryToSend.size());
+
+        BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
         {
-            LOCK(pto->cs_inventory);
+            if (pto->setInventoryKnown.count(inv))
+                continue;
 
-            vInv.reserve(pto->vInventoryToSend.size());
-            vInvWait.reserve(pto->vInventoryToSend.size());
-
-            BOOST_FOREACH(const CInv& inv, pto->vInventoryToSend)
+            // Trickle out tx inv to protect privacy
+            if (inv.type == MSG_TX && !fSendTrickle)
             {
-                if (pto->setInventoryKnown.count(inv))
+                // 1 / 4 of tx invs blast to all immediately
+                static uint256 hashSalt;
+
+                if (hashSalt == 0)
+                    hashSalt = GetRandHash();
+
+                uint256 hashRand = inv.hash ^ hashSalt;
+                hashRand = Hash(BEGIN(hashRand), END(hashRand));
+                bool fTrickleWait = ((hashRand & 3) != 0);
+
+                // Always trickle our own transactions
+                if (!fTrickleWait)
+                {
+                    CWalletTx wtx;
+
+                    if (GetTransaction(inv.hash, wtx))
+                    {
+                        if (wtx.fFromMe)
+                            fTrickleWait = true;
+                    }
+                }
+
+                if (fTrickleWait)
+                {
+                    vInvWait.push_back(inv);
                     continue;
-
-                // Trickle out tx inv to protect privacy
-                if (inv.type == MSG_TX && !fSendTrickle)
-                {
-                    // 1 / 4 of tx invs blast to all immediately
-                    static uint256 hashSalt;
-
-                    if (hashSalt == 0)
-                        hashSalt = GetRandHash();
-
-                    uint256 hashRand = inv.hash ^ hashSalt;
-                    hashRand = Hash(BEGIN(hashRand), END(hashRand));
-                    bool fTrickleWait = ((hashRand & 3) != 0);
-
-                    // Always trickle our own transactions
-                    if (!fTrickleWait)
-                    {
-                        CWalletTx wtx;
-
-                        if (GetTransaction(inv.hash, wtx))
-                        {
-                            if (wtx.fFromMe)
-                                fTrickleWait = true;
-                        }
-                    }
-
-                    if (fTrickleWait)
-                    {
-                        vInvWait.push_back(inv);
-                        continue;
-                    }
-                }
-
-                // Returns true if wasn't already contained in the set
-                if (pto->setInventoryKnown.insert(inv).second)
-                {
-                    vInv.push_back(inv);
-
-                    if (vInv.size() >= 1000)
-                    {
-                        pto->PushMessage(NetMsgType::INV, vInv);
-                        vInv.clear();
-                    }
                 }
             }
 
-            pto->vInventoryToSend = vInvWait;
-        }
-
-        if (!vInv.empty())
-            pto->PushMessage(NetMsgType::INV, vInv);
-
-        // Message: getdata
-        vector<CInv> vGetData;
-        int64_t nNow = GetTime() * 1000000;
-        CTxDB txdb("r");
-
-        while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
-        {
-            const CInv& inv = (*pto->mapAskFor.begin()).second;
-
-            if (!AlreadyHave(txdb, inv))
+            // Returns true if wasn't already contained in the set
+            if (pto->setInventoryKnown.insert(inv).second)
             {
-                if (fDebugNet)
-                    LogPrintf("sending getdata: %s\n", inv.ToString().c_str());
+                vInv.push_back(inv);
 
-                vGetData.push_back(inv);
-
-                if (vGetData.size() >= 1000)
+                if (vInv.size() >= 1000)
                 {
-                    pto->PushMessage(NetMsgType::GETDATA, vGetData);
-                    vGetData.clear();
+                    pto->PushMessage(NetMsgType::INV, vInv);
+                    vInv.clear();
                 }
-
-                mapAlreadyAskedFor[inv] = nNow;
             }
-
-            pto->mapAskFor.erase(pto->mapAskFor.begin());
         }
 
-        if (!vGetData.empty())
-            pto->PushMessage(NetMsgType::GETDATA, vGetData);
+        pto->vInventoryToSend = vInvWait;
     }
-    else
+
+    if (!vInv.empty())
+        pto->PushMessage(NetMsgType::INV, vInv);
+
+    // Message: getdata
+    vector<CInv> vGetData;
+    int64_t nNow = GetTime() * 1000000;
+    CTxDB txdb("r");
+
+    while (!pto->mapAskFor.empty() && (*pto->mapAskFor.begin()).first <= nNow)
     {
-        LogPrintf("%s : Locking of main semaphore failed...", __func__);
+        const CInv& inv = (*pto->mapAskFor.begin()).second;
+
+        if (!AlreadyHave(txdb, inv))
+        {
+            if (fDebugNet)
+                LogPrintf("sending getdata: %s\n", inv.ToString().c_str());
+
+            vGetData.push_back(inv);
+
+            if (vGetData.size() >= 1000)
+            {
+                pto->PushMessage(NetMsgType::GETDATA, vGetData);
+                vGetData.clear();
+            }
+
+            mapAlreadyAskedFor[inv] = nNow;
+        }
+
+        pto->mapAskFor.erase(pto->mapAskFor.begin());
     }
+
+    if (!vGetData.empty())
+        pto->PushMessage(NetMsgType::GETDATA, vGetData);
 
     return true;
 }

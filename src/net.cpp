@@ -2044,19 +2044,8 @@ void ThreadMessageHandler2(void* parg)
         if (fSleep)
         {
             messageHandlerCondition.timed_wait(lock, boost::posix_time::microsec_clock::universal_time() +
-                                               boost::posix_time::milliseconds(100));
+                                               boost::posix_time::milliseconds(250));
         }
-
-        // // Wait and allow messages to bunch up.
-        // // Reduce vnThreadsRunning so StopNode has permission to exit while
-        // // we're sleeping, but we must always check fShutdown after doing this.
-        // vnThreadsRunning[THREAD_MESSAGEHANDLER]--;
-        // MilliSleep(100);
-        // if (fRequestShutdown)
-        //     StartShutdown();
-        // vnThreadsRunning[THREAD_MESSAGEHANDLER]++;
-        // if (fShutdown)
-        //     return;
     }
 }
 
