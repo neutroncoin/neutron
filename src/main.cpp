@@ -4436,6 +4436,10 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
         if (!vGetData.empty())
             pto->PushMessage(NetMsgType::GETDATA, vGetData);
     }
+    else
+    {
+        LogPrintf("%s : Locking of main semaphore failed...", __func__);
+    }
 
     return true;
 }
