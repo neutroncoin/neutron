@@ -2398,8 +2398,8 @@ bool CBlock::AcceptBlock()
     // Check for duplicate
     uint256 hash = GetHash();
 
-    //if (mapBlockIndex.count(hash))
-    //    return error("AcceptBlock() : block already in mapBlockIndex");
+    if (mapBlockIndex.count(hash))
+        return error("AcceptBlock() : block already in mapBlockIndex");
 
     // Get prev block index
     map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
