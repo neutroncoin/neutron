@@ -3539,14 +3539,15 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         if (!IsInitialBlockDownload())
             Checkpoints::AskForPendingSyncCheckpoint(pfrom);
 
-        // // Be more aggressive with blockchain download. Send new getblocks() message after connection
-        // // to new node if waited longer than MAX_TIME_SINCE_BEST_BLOCK.
-        // int64_t TimeSinceBestBlock = GetTime() - nTimeBestReceived;
-        // if (TimeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK)
-        // {
-        //     LogPrintf("INFO: Waiting %ld sec which is too long. Sending GetBlocks(0)\n", TimeSinceBestBlock);
-        //     pfrom->PushGetBlocks(pindexBest, uint256(0));
-        // }
+        // Be more aggressive with blockchain download. Send new getblocks() message after connection
+        // to new node if waited longer than MAX_TIME_SINCE_BEST_BLOCK.
+        int64_t timeSinceBestBlock = GetTime() - nTimeBestReceived;
+
+        if (timeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK)
+        {
+            LogPrintf("%s : Waiting %ld sec which is too long. Sending GetBlocks(0)\n", __func__, timeSinceBestBlock);
+            pfrom->PushGetBlocks(pindexBest, uint256(0));
+        }
     }
     else if (pfrom->nVersion == 0)
     {
@@ -3950,17 +3951,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         if (ProcessNewBlock(pfrom, &block))
             mapAlreadyAskedFor.erase(inv);
-        // else
-        // {
-        //     // Be more aggressive with blockchain download. Send getblocks() message after
-        //     // an error related to new block download
-        //     int64_t TimeSinceBestBlock = GetTime() - nTimeBestReceived;
-        //     if (TimeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK)
-        //     {
-        //         LogPrintf("INFO: Waiting %ld sec which is too long. Sending GetBlocks(0)\n", TimeSinceBestBlock);
-        //         pfrom->PushGetBlocks(pindexBest, uint256(0));
-        //     }
-        // }
+        else
+        {
+            // Be more aggressive with blockchain download. Send getblocks() message after
+            // an error related to new block download
+            int64_t timeSinceBestBlock = GetTime() - nTimeBestReceived;
+
+            if (timeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK)
+            {
+                LogPrintf("%s : Waiting %ld sec which is too long. Sending GetBlocks(0)\n", timeSinceBestBlock);
+                pfrom->PushGetBlocks(pindexBest, uint256(0));
+            }
+        }
 
         if (block.nDoS)
             pfrom->Misbehaving(std::string("block misbehavior"), block.nDoS);
