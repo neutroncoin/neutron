@@ -1602,11 +1602,12 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
     // ppcoin: track money supply and mint amount info
     pindex->nMint = nValueOut - nValueIn + nFees;
-    pindex->nMoneySupply = (pindex->pprev ? pindex->pprev->nMoneySupply : 0) + nValueOut - nValueIn;
+    pindex->nMoneySupply = pindex->pprev ? pindex->pprev->nMoneySupply : 0;
 
     if (pindex->nMoneySupply == 0)
         LogPrintf("%s : Money supply was calculated to zero because of pindex->pprev == null\n", __func__);
 
+    pindex->nMoneySupply = pindex->nMoneySupply + nValueOut - nValueIn;
     fEnforceMnWinner = sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT);
 
     if (fDebug && fEnforceMnWinner)
