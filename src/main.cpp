@@ -6,6 +6,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "alert.h"
+#include "backtrace.h"
 #include "checkpoints.h"
 #include "db.h"
 #include "txdb.h"
@@ -1605,7 +1606,11 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     pindex->nMoneySupply = pindex->pprev ? pindex->pprev->nMoneySupply : 0;
 
     if (pindex->nMoneySupply == 0)
-        LogPrintf("%s : Money supply was calculated to zero because of pindex->pprev == null\n", __func__);
+    {
+        LogPrintf("%s : pprev address: %x\n", pindex->pprev);
+        LogPrintf("%s : Money supply was calculated to zero\n", __func__);
+        Backtrace::output();
+    }
 
     pindex->nMoneySupply = pindex->nMoneySupply + nValueOut - nValueIn;
     fEnforceMnWinner = sporkManager.IsSporkActive(SPORK_2_MASTERNODE_WINNER_ENFORCEMENT);
