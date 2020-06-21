@@ -3959,7 +3959,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
             if (timeSinceBestBlock > MAX_TIME_SINCE_BEST_BLOCK)
             {
-                LogPrintf("%s : Waiting %ld sec which is too long. Sending GetBlocks(0)\n", timeSinceBestBlock);
+                LogPrintf("%s : Waiting %ld sec which is too long. Sending GetBlocks(0)\n", __func__, timeSinceBestBlock);
                 pfrom->PushGetBlocks(pindexBest, uint256(0));
             }
         }
