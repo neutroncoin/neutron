@@ -2309,7 +2309,7 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 
     // Check proof of work matches claimed amount
     // if (fCheckPOW && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
-    //     return DoS(50, error("CheckBlock() : proof of work failed"));
+    //    return DoS(50, error("CheckBlock() : proof of work failed"));
 
     // Check timestamp
     if (GetBlockTime() > FutureDrift(GetAdjustedTime()))
@@ -2541,9 +2541,11 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
     // Check for duplicate
     uint256 hash = pblock->GetHash();
 
-    // if (mapBlockIndex.count(hash))
-    //     return error("ProcessNewBlock : already have block %d %s",
-    //                  mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+    if (mapBlockIndex.count(hash))
+    {
+        return error("%s : already have block %d %s", __func__,
+                     mapBlockIndex[hash]->nHeight, hash.ToString().substr(0,20).c_str());
+    }
 
     if (mapOrphanBlocks.count(hash))
         return error("%s : already have block (orphan) %s", __func__, hash.ToString().substr(0,20).c_str());
