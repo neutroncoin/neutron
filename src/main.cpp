@@ -1978,7 +1978,8 @@ bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
         return error("SetBestChain() : TxnCommit failed");
 
     // Add to current best branch
-    pindexNew->pprev->pnext = pindexNew;
+    if (pindexNew->pprev != NULL)
+        pindexNew->pprev->pnext = pindexNew;
 
     // Delete redundant memory transactions
     BOOST_FOREACH(CTransaction& tx, vtx)
