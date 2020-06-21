@@ -2218,12 +2218,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     uint256 hash = GetHash();
 
     if (mapBlockIndex.count(hash))
-    {
-        // Report a soft success in the case that we are trying to save something already present.
-        // There's no need to error out here, which was the previous behavior.
-        return true;
-        //return error("AddToBlockIndex() : %s already exists", hash.ToString().substr(0,20).c_str());
-    }
+        return error("%s : %s already exists", __func__, hash.ToString());
 
     // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
