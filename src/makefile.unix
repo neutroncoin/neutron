@@ -164,13 +164,13 @@ OBJS= \
 all: neutrond
 
 # LevelDB library
-LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
+LIBS += $(CURDIR)/leveldb/build/libleveldb.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
 OBJS += obj/txdb-leveldb.o
-leveldb/libleveldb.a:
-	@echo "Building LevelDB ..."; cd leveldb; make libleveldb.a libmemenv.a; cd ..;
-obj/txdb-leveldb.o: leveldb/libleveldb.a
+leveldb/build/libleveldb.a:
+	@echo "Building LevelDB ..."; cd leveldb; mkdir -p build; cd build; cmake -DLEVELDB_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build .; cd ../..;
+obj/txdb-leveldb.o: leveldb/build/libleveldb.a
 
 # UniValue library
 LIBS += -L$(CURDIR)/univalue/libunivalue.la
@@ -179,6 +179,9 @@ OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/libunivalue_la-univa
 univalue/libunivalue.la:
 	@echo "Building UniValue ..." && cd univalue && ./autogen.sh && ./configure && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" && cd ..
 univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
+univalue/lib/libunivalue_la-univalue_get.o: univalue/libunivalue.la
+univalue/lib/libunivalue_la-univalue_read.o: univalue/libunivalue.la
+univalue/lib/libunivalue_la-univalue_write.o: univalue/libunivalue.la
 
 # RPC commands
 OBJS += rpc/rpcmasternode.o
@@ -217,11 +220,11 @@ neutrond: $(OBJS:obj/%=obj/%)
 	$(LINK) $(xCXXFLAGS) -o $@ $^ $(xLDFLAGS) $(LIBS)
 
 clean:
-	-rm -f neutrond
-	-rm -f obj/*.o
-	-rm -f obj/*.P
-	-rm -f obj/build.h
-	cd leveldb && $(MAKE) clean && cd ..
+	rm -f neutrond
+	rm -f obj/*.o
+	rm -f obj/*.P
+	rm -f obj/build.h
+	cd leveldb/build && $(MAKE) clean & cd ../..
 	cd univalue && $(MAKE) clean && cd ..
 
 print-%:
