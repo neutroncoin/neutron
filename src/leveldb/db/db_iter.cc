@@ -21,9 +21,9 @@ static void DumpInternalIter(Iterator* iter) {
   for (iter->SeekToFirst(); iter->Valid(); iter->Next()) {
     ParsedInternalKey k;
     if (!ParseInternalKey(iter->key(), &k)) {
-      std::fprintf(stderr, "Corrupt '%s'\n", EscapeString(iter->key()).c_str());
+      fprintf(stderr, "Corrupt '%s'\n", EscapeString(iter->key()).c_str());
     } else {
-      std::fprintf(stderr, "@ '%s'\n", k.DebugString().c_str());
+      fprintf(stderr, "@ '%s'\n", k.DebugString().c_str());
     }
   }
 }
@@ -59,17 +59,17 @@ class DBIter : public Iterator {
   DBIter(const DBIter&) = delete;
   DBIter& operator=(const DBIter&) = delete;
 
-  ~DBIter() override { delete iter_; }
-  bool Valid() const override { return valid_; }
-  Slice key() const override {
+  virtual ~DBIter() { delete iter_; }
+  virtual bool Valid() const { return valid_; }
+  virtual Slice key() const {
     assert(valid_);
     return (direction_ == kForward) ? ExtractUserKey(iter_->key()) : saved_key_;
   }
-  Slice value() const override {
+  virtual Slice value() const {
     assert(valid_);
     return (direction_ == kForward) ? iter_->value() : saved_value_;
   }
-  Status status() const override {
+  virtual Status status() const {
     if (status_.ok()) {
       return iter_->status();
     } else {
@@ -77,11 +77,11 @@ class DBIter : public Iterator {
     }
   }
 
-  void Next() override;
-  void Prev() override;
-  void Seek(const Slice& target) override;
-  void SeekToFirst() override;
-  void SeekToLast() override;
+  virtual void Next();
+  virtual void Prev();
+  virtual void Seek(const Slice& target);
+  virtual void SeekToFirst();
+  virtual void SeekToLast();
 
  private:
   void FindNextUserEntry(bool skipping, std::string* skip);
@@ -160,15 +160,6 @@ void DBIter::Next() {
   } else {
     // Store in saved_key_ the current key so we skip it below.
     SaveKey(ExtractUserKey(iter_->key()), &saved_key_);
-
-    // iter_ is pointing to current key. We can now safely move to the next to
-    // avoid checking current key.
-    iter_->Next();
-    if (!iter_->Valid()) {
-      valid_ = false;
-      saved_key_.clear();
-      return;
-    }
   }
 
   FindNextUserEntry(true, &saved_key_);

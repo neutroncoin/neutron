@@ -2,34 +2,32 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "leveldb/comparator.h"
-
 #include <algorithm>
 #include <cstdint>
 #include <string>
-#include <type_traits>
 
+#include "leveldb/comparator.h"
 #include "leveldb/slice.h"
 #include "util/logging.h"
 #include "util/no_destructor.h"
 
 namespace leveldb {
 
-Comparator::~Comparator() = default;
+Comparator::~Comparator() {}
 
 namespace {
 class BytewiseComparatorImpl : public Comparator {
  public:
-  BytewiseComparatorImpl() = default;
+  BytewiseComparatorImpl() {}
 
-  const char* Name() const override { return "leveldb.BytewiseComparator"; }
+  virtual const char* Name() const { return "leveldb.BytewiseComparator"; }
 
-  int Compare(const Slice& a, const Slice& b) const override {
+  virtual int Compare(const Slice& a, const Slice& b) const {
     return a.compare(b);
   }
 
-  void FindShortestSeparator(std::string* start,
-                             const Slice& limit) const override {
+  virtual void FindShortestSeparator(std::string* start,
+                                     const Slice& limit) const {
     // Find length of common prefix
     size_t min_length = std::min(start->size(), limit.size());
     size_t diff_index = 0;
@@ -51,7 +49,7 @@ class BytewiseComparatorImpl : public Comparator {
     }
   }
 
-  void FindShortSuccessor(std::string* key) const override {
+  virtual void FindShortSuccessor(std::string* key) const {
     // Find first character that can be incremented
     size_t n = key->size();
     for (size_t i = 0; i < n; i++) {

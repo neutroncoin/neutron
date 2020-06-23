@@ -4,9 +4,11 @@
 
 #include "util/logging.h"
 
-#include <cstdarg>
-#include <cstdio>
-#include <cstdlib>
+#include <errno.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <limits>
 
 #include "leveldb/env.h"
@@ -16,7 +18,7 @@ namespace leveldb {
 
 void AppendNumberTo(std::string* str, uint64_t num) {
   char buf[30];
-  std::snprintf(buf, sizeof(buf), "%llu", static_cast<unsigned long long>(num));
+  snprintf(buf, sizeof(buf), "%llu", (unsigned long long)num);
   str->append(buf);
 }
 
@@ -27,8 +29,8 @@ void AppendEscapedStringTo(std::string* str, const Slice& value) {
       str->push_back(c);
     } else {
       char buf[10];
-      std::snprintf(buf, sizeof(buf), "\\x%02x",
-                    static_cast<unsigned int>(c) & 0xff);
+      snprintf(buf, sizeof(buf), "\\x%02x",
+               static_cast<unsigned int>(c) & 0xff);
       str->append(buf);
     }
   }
@@ -54,13 +56,14 @@ bool ConsumeDecimalNumber(Slice* in, uint64_t* val) {
 
   uint64_t value = 0;
 
-  // reinterpret_cast-ing from char* to uint8_t* to avoid signedness.
-  const uint8_t* start = reinterpret_cast<const uint8_t*>(in->data());
+  // reinterpret_cast-ing from char* to unsigned char* to avoid signedness.
+  const unsigned char* start =
+      reinterpret_cast<const unsigned char*>(in->data());
 
-  const uint8_t* end = start + in->size();
-  const uint8_t* current = start;
+  const unsigned char* end = start + in->size();
+  const unsigned char* current = start;
   for (; current != end; ++current) {
-    const uint8_t ch = *current;
+    const unsigned char ch = *current;
     if (ch < '0' || ch > '9') break;
 
     // Overflow check.

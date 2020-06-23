@@ -4,7 +4,7 @@
 
 #include "db/log_writer.h"
 
-#include <cstdint>
+#include <stdint.h>
 
 #include "leveldb/env.h"
 #include "util/coding.h"
@@ -29,7 +29,7 @@ Writer::Writer(WritableFile* dest, uint64_t dest_length)
   InitTypeCrc(type_crc_);
 }
 
-Writer::~Writer() = default;
+Writer::~Writer() {}
 
 Status Writer::AddRecord(const Slice& slice) {
   const char* ptr = slice.data();

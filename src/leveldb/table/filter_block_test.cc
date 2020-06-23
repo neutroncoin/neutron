@@ -4,11 +4,11 @@
 
 #include "table/filter_block.h"
 
-#include "gtest/gtest.h"
 #include "leveldb/filter_policy.h"
 #include "util/coding.h"
 #include "util/hash.h"
 #include "util/logging.h"
+#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
@@ -16,16 +16,16 @@ namespace leveldb {
 // For testing: emit an array with one hash value per key
 class TestHashFilter : public FilterPolicy {
  public:
-  const char* Name() const override { return "TestHashFilter"; }
+  virtual const char* Name() const { return "TestHashFilter"; }
 
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
+  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
     for (int i = 0; i < n; i++) {
       uint32_t h = Hash(keys[i].data(), keys[i].size(), 1);
       PutFixed32(dst, h);
     }
   }
 
-  bool KeyMayMatch(const Slice& key, const Slice& filter) const override {
+  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
     uint32_t h = Hash(key.data(), key.size(), 1);
     for (size_t i = 0; i + 4 <= filter.size(); i += 4) {
       if (h == DecodeFixed32(filter.data() + i)) {
@@ -36,12 +36,12 @@ class TestHashFilter : public FilterPolicy {
   }
 };
 
-class FilterBlockTest : public testing::Test {
+class FilterBlockTest {
  public:
   TestHashFilter policy_;
 };
 
-TEST_F(FilterBlockTest, EmptyBuilder) {
+TEST(FilterBlockTest, EmptyBuilder) {
   FilterBlockBuilder builder(&policy_);
   Slice block = builder.Finish();
   ASSERT_EQ("\\x00\\x00\\x00\\x00\\x0b", EscapeString(block));
@@ -50,7 +50,7 @@ TEST_F(FilterBlockTest, EmptyBuilder) {
   ASSERT_TRUE(reader.KeyMayMatch(100000, "foo"));
 }
 
-TEST_F(FilterBlockTest, SingleChunk) {
+TEST(FilterBlockTest, SingleChunk) {
   FilterBlockBuilder builder(&policy_);
   builder.StartBlock(100);
   builder.AddKey("foo");
@@ -71,7 +71,7 @@ TEST_F(FilterBlockTest, SingleChunk) {
   ASSERT_TRUE(!reader.KeyMayMatch(100, "other"));
 }
 
-TEST_F(FilterBlockTest, MultiChunk) {
+TEST(FilterBlockTest, MultiChunk) {
   FilterBlockBuilder builder(&policy_);
 
   // First filter
@@ -121,7 +121,4 @@ TEST_F(FilterBlockTest, MultiChunk) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

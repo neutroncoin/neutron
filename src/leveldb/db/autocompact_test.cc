@@ -2,24 +2,24 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
-#include "gtest/gtest.h"
 #include "db/db_impl.h"
 #include "leveldb/cache.h"
 #include "leveldb/db.h"
+#include "util/testharness.h"
 #include "util/testutil.h"
 
 namespace leveldb {
 
-class AutoCompactTest : public testing::Test {
+class AutoCompactTest {
  public:
   AutoCompactTest() {
-    dbname_ = testing::TempDir() + "autocompact_test";
+    dbname_ = test::TmpDir() + "/autocompact_test";
     tiny_cache_ = NewLRUCache(100);
     options_.block_cache = tiny_cache_;
     DestroyDB(dbname_, options_);
     options_.create_if_missing = true;
     options_.compression = kNoCompression;
-    EXPECT_LEVELDB_OK(DB::Open(options_, dbname_, &db_));
+    ASSERT_OK(DB::Open(options_, dbname_, &db_));
   }
 
   ~AutoCompactTest() {
@@ -30,7 +30,7 @@ class AutoCompactTest : public testing::Test {
 
   std::string Key(int i) {
     char buf[100];
-    std::snprintf(buf, sizeof(buf), "key%06d", i);
+    snprintf(buf, sizeof(buf), "key%06d", i);
     return std::string(buf);
   }
 
@@ -62,15 +62,15 @@ void AutoCompactTest::DoReads(int n) {
 
   // Fill database
   for (int i = 0; i < kCount; i++) {
-    ASSERT_LEVELDB_OK(db_->Put(WriteOptions(), Key(i), value));
+    ASSERT_OK(db_->Put(WriteOptions(), Key(i), value));
   }
-  ASSERT_LEVELDB_OK(dbi->TEST_CompactMemTable());
+  ASSERT_OK(dbi->TEST_CompactMemTable());
 
   // Delete everything
   for (int i = 0; i < kCount; i++) {
-    ASSERT_LEVELDB_OK(db_->Delete(WriteOptions(), Key(i)));
+    ASSERT_OK(db_->Delete(WriteOptions(), Key(i)));
   }
-  ASSERT_LEVELDB_OK(dbi->TEST_CompactMemTable());
+  ASSERT_OK(dbi->TEST_CompactMemTable());
 
   // Get initial measurement of the space we will be reading.
   const int64_t initial_size = Size(Key(0), Key(n));
@@ -89,8 +89,8 @@ void AutoCompactTest::DoReads(int n) {
     // Wait a little bit to allow any triggered compactions to complete.
     Env::Default()->SleepForMicroseconds(1000000);
     uint64_t size = Size(Key(0), Key(n));
-    std::fprintf(stderr, "iter %3d => %7.3f MB [other %7.3f MB]\n", read + 1,
-                 size / 1048576.0, Size(Key(n), Key(kCount)) / 1048576.0);
+    fprintf(stderr, "iter %3d => %7.3f MB [other %7.3f MB]\n", read + 1,
+            size / 1048576.0, Size(Key(n), Key(kCount)) / 1048576.0);
     if (size <= initial_size / 10) {
       break;
     }
@@ -103,13 +103,10 @@ void AutoCompactTest::DoReads(int n) {
   ASSERT_GE(final_other_size, initial_other_size / 5 - 1048576);
 }
 
-TEST_F(AutoCompactTest, ReadAll) { DoReads(kCount); }
+TEST(AutoCompactTest, ReadAll) { DoReads(kCount); }
 
-TEST_F(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
+TEST(AutoCompactTest, ReadHalf) { DoReads(kCount / 2); }
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

@@ -28,9 +28,9 @@ static const size_t kHeader = 12;
 
 WriteBatch::WriteBatch() { Clear(); }
 
-WriteBatch::~WriteBatch() = default;
+WriteBatch::~WriteBatch() {}
 
-WriteBatch::Handler::~Handler() = default;
+WriteBatch::Handler::~Handler() {}
 
 void WriteBatch::Clear() {
   rep_.clear();
@@ -118,11 +118,11 @@ class MemTableInserter : public WriteBatch::Handler {
   SequenceNumber sequence_;
   MemTable* mem_;
 
-  void Put(const Slice& key, const Slice& value) override {
+  virtual void Put(const Slice& key, const Slice& value) {
     mem_->Add(sequence_, kTypeValue, key, value);
     sequence_++;
   }
-  void Delete(const Slice& key) override {
+  virtual void Delete(const Slice& key) {
     mem_->Add(sequence_, kTypeDeletion, key, Slice());
     sequence_++;
   }

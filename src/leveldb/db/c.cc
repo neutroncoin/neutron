@@ -4,8 +4,7 @@
 
 #include "leveldb/c.h"
 
-#include <cstdint>
-#include <cstdlib>
+#include <stdlib.h>
 
 #include "leveldb/cache.h"
 #include "leveldb/comparator.h"
@@ -85,17 +84,17 @@ struct leveldb_filelock_t {
 };
 
 struct leveldb_comparator_t : public Comparator {
-  ~leveldb_comparator_t() override { (*destructor_)(state_); }
+  virtual ~leveldb_comparator_t() { (*destructor_)(state_); }
 
-  int Compare(const Slice& a, const Slice& b) const override {
+  virtual int Compare(const Slice& a, const Slice& b) const {
     return (*compare_)(state_, a.data(), a.size(), b.data(), b.size());
   }
 
-  const char* Name() const override { return (*name_)(state_); }
+  virtual const char* Name() const { return (*name_)(state_); }
 
   // No-ops since the C binding does not support key shortening methods.
-  void FindShortestSeparator(std::string*, const Slice&) const override {}
-  void FindShortSuccessor(std::string* key) const override {}
+  virtual void FindShortestSeparator(std::string*, const Slice&) const {}
+  virtual void FindShortSuccessor(std::string* key) const {}
 
   void* state_;
   void (*destructor_)(void*);
@@ -105,11 +104,11 @@ struct leveldb_comparator_t : public Comparator {
 };
 
 struct leveldb_filterpolicy_t : public FilterPolicy {
-  ~leveldb_filterpolicy_t() override { (*destructor_)(state_); }
+  virtual ~leveldb_filterpolicy_t() { (*destructor_)(state_); }
 
-  const char* Name() const override { return (*name_)(state_); }
+  virtual const char* Name() const { return (*name_)(state_); }
 
-  void CreateFilter(const Slice* keys, int n, std::string* dst) const override {
+  virtual void CreateFilter(const Slice* keys, int n, std::string* dst) const {
     std::vector<const char*> key_pointers(n);
     std::vector<size_t> key_sizes(n);
     for (int i = 0; i < n; i++) {
@@ -122,7 +121,7 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
     free(filter);
   }
 
-  bool KeyMayMatch(const Slice& key, const Slice& filter) const override {
+  virtual bool KeyMayMatch(const Slice& key, const Slice& filter) const {
     return (*key_match_)(state_, key.data(), key.size(), filter.data(),
                          filter.size());
   }
@@ -133,8 +132,8 @@ struct leveldb_filterpolicy_t : public FilterPolicy {
   char* (*create_)(void*, const char* const* key_array,
                    const size_t* key_length_array, int num_keys,
                    size_t* filter_length);
-  uint8_t (*key_match_)(void*, const char* key, size_t length,
-                        const char* filter, size_t filter_length);
+  unsigned char (*key_match_)(void*, const char* key, size_t length,
+                              const char* filter, size_t filter_length);
 };
 
 struct leveldb_env_t {
@@ -158,7 +157,7 @@ static bool SaveError(char** errptr, const Status& s) {
 
 static char* CopyString(const std::string& str) {
   char* result = reinterpret_cast<char*>(malloc(sizeof(char) * str.size()));
-  std::memcpy(result, str.data(), sizeof(char) * str.size());
+  memcpy(result, str.data(), sizeof(char) * str.size());
   return result;
 }
 
@@ -282,7 +281,7 @@ void leveldb_iter_destroy(leveldb_iterator_t* iter) {
   delete iter;
 }
 
-uint8_t leveldb_iter_valid(const leveldb_iterator_t* iter) {
+unsigned char leveldb_iter_valid(const leveldb_iterator_t* iter) {
   return iter->rep->Valid();
 }
 
@@ -346,10 +345,10 @@ void leveldb_writebatch_iterate(const leveldb_writebatch_t* b, void* state,
     void* state_;
     void (*put_)(void*, const char* k, size_t klen, const char* v, size_t vlen);
     void (*deleted_)(void*, const char* k, size_t klen);
-    void Put(const Slice& key, const Slice& value) override {
+    virtual void Put(const Slice& key, const Slice& value) {
       (*put_)(state_, key.data(), key.size(), value.data(), value.size());
     }
-    void Delete(const Slice& key) override {
+    virtual void Delete(const Slice& key) {
       (*deleted_)(state_, key.data(), key.size());
     }
   };
@@ -379,15 +378,18 @@ void leveldb_options_set_filter_policy(leveldb_options_t* opt,
   opt->rep.filter_policy = policy;
 }
 
-void leveldb_options_set_create_if_missing(leveldb_options_t* opt, uint8_t v) {
+void leveldb_options_set_create_if_missing(leveldb_options_t* opt,
+                                           unsigned char v) {
   opt->rep.create_if_missing = v;
 }
 
-void leveldb_options_set_error_if_exists(leveldb_options_t* opt, uint8_t v) {
+void leveldb_options_set_error_if_exists(leveldb_options_t* opt,
+                                         unsigned char v) {
   opt->rep.error_if_exists = v;
 }
 
-void leveldb_options_set_paranoid_checks(leveldb_options_t* opt, uint8_t v) {
+void leveldb_options_set_paranoid_checks(leveldb_options_t* opt,
+                                         unsigned char v) {
   opt->rep.paranoid_checks = v;
 }
 
@@ -447,8 +449,8 @@ leveldb_filterpolicy_t* leveldb_filterpolicy_create(
     char* (*create_filter)(void*, const char* const* key_array,
                            const size_t* key_length_array, int num_keys,
                            size_t* filter_length),
-    uint8_t (*key_may_match)(void*, const char* key, size_t length,
-                             const char* filter, size_t filter_length),
+    unsigned char (*key_may_match)(void*, const char* key, size_t length,
+                                   const char* filter, size_t filter_length),
     const char* (*name)(void*)) {
   leveldb_filterpolicy_t* result = new leveldb_filterpolicy_t;
   result->state_ = state;
@@ -495,11 +497,12 @@ leveldb_readoptions_t* leveldb_readoptions_create() {
 void leveldb_readoptions_destroy(leveldb_readoptions_t* opt) { delete opt; }
 
 void leveldb_readoptions_set_verify_checksums(leveldb_readoptions_t* opt,
-                                              uint8_t v) {
+                                              unsigned char v) {
   opt->rep.verify_checksums = v;
 }
 
-void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t* opt, uint8_t v) {
+void leveldb_readoptions_set_fill_cache(leveldb_readoptions_t* opt,
+                                        unsigned char v) {
   opt->rep.fill_cache = v;
 }
 
@@ -514,7 +517,8 @@ leveldb_writeoptions_t* leveldb_writeoptions_create() {
 
 void leveldb_writeoptions_destroy(leveldb_writeoptions_t* opt) { delete opt; }
 
-void leveldb_writeoptions_set_sync(leveldb_writeoptions_t* opt, uint8_t v) {
+void leveldb_writeoptions_set_sync(leveldb_writeoptions_t* opt,
+                                   unsigned char v) {
   opt->rep.sync = v;
 }
 
@@ -548,7 +552,7 @@ char* leveldb_env_get_test_directory(leveldb_env_t* env) {
   }
 
   char* buffer = static_cast<char*>(malloc(result.size() + 1));
-  std::memcpy(buffer, result.data(), result.size());
+  memcpy(buffer, result.data(), result.size());
   buffer[result.size()] = '\0';
   return buffer;
 }

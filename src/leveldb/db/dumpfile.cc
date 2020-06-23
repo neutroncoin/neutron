@@ -4,7 +4,7 @@
 
 #include "leveldb/dumpfile.h"
 
-#include <cstdio>
+#include <stdio.h>
 
 #include "db/dbformat.h"
 #include "db/filename.h"
@@ -38,7 +38,7 @@ bool GuessType(const std::string& fname, FileType* type) {
 // Notified when log reader encounters corruption.
 class CorruptionReporter : public log::Reader::Reporter {
  public:
-  void Corruption(size_t bytes, const Status& status) override {
+  virtual void Corruption(size_t bytes, const Status& status) {
     std::string r = "corruption: ";
     AppendNumberTo(&r, bytes);
     r += " bytes; ";
@@ -74,7 +74,7 @@ Status PrintLogContents(Env* env, const std::string& fname,
 // Called on every item found in a WriteBatch.
 class WriteBatchItemPrinter : public WriteBatch::Handler {
  public:
-  void Put(const Slice& key, const Slice& value) override {
+  virtual void Put(const Slice& key, const Slice& value) {
     std::string r = "  put '";
     AppendEscapedStringTo(&r, key);
     r += "' '";
@@ -82,7 +82,7 @@ class WriteBatchItemPrinter : public WriteBatch::Handler {
     r += "'\n";
     dst_->Append(r);
   }
-  void Delete(const Slice& key) override {
+  virtual void Delete(const Slice& key) {
     std::string r = "  del '";
     AppendEscapedStringTo(&r, key);
     r += "'\n";

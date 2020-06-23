@@ -7,7 +7,8 @@
 #ifndef STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 #define STORAGE_LEVELDB_DB_TABLE_CACHE_H_
 
-#include <cstdint>
+#include <stdint.h>
+
 #include <string>
 
 #include "db/dbformat.h"

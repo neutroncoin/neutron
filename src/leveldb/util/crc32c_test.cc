@@ -3,11 +3,12 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "util/crc32c.h"
-
-#include "gtest/gtest.h"
+#include "util/testharness.h"
 
 namespace leveldb {
 namespace crc32c {
+
+class CRC {};
 
 TEST(CRC, StandardResults) {
   // From rfc3720 section B.4.
@@ -29,7 +30,7 @@ TEST(CRC, StandardResults) {
   }
   ASSERT_EQ(0x113fdb5c, Value(buf, sizeof(buf)));
 
-  uint8_t data[48] = {
+  unsigned char data[48] = {
       0x01, 0xc0, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
       0x00, 0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x00, 0x00, 0x04, 0x00,
       0x00, 0x00, 0x00, 0x14, 0x00, 0x00, 0x00, 0x18, 0x28, 0x00, 0x00, 0x00,
@@ -55,7 +56,4 @@ TEST(CRC, Mask) {
 }  // namespace crc32c
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

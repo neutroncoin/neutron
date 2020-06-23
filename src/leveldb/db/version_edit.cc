@@ -66,10 +66,11 @@ void VersionEdit::EncodeTo(std::string* dst) const {
     PutLengthPrefixedSlice(dst, compact_pointers_[i].second.Encode());
   }
 
-  for (const auto& deleted_file_kvp : deleted_files_) {
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end(); ++iter) {
     PutVarint32(dst, kDeletedFile);
-    PutVarint32(dst, deleted_file_kvp.first);   // level
-    PutVarint64(dst, deleted_file_kvp.second);  // file number
+    PutVarint32(dst, iter->first);   // level
+    PutVarint64(dst, iter->second);  // file number
   }
 
   for (size_t i = 0; i < new_files_.size(); i++) {
@@ -86,7 +87,8 @@ void VersionEdit::EncodeTo(std::string* dst) const {
 static bool GetInternalKey(Slice* input, InternalKey* dst) {
   Slice str;
   if (GetLengthPrefixedSlice(input, &str)) {
-    return dst->DecodeFrom(str);
+    dst->DecodeFrom(str);
+    return true;
   } else {
     return false;
   }
@@ -231,11 +233,12 @@ std::string VersionEdit::DebugString() const {
     r.append(" ");
     r.append(compact_pointers_[i].second.DebugString());
   }
-  for (const auto& deleted_files_kvp : deleted_files_) {
-    r.append("\n  RemoveFile: ");
-    AppendNumberTo(&r, deleted_files_kvp.first);
+  for (DeletedFileSet::const_iterator iter = deleted_files_.begin();
+       iter != deleted_files_.end(); ++iter) {
+    r.append("\n  DeleteFile: ");
+    AppendNumberTo(&r, iter->first);
     r.append(" ");
-    AppendNumberTo(&r, deleted_files_kvp.second);
+    AppendNumberTo(&r, iter->second);
   }
   for (size_t i = 0; i < new_files_.size(); i++) {
     const FileMetaData& f = new_files_[i].second;

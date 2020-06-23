@@ -5,7 +5,8 @@
 #ifndef STORAGE_LEVELDB_TABLE_FORMAT_H_
 #define STORAGE_LEVELDB_TABLE_FORMAT_H_
 
-#include <cstdint>
+#include <stdint.h>
+
 #include <string>
 
 #include "leveldb/slice.h"
@@ -52,7 +53,7 @@ class Footer {
   // of two block handles and a magic number.
   enum { kEncodedLength = 2 * BlockHandle::kMaxEncodedLength + 8 };
 
-  Footer() = default;
+  Footer() {}
 
   // The block handle for the metaindex block of the table
   const BlockHandle& metaindex_handle() const { return metaindex_handle_; }

@@ -4,7 +4,7 @@
 
 #include "db/log_reader.h"
 
-#include <cstdio>
+#include <stdio.h>
 
 #include "leveldb/env.h"
 #include "util/coding.h"
@@ -13,7 +13,7 @@
 namespace leveldb {
 namespace log {
 
-Reader::Reporter::~Reporter() = default;
+Reader::Reporter::~Reporter() {}
 
 Reader::Reader(SequentialFile* file, Reporter* reporter, bool checksum,
                uint64_t initial_offset)
@@ -160,7 +160,7 @@ bool Reader::ReadRecord(Slice* record, std::string* scratch) {
 
       default: {
         char buf[40];
-        std::snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
+        snprintf(buf, sizeof(buf), "unknown record type %u", record_type);
         ReportCorruption(
             (fragment.size() + (in_fragmented_record ? scratch->size() : 0)),
             buf);

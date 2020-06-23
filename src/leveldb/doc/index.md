@@ -307,7 +307,7 @@ version numbers found in the keys to decide how to interpret them.
 ## Performance
 
 Performance can be tuned by changing the default values of the types defined in
-`include/options.h`.
+`include/leveldb/options.h`.
 
 ### Block size
 

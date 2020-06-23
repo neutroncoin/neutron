@@ -9,10 +9,9 @@
 #include <string>
 #include <vector>
 
-#include "gtest/gtest.h"
 #include "leveldb/db.h"
 #include "leveldb/write_batch.h"
-#include "util/testutil.h"
+#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -38,6 +37,8 @@ std::string CreateRandomString(int32_t index) {
 
 }  // namespace
 
+class Issue320 {};
+
 TEST(Issue320, Test) {
   std::srand(0);
 
@@ -52,8 +53,8 @@ TEST(Issue320, Test) {
   Options options;
   options.create_if_missing = true;
 
-  std::string dbpath = testing::TempDir() + "leveldb_issue320_test";
-  ASSERT_LEVELDB_OK(DB::Open(options, dbpath, &db));
+  std::string dbpath = test::TmpDir() + "/leveldb_issue320_test";
+  ASSERT_OK(DB::Open(options, dbpath, &db));
 
   uint32_t target_size = 10000;
   uint32_t num_items = 0;
@@ -77,8 +78,7 @@ TEST(Issue320, Test) {
           CreateRandomString(index), CreateRandomString(index)));
       batch.Put(test_map[index]->first, test_map[index]->second);
     } else {
-      ASSERT_LEVELDB_OK(
-          db->Get(readOptions, test_map[index]->first, &old_value));
+      ASSERT_OK(db->Get(readOptions, test_map[index]->first, &old_value));
       if (old_value != test_map[index]->second) {
         std::cout << "ERROR incorrect value returned by Get" << std::endl;
         std::cout << "  count=" << count << std::endl;
@@ -102,7 +102,7 @@ TEST(Issue320, Test) {
       }
     }
 
-    ASSERT_LEVELDB_OK(db->Write(writeOptions, &batch));
+    ASSERT_OK(db->Write(writeOptions, &batch));
 
     if (keep_snapshots && GenerateRandomNumber(10) == 0) {
       int i = GenerateRandomNumber(snapshots.size());
@@ -125,7 +125,4 @@ TEST(Issue320, Test) {
 
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

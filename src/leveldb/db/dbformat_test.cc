@@ -3,9 +3,8 @@
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
 #include "db/dbformat.h"
-
-#include "gtest/gtest.h"
 #include "util/logging.h"
+#include "util/testharness.h"
 
 namespace leveldb {
 
@@ -42,6 +41,8 @@ static void TestKey(const std::string& key, uint64_t seq, ValueType vt) {
   ASSERT_TRUE(!ParseInternalKey(Slice("bar"), &decoded));
 }
 
+class FormatTest {};
+
 TEST(FormatTest, InternalKey_EncodeDecode) {
   const char* keys[] = {"", "k", "hello", "longggggggggggggggggggggg"};
   const uint64_t seq[] = {1,
@@ -62,12 +63,6 @@ TEST(FormatTest, InternalKey_EncodeDecode) {
       TestKey("hello", 1, kTypeDeletion);
     }
   }
-}
-
-TEST(FormatTest, InternalKey_DecodeFromEmpty) {
-  InternalKey internal_key;
-
-  ASSERT_TRUE(!internal_key.DecodeFrom(""));
 }
 
 TEST(FormatTest, InternalKeyShortSeparator) {
@@ -111,23 +106,6 @@ TEST(FormatTest, InternalKeyShortestSuccessor) {
             ShortSuccessor(IKey("\xff\xff", 100, kTypeValue)));
 }
 
-TEST(FormatTest, ParsedInternalKeyDebugString) {
-  ParsedInternalKey key("The \"key\" in 'single quotes'", 42, kTypeValue);
-
-  ASSERT_EQ("'The \"key\" in 'single quotes'' @ 42 : 1", key.DebugString());
-}
-
-TEST(FormatTest, InternalKeyDebugString) {
-  InternalKey key("The \"key\" in 'single quotes'", 42, kTypeValue);
-  ASSERT_EQ("'The \"key\" in 'single quotes'' @ 42 : 1", key.DebugString());
-
-  InternalKey invalid_key;
-  ASSERT_EQ("(bad)", invalid_key.DebugString());
-}
-
 }  // namespace leveldb
 
-int main(int argc, char** argv) {
-  testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
+int main(int argc, char** argv) { return leveldb::test::RunAllTests(); }

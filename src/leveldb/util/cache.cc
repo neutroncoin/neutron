@@ -2,12 +2,11 @@
 // Use of this source code is governed by a BSD-style license that can be
 // found in the LICENSE file. See the AUTHORS file for names of contributors.
 
+#include <assert.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include "leveldb/cache.h"
-
-#include <cassert>
-#include <cstdio>
-#include <cstdlib>
-
 #include "port/port.h"
 #include "port/thread_annotations.h"
 #include "util/hash.h"
@@ -279,7 +278,7 @@ Cache::Handle* LRUCache::Insert(const Slice& key, uint32_t hash, void* value,
   e->hash = hash;
   e->in_cache = false;
   e->refs = 1;  // for the returned handle.
-  std::memcpy(e->key_data, key.data(), key.size());
+  memcpy(e->key_data, key.data(), key.size());
 
   if (capacity_ > 0) {
     e->refs++;  // for the cache's reference.
@@ -355,37 +354,37 @@ class ShardedLRUCache : public Cache {
       shard_[s].SetCapacity(per_shard);
     }
   }
-  ~ShardedLRUCache() override {}
-  Handle* Insert(const Slice& key, void* value, size_t charge,
-                 void (*deleter)(const Slice& key, void* value)) override {
+  virtual ~ShardedLRUCache() {}
+  virtual Handle* Insert(const Slice& key, void* value, size_t charge,
+                         void (*deleter)(const Slice& key, void* value)) {
     const uint32_t hash = HashSlice(key);
     return shard_[Shard(hash)].Insert(key, hash, value, charge, deleter);
   }
-  Handle* Lookup(const Slice& key) override {
+  virtual Handle* Lookup(const Slice& key) {
     const uint32_t hash = HashSlice(key);
     return shard_[Shard(hash)].Lookup(key, hash);
   }
-  void Release(Handle* handle) override {
+  virtual void Release(Handle* handle) {
     LRUHandle* h = reinterpret_cast<LRUHandle*>(handle);
     shard_[Shard(h->hash)].Release(handle);
   }
-  void Erase(const Slice& key) override {
+  virtual void Erase(const Slice& key) {
     const uint32_t hash = HashSlice(key);
     shard_[Shard(hash)].Erase(key, hash);
   }
-  void* Value(Handle* handle) override {
+  virtual void* Value(Handle* handle) {
     return reinterpret_cast<LRUHandle*>(handle)->value;
   }
-  uint64_t NewId() override {
+  virtual uint64_t NewId() {
     MutexLock l(&id_mutex_);
     return ++(last_id_);
   }
-  void Prune() override {
+  virtual void Prune() {
     for (int s = 0; s < kNumShards; s++) {
       shard_[s].Prune();
     }
   }
-  size_t TotalCharge() const override {
+  virtual size_t TotalCharge() const {
     size_t total = 0;
     for (int s = 0; s < kNumShards; s++) {
       total += shard_[s].TotalCharge();

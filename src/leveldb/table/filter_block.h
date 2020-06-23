@@ -9,8 +9,9 @@
 #ifndef STORAGE_LEVELDB_TABLE_FILTER_BLOCK_H_
 #define STORAGE_LEVELDB_TABLE_FILTER_BLOCK_H_
 
-#include <cstddef>
-#include <cstdint>
+#include <stddef.h>
+#include <stdint.h>
+
 #include <string>
 #include <vector>
 
