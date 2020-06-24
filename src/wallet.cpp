@@ -932,7 +932,7 @@ void CWalletTx::GetAccountAmounts(const string& strAccount, int64_t& nReceived,
 // Scan the block chain (starting in pindexStart) for transactions
 // from or to us. If fUpdate is true, found transactions that already
 // exist in the wallet will be updated.
-int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
+int CWallet::ScanForWalletTransactions(CDiskBlockIndex *pindexStart, bool fUpdate)
 {
     int ret = 0;
     int64_t nNow = GetTime();
