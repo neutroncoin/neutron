@@ -1,6 +1,9 @@
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_CHECKPOINT_H
 #define  BITCOIN_CHECKPOINT_H
 
@@ -18,9 +21,6 @@ class uint256;
 class CBlockIndex;
 class CSyncCheckpoint;
 
-/** Block-chain checkpoints are compiled-in sanity checks.
- * They are updated every release or three.
- */
 namespace Checkpoints
 {
     /** Checkpointing mode */
@@ -41,18 +41,18 @@ namespace Checkpoints
     int GetTotalBlocksEstimate();
 
     // Returns last CBlockIndex* in mapBlockIndex that is a checkpoint
-    CBlockIndex* GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex);
+    CDiskBlockIndex* GetLastCheckpoint();
 
     extern uint256 hashSyncCheckpoint;
     extern CSyncCheckpoint checkpointMessage;
     extern uint256 hashInvalidCheckpoint;
     extern CCriticalSection cs_hashSyncCheckpoint;
 
-    CBlockIndex* GetLastSyncCheckpoint();
+    CDiskBlockIndex* GetLastSyncCheckpoint();
     bool WriteSyncCheckpoint(const uint256& hashCheckpoint);
     bool AcceptPendingSyncCheckpoint();
     uint256 AutoSelectSyncCheckpoint();
-    bool CheckSync(const uint256& hashBlock, const CBlockIndex* pindexPrev);
+    bool CheckSync(const uint256& hashBlock, const CDiskBlockIndex* pindexPrev);
     bool WantedByPendingSyncCheckpoint(uint256 hashBlock);
     bool ResetSyncCheckpoint();
     void AskForPendingSyncCheckpoint(CNode* pfrom);
