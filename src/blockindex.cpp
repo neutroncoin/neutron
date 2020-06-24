@@ -47,7 +47,7 @@ CBlockIndex *BlockIndex::find(const uint256& hash)
         CTxDB txdb("r");
         CDiskBlockIndex diskindex;
 
-        if (txdb.ReadBlockIndex(hash, &diskindex))
+        if (txdb.ReadBlockIndex(hash, *(&diskindex)))
         {
             // Construct block index object
             CBlockIndex* pindexNew    = get_or_create(hash);
@@ -88,7 +88,7 @@ CBlockIndex *BlockIndex::find(const uint256& hash)
 bool BlockIndex::contains(const uint256& hash)
 {
     std::lock_guard<std::mutex> lock(mutexBlockIndex);
-    CTxDB txdb();
+    CTxDB txdb("r");
 
     return mapBlockIndex.count(hash) > 0 || txdb.ContainsBlockIndex(hash);
 }
