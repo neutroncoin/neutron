@@ -37,7 +37,6 @@ set<CWallet*> setpwalletRegistered;
 CCriticalSection cs_main;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
-map<uint256, CBlockIndex*> mapBlockIndex;
 BlockIndex blockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
@@ -56,7 +55,7 @@ int nBestHeight = -1;
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
-CBlockIndex* pindexBest = NULL;
+CDiskBlockIndex* pindexBest = NULL;
 int64_t nTimeBestReceived = 0;
 
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000

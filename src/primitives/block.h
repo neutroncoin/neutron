@@ -26,17 +26,17 @@ public:
     {
     }
 
-    explicit CBlockLocator(const CBlockIndex* pindex)
+    explicit CBlockLocator(const CDiskBlockIndex *pindex)
     {
         Set(pindex);
     }
 
     explicit CBlockLocator(uint256 hashBlock)
     {
-        std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+        CDiskBlockIndex *pindex = blockIndex.find(hashBlock);
 
-        if (mi != mapBlockIndex.end())
-            Set((*mi).second);
+        if (pindex != nullptr)
+            Set(pindex);
     }
 
     CBlockLocator(const std::vector<uint256>& vHaveIn)
@@ -62,7 +62,7 @@ public:
         return vHave.empty();
     }
 
-    void Set(const CBlockIndex* pindex)
+    void Set(const CDiskBlockIndex *pindex)
     {
         vHave.clear();
         int nStep = 1;
@@ -73,7 +73,7 @@ public:
 
             // Exponentially larger steps back
             for (int i = 0; pindex && i < nStep; i++)
-                pindex = pindex->pprev;
+                pindex = blockIndex.find(pindex->hashPrev);
 
             if (vHave.size() > 10)
                 nStep *= 2;
@@ -90,12 +90,10 @@ public:
 
         BOOST_FOREACH(const uint256& hash, vHave)
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
+            CDiskBlockIndex *pindex = blockIndex.find(hash);
 
-            if (mi != mapBlockIndex.end())
+            if (pindex != nullptr)
             {
-                CBlockIndex* pindex = (*mi).second;
-
                 if (pindex->IsInMainChain())
                     return nDistance;
             }
@@ -109,17 +107,15 @@ public:
         return nDistance;
     }
 
-    CBlockIndex* GetBlockIndex()
+    CDiskBlockIndex* GetBlockIndex()
     {
         // Find the first block the caller has in the main chain
         BOOST_FOREACH(const uint256& hash, vHave)
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
+            CDiskBlockIndex *pindex = blockIndex.find(hash);
 
-            if (mi != mapBlockIndex.end())
+            if (pindex != nullptr)
             {
-                CBlockIndex* pindex = (*mi).second;
-
                 if (pindex->IsInMainChain())
                     return pindex;
             }
@@ -133,12 +129,10 @@ public:
         // Find the first block the caller has in the main chain
         BOOST_FOREACH(const uint256& hash, vHave)
         {
-            std::map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
+            CDiskBlockIndex *pindex = blockIndex.find(hash);
 
-            if (mi != mapBlockIndex.end())
+            if (pindex != nullptr)
             {
-                CBlockIndex* pindex = (*mi).second;
-
                 if (pindex->IsInMainChain())
                     return hash;
             }
@@ -149,7 +143,7 @@ public:
 
     int GetHeight()
     {
-        CBlockIndex* pindex = GetBlockIndex();
+        CDiskBlockIndex* pindex = GetBlockIndex();
 
         if (!pindex)
             return 0;

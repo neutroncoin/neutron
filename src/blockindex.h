@@ -5,23 +5,26 @@
 #ifndef NEUTRON_BLOCK_INDEX_H
 #define NEUTRON_BLOCK_INDEX_H
 
+#include <list>
 #include <map>
 #include <mutex>
 
-#include "main.h"
 #include "uint256.h"
+
+class CDiskBlockIndex;
 
 class BlockIndex
 {
 private:
     const int BLOCK_INDEX_SIZE = 1024;
-    std::map<uint256, CBlockIndex *> mapBlockIndex;
+    std::map<uint256, CDiskBlockIndex *> mapBlockIndex;
     std::list<uint256> mapBlockIndexByRecentlyUsed;
     std::mutex mutexBlockIndex;
-    CBlockIndex *get_or_create(const uint256& hash);
 public:
-    CBlockIndex *find(const uint256& hash);
+    CDiskBlockIndex *find(const uint256& hash);
     bool contains(const uint256& hash);
 };
+
+extern BlockIndex blockIndex;
 
 #endif
