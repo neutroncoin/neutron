@@ -5,6 +5,7 @@
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
+#include "blockindex.h"
 #include "checkpoints.h"
 #include "main.h"
 #include "utiltime.h"
@@ -57,8 +58,8 @@ double GetPoWMHashPS()
     int nPoWInterval = 72;
     int64_t nTargetSpacingWorkMin = 30, nTargetSpacingWork = 30;
 
-    CBlockIndex* pindex = pindexGenesisBlock;
-    CBlockIndex* pindexPrevWork = pindexGenesisBlock;
+    CBlockIndex* pindex = blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);
+    CBlockIndex* pindexPrevWork = pindex;
 
     while (pindex)
     {

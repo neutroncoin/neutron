@@ -8,6 +8,7 @@
 #include "txdb.h"
 #include "walletdb.h"
 #include "bitcoinrpc.h"
+#include "blockindex.h"
 #include "net.h"
 #include "netbase.h"
 #include "noui.h"
@@ -1034,7 +1035,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     CBlockIndex *pindexRescan = pindexBest;
 
     if (GetBoolArg("-rescan"))
-        pindexRescan = pindexGenesisBlock;
+        pindexRescan = blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);
     else
     {
         CWalletDB walletdb(strWalletFileName);

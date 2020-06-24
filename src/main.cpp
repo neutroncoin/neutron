@@ -7,6 +7,7 @@
 
 #include "alert.h"
 #include "backtrace.h"
+#include "blockindex.h"
 #include "checkpoints.h"
 #include "db.h"
 #include "txdb.h"
@@ -37,6 +38,7 @@ CCriticalSection cs_main;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 map<uint256, CBlockIndex*> mapBlockIndex;
+BlockIndex blockIndex;
 set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Starting Difficulty: results with 0,000244140625 proof-of-work difficulty
@@ -50,7 +52,6 @@ unsigned int nStakeMaxAge = 5 * 60 * 60; // Neutron - 5 hours
 unsigned int nModifierInterval = 10 * 60; // Neutron - time to elapse before new modifier is computed
 
 int nCoinbaseMaturity = 80;
-CBlockIndex* pindexGenesisBlock = NULL;
 int nBestHeight = -1;
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
@@ -847,7 +848,7 @@ CBlockIndex* FindBlockByHeight(int nHeight)
     CBlockIndex *pblockindex;
 
     if (nHeight < nBestHeight / 2)
-        pblockindex = pindexGenesisBlock;
+        pblockindex = blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);
     else
         pblockindex = pindexBest;
 
@@ -1995,14 +1996,14 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     if (!txdb.TxnBegin())
         return error("%s : TxnBegin failed", __func__);
 
-    if (pindexGenesisBlock == NULL && hash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
+    if (!blockIndex.contains(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet) && hash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
     {
         txdb.WriteHashBestChain(hash);
 
         if (!txdb.TxnCommit())
             return error("%s : TxnCommit failed", __func__);
 
-        pindexGenesisBlock = pindexNew;
+        //pindexGenesisBlock = pindexNew;
     }
     else if (hashPrevBlock == hashBestChain)
     {
@@ -3017,7 +3018,7 @@ void PrintBlockTree()
     }
 
     vector<pair<int, CBlockIndex*> > vStack;
-    vStack.push_back(make_pair(0, pindexGenesisBlock));
+    vStack.push_back(make_pair(0, blockIndex.find(!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet)));
 
     int nPrevCol = 0;
     while (!vStack.empty())

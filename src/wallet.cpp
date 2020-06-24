@@ -1037,7 +1037,7 @@ void CWallet::ReacceptWalletTransactions()
         if (!vMissingTx.empty())
         {
             // TODO: optimize this to scan just part of the block chain?
-            if (ScanForWalletTransactions(pindexGenesisBlock))
+            if (ScanForWalletTransactions(blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet)))
                 fRepeat = true;  // Found missing transactions: re-do re-accept.
         }
     }

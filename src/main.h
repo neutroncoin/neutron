@@ -26,6 +26,7 @@
 
 using namespace std;
 
+class BlockIndex;
 class CWallet;
 class CBlock;
 class CBlockIndex;
@@ -95,9 +96,9 @@ inline CBigNum GetPOSLimit(int nHeight) { return CBigNum(~uint256(0) >> (GetPOSP
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
+extern BlockIndex blockIndex;
 extern std::map<uint256, CBlockIndex*> mapBlockIndex;
 extern std::set<std::pair<COutPoint, unsigned int> > setStakeSeen;
-extern CBlockIndex* pindexGenesisBlock;
 extern unsigned int nTargetSpacing;
 extern unsigned int nStakeMinAge;
 extern unsigned int nStakeMaxAge;

@@ -17,6 +17,7 @@
 #include <memenv/memenv.h>
 
 #include "backtrace.h"
+#include "blockindex.h"
 #include "kernel.h"
 #include "checkpoints.h"
 #include "txdb.h"
@@ -295,6 +296,16 @@ bool CTxDB::ReadDiskTx(COutPoint outpoint, CTransaction& tx)
     return ReadDiskTx(outpoint.hash, tx, txindex);
 }
 
+bool CTxDB::ContainsBlockIndex(const uint256& hash)
+{
+    return Exists(make_pair(string("blockindex"), hash));
+}
+
+bool CTxDB::ReadBlockIndex(const uint256& hash, CDiskBlockIndex& blockindex)
+{
+    return Read(make_pair(string("blockindex"), hash), blockindex);
+}
+
 bool CTxDB::WriteBlockIndex(const CDiskBlockIndex& blockindex)
 {
     return Write(make_pair(string("blockindex"), blockindex.GetBlockHash()), blockindex);
@@ -370,8 +381,6 @@ bool CTxDB::LoadBlockIndex()
         return true;
     }
 
-    // The block index is an in-memory structure that maps hashes to on-disk
-    // locations where the contents of the block can be found. Here, we scan it
     // out of the DB and into mapBlockIndex.
     leveldb::Iterator *iterator = pdb->NewIterator(leveldb::ReadOptions());
 
@@ -420,8 +429,8 @@ bool CTxDB::LoadBlockIndex()
         pindexNew->nNonce         = diskindex.nNonce;
 
         // Watch for genesis block
-        if (pindexGenesisBlock == NULL && blockHash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
-            pindexGenesisBlock = pindexNew;
+        // if (pindexGenesisBlock == NULL && blockHash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
+        //     pindexGenesisBlock = pindexNew;
 
         if (!pindexNew->CheckIndex())
         {
@@ -468,7 +477,7 @@ bool CTxDB::LoadBlockIndex()
     // Load hashBestChain pointer to end of best chain
     if (!ReadHashBestChain(hashBestChain))
     {
-        if (pindexGenesisBlock == NULL)
+        if (!blockIndex.contains(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
             return true;
 
         return error("%s : hashBestChain not loaded", __func__);

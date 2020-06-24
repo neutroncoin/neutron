@@ -7,6 +7,8 @@
 
 #include "init.h" // for pwalletMain
 #include "bitcoinrpc.h"
+#include "blockindex.h"
+#include "main.h"
 #include "ui_interface.h"
 #include "base58.h"
 #include "script/standard.h"
@@ -144,7 +146,7 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
         // whenever a key is imported, we need to scan the whole chain
         pwalletMain->nTimeFirstKey = 1; // 0 would be considered 'no value'
 
-        pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
+        pwalletMain->ScanForWalletTransactions(blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet), true);
         pwalletMain->ReacceptWalletTransactions();
     }
 

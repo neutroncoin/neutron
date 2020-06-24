@@ -193,6 +193,8 @@ public:
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
+    bool ContainsBlockIndex(const uint256& hash);
+    bool ReadBlockIndex(const uint256& hash, CDiskBlockIndex& blockindex);
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);

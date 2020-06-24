@@ -112,6 +112,7 @@ OBJS= \
     obj/addrman.o \
     obj/alert.o \
     obj/backtrace.o \
+    obj/blockindex.o \
     obj/bitcoinrpc.o \
     obj/checkpoints.o \
     obj/clientversion.o \
