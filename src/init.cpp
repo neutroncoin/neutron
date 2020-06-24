@@ -942,33 +942,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     else
         PrintBlockInfo();
 
-    if (mapArgs.count("-printblock"))
-    {
-        string strMatch = mapArgs["-printblock"];
-        int nFound = 0;
-
-        for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
-        {
-            uint256 hash = (*mi).first;
-
-            if (strncmp(hash.ToString().c_str(), strMatch.c_str(), strMatch.size()) == 0)
-            {
-                CBlockIndex* pindex = (*mi).second;
-                CBlock block;
-                block.ReadFromDisk(pindex);
-                block.BuildMerkleTree();
-                block.print();
-                LogPrintf("\n");
-                nFound++;
-            }
-        }
-
-        if (nFound == 0)
-            LogPrintf("[AppInit2] No blocks matching %s were found\n", strMatch.c_str());
-
-        return false;
-    }
-
     // ********************************************************* Step 8: load wallet
 
     if (fDisableWallet) {
