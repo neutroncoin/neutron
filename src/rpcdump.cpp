@@ -1,11 +1,13 @@
 // Copyright (c) 2009-2012 Bitcoin Developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include <iostream>
 #include <fstream>
 
-#include "init.h" // for pwalletMain
+#include "init.h"
 #include "bitcoinrpc.h"
 #include "blockindex.h"
 #include "main.h"
@@ -18,9 +20,7 @@
 #include <boost/algorithm/string.hpp>
 
 using namespace std;
-
 void EnsureWalletIsUnlocked();
-
 namespace bt = boost::posix_time;
 
 // Extended DecodeDumpTime implementation, see this page for details:
@@ -39,6 +39,7 @@ std::time_t pt_to_time_t(const bt::ptime& pt)
 {
     bt::ptime timet_start(boost::gregorian::date(1970,1,1));
     bt::time_duration diff = pt - timet_start;
+
     return diff.ticks()/bt::time_duration::rep_type::ticks_per_second;
 }
 
@@ -57,33 +58,44 @@ int64_t DecodeDumpTime(const std::string& s)
     return pt_to_time_t(pt);
 }
 
-std::string static EncodeDumpTime(int64_t nTime) {
+std::string static EncodeDumpTime(int64_t nTime)
+{
     return DateTimeStrFormat("%Y-%m-%dT%H:%M:%SZ", nTime);
 }
 
-std::string static EncodeDumpString(const std::string &str) {
+std::string static EncodeDumpString(const std::string &str)
+{
     std::stringstream ret;
-    BOOST_FOREACH(unsigned char c, str) {
-        if (c <= 32 || c >= 128 || c == '%') {
+
+    BOOST_FOREACH(unsigned char c, str)
+    {
+        if (c <= 32 || c >= 128 || c == '%')
             ret << '%' << HexStr(&c, &c + 1);
-        } else {
+        else
             ret << c;
-        }
     }
+
     return ret.str();
 }
 
-std::string DecodeDumpString(const std::string &str) {
+std::string DecodeDumpString(const std::string &str)
+{
     std::stringstream ret;
-    for (unsigned int pos = 0; pos < str.length(); pos++) {
+
+    for (unsigned int pos = 0; pos < str.length(); pos++)
+    {
         unsigned char c = str[pos];
-        if (c == '%' && pos+2 < str.length()) {
+
+        if (c == '%' && pos+2 < str.length())
+        {
             c = (((str[pos+1]>>6)*9+((str[pos+1]-'0')&15)) << 4) |
                 ((str[pos+2]>>6)*9+((str[pos+2]-'0')&15));
             pos += 2;
         }
+
         ret << c;
     }
+
     return ret.str();
 }
 
@@ -95,6 +107,7 @@ public:
     bool fSpent;
     CWalletTx* ptx;
     int nOut;
+
     CTxDump(CWalletTx* ptx = NULL, int nOut = -1)
     {
         pindex = NULL;
@@ -108,18 +121,24 @@ public:
 UniValue importprivkey(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
+    {
         throw runtime_error(
             "importprivkey <Neutronprivkey> [label]\n"
             "Adds a private key (as returned by dumpprivkey) to your wallet.");
+    }
 
     string strSecret = params[0].get_str();
     string strLabel = "";
+
     if (params.size() > 1)
         strLabel = params[1].get_str();
+
     CBitcoinSecret vchSecret;
     bool fGood = vchSecret.SetString(strSecret);
 
-    if (!fGood) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+    if (!fGood)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+
     if (fWalletUnlockStakingOnly)
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Wallet is unlocked for staking only.");
 
@@ -145,7 +164,6 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
 
         // whenever a key is imported, we need to scan the whole chain
         pwalletMain->nTimeFirstKey = 1; // 0 would be considered 'no value'
-
         pwalletMain->ScanForWalletTransactions(blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet), true);
         pwalletMain->ReacceptWalletTransactions();
     }
@@ -161,27 +179,31 @@ UniValue importwallet(const UniValue& params, bool fHelp)
             "Imports keys from a wallet dump file (see dumpwallet).");
 
     EnsureWalletIsUnlocked();
-
     ifstream file;
     file.open(params[0].get_str().c_str());
+
     if (!file.is_open())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot open wallet dump file");
 
     int64_t nTimeBegin = pindexBest->nTime;
-
     bool fGood = true;
 
-    while (file.good()) {
+    while (file.good())
+    {
         std::string line;
         std::getline(file, line);
+
         if (line.empty() || line[0] == '#')
             continue;
 
         std::vector<std::string> vstr;
         boost::split(vstr, line, boost::is_any_of(" "));
+
         if (vstr.size() < 2)
             continue;
+
         CBitcoinSecret vchSecret;
+
         if (!vchSecret.SetString(vstr[0]))
             continue;
 
@@ -195,41 +217,55 @@ UniValue importwallet(const UniValue& params, bool fHelp)
             LogPrintf("Skipping import of %s (key already present)\n", CBitcoinAddress(keyid).ToString().c_str());
             continue;
         }
+
         int64_t nTime = DecodeDumpTime(vstr[1]);
         std::string strLabel;
         bool fLabel = true;
-        for (unsigned int nStr = 2; nStr < vstr.size(); nStr++) {
+
+        for (unsigned int nStr = 2; nStr < vstr.size(); nStr++)
+        {
             if (boost::algorithm::starts_with(vstr[nStr], "#"))
                 break;
+
             if (vstr[nStr] == "change=1")
                 fLabel = false;
+
             if (vstr[nStr] == "reserve=1")
                 fLabel = false;
-            if (boost::algorithm::starts_with(vstr[nStr], "label=")) {
+
+            if (boost::algorithm::starts_with(vstr[nStr], "label="))
+            {
                 strLabel = DecodeDumpString(vstr[nStr].substr(6));
                 fLabel = true;
             }
         }
+
         LogPrintf("Importing %s...\n", CBitcoinAddress(keyid).ToString().c_str());
-        if (!pwalletMain->AddKey(key)) {
+
+        if (!pwalletMain->AddKey(key))
+        {
             fGood = false;
             continue;
         }
+
         pwalletMain->mapKeyMetadata[keyid].nCreateTime = nTime;
+
         if (fLabel)
             pwalletMain->SetAddressBookName(keyid, strLabel);
+
         nTimeBegin = std::min(nTimeBegin, nTime);
     }
-    file.close();
 
-    CBlockIndex *pindex = pindexBest;
-    while (pindex && pindex->pprev && pindex->nTime > nTimeBegin - 7200)
-        pindex = pindex->pprev;
+    file.close();
+    CDiskBlockIndex *pindex = pindexBest;
+
+    while (pindex && pindex->hashPrev != 0 && pindex->nTime > nTimeBegin - 7200)
+        pindex = blockIndex.find(pindex->hashPrev);
 
     if (!pwalletMain->nTimeFirstKey || nTimeBegin < pwalletMain->nTimeFirstKey)
         pwalletMain->nTimeFirstKey = nTimeBegin;
 
-    LogPrintf("Rescanning last %i blocks\n", pindexBest->nHeight - pindex->nHeight + 1);
+    LogPrintf("%s : Rescanning last %i blocks\n", __func__, pindexBest->nHeight - pindex->nHeight + 1);
     pwalletMain->ScanForWalletTransactions(pindex);
     pwalletMain->ReacceptWalletTransactions();
     pwalletMain->MarkDirty();
@@ -244,55 +280,64 @@ UniValue importwallet(const UniValue& params, bool fHelp)
 UniValue dumpprivkey(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
+    {
         throw runtime_error(
             "dumpprivkey <Neutronaddress>\n"
             "Reveals the private key corresponding to <Neutronaddress>.");
+    }
 
     EnsureWalletIsUnlocked();
-
     string strAddress = params[0].get_str();
     CBitcoinAddress address;
+
     if (!address.SetString(strAddress))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid Neutron address");
+
     if (fWalletUnlockStakingOnly)
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Wallet is unlocked for staking only.");
+
     CKeyID keyID;
+
     if (!address.GetKeyID(keyID))
         throw JSONRPCError(RPC_TYPE_ERROR, "Address does not refer to a key");
+
     CSecret vchSecret;
     bool fCompressed;
+
     if (!pwalletMain->GetSecret(keyID, vchSecret, fCompressed))
         throw JSONRPCError(RPC_WALLET_ERROR, "Private key for address " + strAddress + " is not known");
+
     return CBitcoinSecret(vchSecret, fCompressed).ToString();
 }
 
 UniValue dumpwallet(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 1)
+    {
         throw runtime_error(
             "dumpwallet <filename>\n"
             "Dumps all wallet keys in a human-readable format.");
+    }
 
     EnsureWalletIsUnlocked();
-
     ofstream file;
     file.open(params[0].get_str().c_str());
+
     if (!file.is_open())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Cannot open wallet dump file");
 
     std::map<CKeyID, int64_t> mapKeyBirth;
-
     std::set<CKeyID> setKeyPool;
 
     pwalletMain->GetKeyBirthTimes(mapKeyBirth);
-
     pwalletMain->GetAllReserveKeys(setKeyPool);
 
     // sort time/key pairs
     std::vector<std::pair<int64_t, CKeyID> > vKeyBirth;
-    for (std::map<CKeyID, int64_t>::const_iterator it = mapKeyBirth.begin(); it != mapKeyBirth.end(); it++) {
+
+    for (std::map<CKeyID, int64_t>::const_iterator it = mapKeyBirth.begin(); it != mapKeyBirth.end(); it++)
         vKeyBirth.push_back(std::make_pair(it->second, it->first));
-    }
+
     mapKeyBirth.clear();
     std::sort(vKeyBirth.begin(), vKeyBirth.end());
 
@@ -302,28 +347,41 @@ UniValue dumpwallet(const UniValue& params, bool fHelp)
     file << strprintf("# * Best block at time of backup was %i (%s),\n", nBestHeight, hashBestChain.ToString().c_str());
     file << strprintf("#   mined on %s\n", EncodeDumpTime(pindexBest->nTime).c_str());
     file << "\n";
-    for (std::vector<std::pair<int64_t, CKeyID> >::const_iterator it = vKeyBirth.begin(); it != vKeyBirth.end(); it++) {
+
+    for (std::vector<std::pair<int64_t, CKeyID> >::const_iterator it = vKeyBirth.begin(); it != vKeyBirth.end(); it++)
+    {
         const CKeyID &keyid = it->second;
         std::string strTime = EncodeDumpTime(it->first);
         std::string strAddr = CBitcoinAddress(keyid).ToString();
         bool IsCompressed;
-
         CKey key;
-        if (pwalletMain->GetKey(keyid, key)) {
-            if (pwalletMain->mapAddressBook.count(keyid)) {
+
+        if (pwalletMain->GetKey(keyid, key))
+        {
+            if (pwalletMain->mapAddressBook.count(keyid))
+            {
                 CSecret secret = key.GetSecret(IsCompressed);
-                file << strprintf("%s %s label=%s # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(), strTime.c_str(), EncodeDumpString(pwalletMain->mapAddressBook[keyid]).c_str(), strAddr.c_str());
-            } else if (setKeyPool.count(keyid)) {
+                file << strprintf("%s %s label=%s # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(),
+                                  strTime.c_str(), EncodeDumpString(pwalletMain->mapAddressBook[keyid]).c_str(), strAddr.c_str());
+            }
+            else if (setKeyPool.count(keyid))
+            {
                 CSecret secret = key.GetSecret(IsCompressed);
-                file << strprintf("%s %s reserve=1 # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(), strTime.c_str(), strAddr.c_str());
-            } else {
+                file << strprintf("%s %s reserve=1 # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(),
+                                  strTime.c_str(), strAddr.c_str());
+            }
+            else
+            {
                 CSecret secret = key.GetSecret(IsCompressed);
-                file << strprintf("%s %s change=1 # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(), strTime.c_str(), strAddr.c_str());
+                file << strprintf("%s %s change=1 # addr=%s\n", CBitcoinSecret(secret, IsCompressed).ToString().c_str(),
+                                  strTime.c_str(), strAddr.c_str());
             }
         }
     }
+
     file << "\n";
     file << "# End of dump\n";
     file.close();
+
     return NullUniValue;
 }

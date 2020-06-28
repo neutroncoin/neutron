@@ -14,7 +14,7 @@
 
 static const int64_t DEFAULT_MAX_TIP_AGE = 60 * 60 * 2;
 extern int64_t nMaxTipAge;
-class CBlockIndex;
+class CDiskBlockIndex;
 
 FILE* OpenBlockFile(unsigned int nFile, unsigned int nBlockPos, const char* pszMode="rb");
 FILE* AppendBlockFile(unsigned int& nFileRet);
@@ -23,6 +23,6 @@ void DelatchIsInitialBlockDownload();
 bool IsInitialBlockDownload();
 
 /** Guess verification progress (as a fraction between 0.0=genesis and 1.0=current tip). */
-double GuessVerificationProgress(CBlockIndex* pindex);
+double GuessVerificationProgress(CDiskBlockIndex* pindex);
 
 #endif // BITCOIN_VALIDATION_H

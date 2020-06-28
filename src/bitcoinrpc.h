@@ -155,7 +155,7 @@ extern CRPCTable tableRPC;
 extern int64_t nWalletUnlockTime;
 extern CAmount AmountFromValue(const UniValue& value);
 extern UniValue ValueFromAmount(const CAmount& amount);
-extern double GetDifficulty(const CBlockIndex* blockindex = NULL);
+extern double GetDifficulty(const CDiskBlockIndex* blockindex = nullptr);
 extern double GetPoWMHashPS();
 extern double GetPoSKernelPS();
 extern std::string HexBits(unsigned int nBits);

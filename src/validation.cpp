@@ -93,7 +93,7 @@ bool IsInitialBlockDownload()
 
     LOCK(cs_main);
 
-    if (pindexBest == NULL)
+    if (pindexBest == nullptr)
         return true;
 
     if (nBestHeight < Checkpoints::GetTotalBlocksEstimate())
@@ -102,7 +102,7 @@ bool IsInitialBlockDownload()
     /* TODO: look into verifying chain work */
 
     static int64_t nLastUpdate;
-    static CBlockIndex* pindexLastBest;
+    static CDiskBlockIndex* pindexLastBest;
 
     if (pindexBest != pindexLastBest)
     {
@@ -116,16 +116,15 @@ bool IsInitialBlockDownload()
     if (pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
         return true;
 
-    LogPrintf("[InitialBlockDownload] Leaving InitialBlockDownload (latching to false)\n");
+    LogPrintf("%s : Leaving InitialBlockDownload (latching to false)\n", __func__);
     latchToFalse.store(true, std::memory_order_relaxed);
-
     return false;
 }
 
 // Guess how far we are in the verification process at the given block index
-double GuessVerificationProgress(CBlockIndex *pindex)
+double GuessVerificationProgress(CDiskBlockIndex *pindex)
 {
-    if (pindex == NULL || pindexBest == NULL)
+    if (pindex == nullptr || pindexBest == nullptr)
         return 0.0;
 
     return (float) pindex->nHeight / (float) pindexBest->nHeight;

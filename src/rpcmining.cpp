@@ -1,5 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -25,14 +27,16 @@ UniValue getsubsidy(const UniValue& params, bool fHelp)
 UniValue getmininginfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
+    {
         throw runtime_error(
             "getmininginfo\n"
             "Returns an object containing mining-related information.");
+    }
 
     uint64_t nMinWeight = 0, nMaxWeight = 0, nWeight = 0;
     pwalletMain->GetStakeWeight(*pwalletMain, nMinWeight, nMaxWeight, nWeight);
-
     UniValue obj(UniValue::VOBJ), diff(UniValue::VOBJ), weight(UniValue::VOBJ);
+
     obj.push_back(Pair("Blocks",        (int)nBestHeight));
     obj.push_back(Pair("Current Block Size",(uint64_t)nLastBlockSize));
     obj.push_back(Pair("Current Block Tx",(uint64_t)nLastBlockTx));
@@ -55,15 +59,18 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
 
     obj.push_back(Pair("Stake Interest",    (uint64_t)COIN_YEAR_REWARD));
     obj.push_back(Pair("Testnet",       fTestNet));
+
     return obj;
 }
 
 UniValue getstakinginfo(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
+    {
         throw runtime_error(
             "getstakinginfo\n"
             "Returns an object containing staking-related information.");
+    }
 
     uint64_t nMinWeight = 0, nMaxWeight = 0, nWeight = 0;
     pwalletMain->GetStakeWeight(*pwalletMain, nMinWeight, nMaxWeight, nWeight);
@@ -87,7 +94,6 @@ UniValue getstakinginfo(const UniValue& params, bool fHelp)
 
     obj.push_back(Pair("Weight", (uint64_t)nWeight));
     obj.push_back(Pair("Net Stake Weight", (uint64_t)nNetworkWeight));
-
     obj.push_back(Pair("Expected Time", nExpectedTime));
 
     return obj;
@@ -96,10 +102,11 @@ UniValue getstakinginfo(const UniValue& params, bool fHelp)
 UniValue getworkex(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 2)
+    {
         throw runtime_error(
             "getworkex [data, coinbase]\n"
-            "If [data, coinbase] is not specified, returns extended work data.\n"
-        );
+            "If [data, coinbase] is not specified, returns extended work data.\n");
+    }
 
     if (vNodes.empty())
         throw JSONRPCError(-9, "Neutron is not connected!");
@@ -119,28 +126,33 @@ UniValue getworkex(const UniValue& params, bool fHelp)
     {
         // Update block
         static unsigned int nTransactionsUpdatedLast;
-        static CBlockIndex* pindexPrev;
+        static CDiskBlockIndex* pindexPrev;
         static int64_t nStart;
         static CBlock* pblock;
-        if (pindexPrev != pindexBest ||
-            (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60))
+
+        if (pindexPrev != pindexBest || (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60))
         {
             if (pindexPrev != pindexBest)
             {
                 // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
+
                 BOOST_FOREACH(CBlock* pblock, vNewBlock)
                     delete pblock;
+
                 vNewBlock.clear();
             }
+
             nTransactionsUpdatedLast = nTransactionsUpdated;
             pindexPrev = pindexBest;
             nStart = GetTime();
 
             // Create new block
             pblock = CreateNewBlock(pwalletMain);
+
             if (!pblock)
                 throw JSONRPCError(-7, "Out of memory");
+
             vNewBlock.push_back(pblock);
         }
 
@@ -253,18 +265,20 @@ UniValue getwork(const UniValue& params, bool fHelp)
     {
         // Update block
         static unsigned int nTransactionsUpdatedLast;
-        static CBlockIndex* pindexPrev;
+        static CDiskBlockIndex* pindexPrev;
         static int64_t nStart;
         static CBlock* pblock;
-        if (pindexPrev != pindexBest ||
-            (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60))
+
+        if (pindexPrev != pindexBest || (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 60))
         {
             if (pindexPrev != pindexBest)
             {
                 // Deallocate old blocks since they're obsolete now
                 mapNewBlock.clear();
+
                 BOOST_FOREACH(CBlock* pblock, vNewBlock)
                     delete pblock;
+
                 vNewBlock.clear();
             }
 
@@ -273,16 +287,16 @@ UniValue getwork(const UniValue& params, bool fHelp)
 
             // Store the pindexBest used before CreateNewBlock, to avoid races
             nTransactionsUpdatedLast = nTransactionsUpdated;
-            CBlockIndex* pindexPrevNew = pindexBest;
+            CDiskBlockIndex* pindexPrevNew = pindexBest;
             nStart = GetTime();
 
             // Create new block
             pblock = CreateNewBlock(pwalletMain);
+
             if (!pblock)
                 throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
-            vNewBlock.push_back(pblock);
 
-            // Need to update only after we know CreateNewBlock succeeded
+            vNewBlock.push_back(pblock);
             pindexPrev = pindexPrevNew;
         }
 
@@ -304,20 +318,23 @@ UniValue getwork(const UniValue& params, bool fHelp)
         FormatHashBuffers(pblock, pmidstate, pdata, phash1);
 
         uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
-
         UniValue result(UniValue::VOBJ);
+
         result.push_back(Pair("midstate", HexStr(BEGIN(pmidstate), END(pmidstate)))); // deprecated
         result.push_back(Pair("data",     HexStr(BEGIN(pdata), END(pdata))));
         result.push_back(Pair("hash1",    HexStr(BEGIN(phash1), END(phash1)))); // deprecated
         result.push_back(Pair("target",   HexStr(BEGIN(hashTarget), END(hashTarget))));
+
         return result;
     }
     else
     {
         // Parse parameters
         vector<unsigned char> vchData = ParseHex(params[0].get_str());
+
         if (vchData.size() != 128)
             throw JSONRPCError(RPC_INVALID_PARAMETER, "Invalid parameter");
+
         CBlock* pdata = (CBlock*)&vchData[0];
 
         // Byte reverse
@@ -327,8 +344,8 @@ UniValue getwork(const UniValue& params, bool fHelp)
         // Get saved block
         if (!mapNewBlock.count(pdata->hashMerkleRoot))
             return false;
-        CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
 
+        CBlock* pblock = mapNewBlock[pdata->hashMerkleRoot].first;
         pblock->nTime = pdata->nTime;
         pblock->nNonce = pdata->nNonce;
         pblock->vtx[0].vin[0].scriptSig = mapNewBlock[pdata->hashMerkleRoot].second;
@@ -342,6 +359,7 @@ UniValue getwork(const UniValue& params, bool fHelp)
 UniValue getblocktemplate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() > 1)
+    {
         throw runtime_error(
             "getblocktemplate [params]\n"
             "Returns data needed to construct a block to work on:\n"
@@ -360,12 +378,15 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             "  \"bits\" : compressed target of next block\n"
             "  \"height\" : height of the next block\n"
             "See https://en.bitcoin.it/wiki/BIP_0022 for full specification.");
+    }
 
     std::string strMode = "template";
+
     if (params.size() > 0)
     {
         const UniValue& oparam = params[0].get_obj();
         const UniValue& modeval = find_value(oparam, "mode");
+
         if (modeval.isStr())
             strMode = modeval.get_str();
         else if (modeval.isNull())
@@ -392,18 +413,18 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 
     // Update block
     static unsigned int nTransactionsUpdatedLast;
-    static CBlockIndex* pindexPrev;
+    static CDiskBlockIndex* pindexPrev;
     static int64_t nStart;
     static CBlock* pblock;
-    if (pindexPrev != pindexBest ||
-        (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 5))
+
+    if (pindexPrev != pindexBest || (nTransactionsUpdated != nTransactionsUpdatedLast && GetTime() - nStart > 5))
     {
         // Clear pindexPrev so future calls make a new block, despite any failures from here on
         pindexPrev = NULL;
 
         // Store the pindexBest used before CreateNewBlock, to avoid races
         nTransactionsUpdatedLast = nTransactionsUpdated;
-        CBlockIndex* pindexPrevNew = pindexBest;
+        CDiskBlockIndex* pindexPrevNew = pindexBest;
         nStart = GetTime();
 
         // Create new block
@@ -412,7 +433,9 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             delete pblock;
             pblock = NULL;
         }
+
         pblock = CreateNewBlock(pwalletMain);
+
         if (!pblock)
             throw JSONRPCError(RPC_OUT_OF_MEMORY, "Out of memory");
 
@@ -428,6 +451,7 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     map<uint256, int64_t> setTxIndex;
     int i = 0;
     CTxDB txdb("r");
+
     BOOST_FOREACH (CTransaction& tx, pblock->vtx)
     {
         uint256 txHash = tx.GetHash();
@@ -437,28 +461,28 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
             continue;
 
         UniValue entry(UniValue::VOBJ);
-
         CDataStream ssTx(SER_NETWORK, PROTOCOL_VERSION);
         ssTx << tx;
-        entry.push_back(Pair("data", HexStr(ssTx.begin(), ssTx.end())));
 
+        entry.push_back(Pair("data", HexStr(ssTx.begin(), ssTx.end())));
         entry.push_back(Pair("hash", txHash.GetHex()));
 
         MapPrevTx mapInputs;
         map<uint256, CTxIndex> mapUnused;
         bool fInvalid = false;
+
         if (tx.FetchInputs(txdb, mapUnused, false, false, mapInputs, fInvalid))
         {
             entry.push_back(Pair("fee", (int64_t)(tx.GetValueIn(mapInputs) - tx.GetValueOut())));
-
             UniValue deps(UniValue::VARR);
+
             BOOST_FOREACH (MapPrevTx::value_type& inp, mapInputs)
             {
                 if (setTxIndex.count(inp.first))
                     deps.push_back(setTxIndex[inp.first]);
             }
-            entry.push_back(Pair("depends", deps));
 
+            entry.push_back(Pair("depends", deps));
             int64_t nSigOps = tx.GetLegacySigOpCount();
             nSigOps += tx.GetP2SHSigOpCount(mapInputs);
             entry.push_back(Pair("sigops", nSigOps));
@@ -471,8 +495,8 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
     aux.push_back(Pair("flags", HexStr(COINBASE_FLAGS.begin(), COINBASE_FLAGS.end())));
 
     uint256 hashTarget = CBigNum().SetCompact(pblock->nBits).getuint256();
-
     UniValue aMutable(UniValue::VARR);
+
     if (aMutable.empty())
     {
         aMutable.push_back("time");
@@ -502,23 +526,29 @@ UniValue getblocktemplate(const UniValue& params, bool fHelp)
 UniValue submitblock(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
+    {
         throw runtime_error(
             "submitblock <hex data> [optional-params-obj]\n"
             "[optional-params-obj] parameter is currently ignored.\n"
             "Attempts to submit new block to network.\n"
             "See https://en.bitcoin.it/wiki/BIP_0022 for full specification.");
+    }
 
     vector<unsigned char> blockData(ParseHex(params[0].get_str()));
     CDataStream ssBlock(blockData, SER_NETWORK, PROTOCOL_VERSION);
     CBlock block;
-    try {
+
+    try
+    {
         ssBlock >> block;
     }
-    catch (std::exception &e) {
+    catch (std::exception &e)
+    {
         throw JSONRPCError(RPC_DESERIALIZATION_ERROR, "Block decode failed");
     }
 
     bool fAccepted = ProcessNewBlock(NULL, &block);
+
     if (!fAccepted)
         return "rejected";
 
@@ -528,12 +558,15 @@ UniValue submitblock(const UniValue& params, bool fHelp)
 UniValue setgenerate(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
+    {
         throw runtime_error(
             "setgenerate <generate> [genproclimit]\n"
                 "<generate> is true or false to turn generation on or off.\n"
                 "Generation is limited to [genproclimit] processors, -1 is unlimited.");
+    }
 
     bool fGenerate = true;
+
     if (params.size() > 0)
         fGenerate = params[0].get_bool();
 
@@ -541,11 +574,12 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
     {
         int nGenProcLimit = params[1].get_int();
         mapArgs["-genproclimit"] = itostr(nGenProcLimit);
+
         if (nGenProcLimit == 0)
             fGenerate = false;
     }
-    mapArgs["-gen"] = (fGenerate ? "1" : "0");
 
+    mapArgs["-gen"] = (fGenerate ? "1" : "0");
     GenerateBitcoins(fGenerate, pwalletMain);
     return NullUniValue;
 }
@@ -554,11 +588,14 @@ UniValue setgenerate(const UniValue& params, bool fHelp)
 UniValue gethashespersec(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
+    {
         throw runtime_error(
             "gethashespersec\n"
                 "Returns a recent hashes per second performance measurement while generating.");
+    }
 
     if (GetTimeMillis() - nHPSTimerStart > 8000)
-        return (boost::int64_t)0;
+        return (boost::int64_t) 0;
+
     return (boost::int64_t)dHashesPerSec;
 }
