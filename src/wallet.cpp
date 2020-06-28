@@ -487,7 +487,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
             wtx.nTimeSmart = wtx.nTimeReceived;
             if (wtxIn.hashBlock != 0)
             {
-                if (mapBlockIndex.count(wtxIn.hashBlock))
+                if (blockIndex.contains(wtxIn.hashBlock))
                 {
                     unsigned int latestNow = wtx.nTimeReceived;
                     unsigned int latestEntry = 0;
@@ -521,17 +521,20 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                         }
                     }
 
-                    unsigned int& blocktime = mapBlockIndex[wtxIn.hashBlock]->nTime;
+                    unsigned int& blocktime = blockIndex.find(wtxIn.hashBlock)->nTime;
                     wtx.nTimeSmart = std::max(latestEntry, std::min(blocktime, latestNow));
                 }
                 else
-                    LogPrintf("AddToWallet() : found %s in block %s not in index\n",
-                           wtxIn.GetHash().ToString().substr(0,10).c_str(),
-                           wtxIn.hashBlock.ToString().c_str());
+                {
+                    LogPrintf("%s : found %s in block %s not in index\n", __func__,
+                              wtxIn.GetHash().ToString().substr(0,10).c_str(),
+                              wtxIn.hashBlock.ToString().c_str());
+                }
             }
         }
 
         bool fUpdated = false;
+
         if (!fInsertedNew)
         {
             // Merge
@@ -551,6 +554,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                 wtx.fFromMe = wtxIn.fFromMe;
                 fUpdated = true;
             }
+
             fUpdated |= wtx.UpdateSpent(wtxIn.vfSpent);
         }
 
@@ -561,16 +565,20 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
         if (fInsertedNew || fUpdated)
             if (!wtx.WriteToDisk())
                 return false;
+
 #ifndef QT_GUI
         // If default receiving address gets used, replace it with a new one
-        if (vchDefaultKey.IsValid()) {
+        if (vchDefaultKey.IsValid())
+        {
             CScript scriptDefaultKey;
             scriptDefaultKey.SetDestination(vchDefaultKey.GetID());
+
             BOOST_FOREACH(const CTxOut& txout, wtx.vout)
             {
                 if (txout.scriptPubKey == scriptDefaultKey)
                 {
                     CPubKey newDefaultKey;
+
                     if (GetKeyFromPool(newDefaultKey, false))
                     {
                         SetDefaultKey(newDefaultKey);
@@ -580,6 +588,7 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
             }
         }
 #endif
+
         // since AddToWallet is called directly for self-originating transactions, check for consumption of own coins
         WalletUpdateSpent(wtx, (wtxIn.hashBlock != 0));
 
@@ -640,6 +649,7 @@ bool CWallet::IsMine(const CTxIn &txin) const
     {
         LOCK(cs_wallet);
         map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
@@ -656,6 +666,7 @@ int64_t CWallet::GetDebit(const CTxIn &txin) const
     {
         LOCK(cs_wallet);
         map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
@@ -936,42 +947,57 @@ int CWallet::ScanForWalletTransactions(CDiskBlockIndex *pindexStart, bool fUpdat
 {
     int ret = 0;
     int64_t nNow = GetTime();
+    CDiskBlockIndex* pindex = pindexStart;
 
-    CBlockIndex* pindex = pindexStart;
     {
         LOCK2(cs_main, cs_wallet);
 
         // no need to read and scan block, if block was created before
         // our wallet birthday (as adjusted for block time variability)
-        while (pindex && nTimeFirstKey && (pindex->nTime < (nTimeFirstKey - 7200))) {
-            pindex = pindex->pnext;
-        }
+        while (pindex && nTimeFirstKey && (pindex->nTime < (nTimeFirstKey - 7200)))
+            pindex = blockIndex.find(pindex->hashNext);
 
         ShowProgress(_("Rescanning..."), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
         double dProgressStart = GuessVerificationProgress(pindex);
         double dProgressTip = GuessVerificationProgress(pindexBest);
-        if (fDebug) LogPrintf("[Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n", pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
+
+        if (fDebug)
+        {
+            LogPrintf("%s : [Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n",
+                      __func__, pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
+        }
+
         while (pindex)
         {
-            if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0) {
-                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((GuessVerificationProgress(pindex) - dProgressStart) / (dProgressTip - dProgressStart) * 100))));
+            if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0)
+            {
+                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int) ((GuessVerificationProgress(pindex) -
+                             dProgressStart) / (dProgressTip - dProgressStart) * 100))));
             }
-            if (GetTime() >= nNow + 60) {
+
+            if (GetTime() >= nNow + 60)
+            {
                 nNow = GetTime();
-                LogPrintf("[Rescan] Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, GuessVerificationProgress(pindex));
+
+                LogPrintf("%s : [Rescan] Still rescanning. At block %d. Progress=%f\n", __func__,
+                          pindex->nHeight, GuessVerificationProgress(pindex));
             }
 
             CBlock block;
             block.ReadFromDisk(pindex, true);
+
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
                     ret++;
             }
-            pindex = pindex->pnext;
+
+            pindex = blockIndex.find(pindex->hashNext);
         }
+
         ShowProgress(_("Rescanning..."), 100); // hide progress dialog in GUI
     }
+
     return ret;
 }
 
@@ -2405,7 +2431,7 @@ bool CWallet::GetStakeWeight(const CKeyStore& keystore, uint64_t& nMinWeight, ui
 
 bool CWallet::CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, int64_t nFees, CTransaction& txNew, CKey& key)
 {
-    CBlockIndex* pindexPrev = pindexBest;
+    CDiskBlockIndex* pindexPrev = pindexBest;
     CBigNum bnTargetPerCoinDay;
     bnTargetPerCoinDay.SetCompact(nBits);
 
@@ -3411,23 +3437,29 @@ void CWallet::ListLockedCoins(std::vector<COutPoint>& vOutpts)
 
 
 
-void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const {
+void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const
+{
     mapKeyBirth.clear();
 
     // get birth times for keys with metadata
     for (std::map<CKeyID, CKeyMetadata>::const_iterator it = mapKeyMetadata.begin(); it != mapKeyMetadata.end(); it++)
+    {
         if (it->second.nCreateTime)
             mapKeyBirth[it->first] = it->second.nCreateTime;
+    }
 
     // map in which we'll infer heights of other keys
-    CBlockIndex *pindexMax = FindBlockByHeight(std::max(0, nBestHeight - 144)); // the tip can be reorganised; use a 144-block safety margin
-    std::map<CKeyID, CBlockIndex*> mapKeyFirstBlock;
+    CDiskBlockIndex *pindexMax = FindBlockByHeight(std::max(0, nBestHeight - 144)); // the tip can be reorganised; use a 144-block safety margin
+    std::map<CKeyID, CDiskBlockIndex*> mapKeyFirstBlock;
     std::set<CKeyID> setKeys;
     GetKeys(setKeys);
-    BOOST_FOREACH(const CKeyID &keyid, setKeys) {
+
+    BOOST_FOREACH(const CKeyID &keyid, setKeys)
+    {
         if (mapKeyBirth.count(keyid) == 0)
             mapKeyFirstBlock[keyid] = pindexMax;
     }
+
     setKeys.clear();
 
     // if there are no such keys, we're done
@@ -3436,42 +3468,51 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const {
 
     // find first block that affects those keys, if there are any left
     std::vector<CKeyID> vAffected;
-    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++) {
+
+    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++)
+    {
         // iterate over all wallet transactions...
         const CWalletTx &wtx = (*it).second;
-        std::map<uint256, CBlockIndex*>::const_iterator blit = mapBlockIndex.find(wtx.hashBlock);
-        if (blit != mapBlockIndex.end() && blit->second->IsInMainChain()) {
+        CDiskBlockIndex *pindexTx = blockIndex.find(wtx.hashBlock);
+
+        if (pindexTx != nullptr && pindexTx->IsInMainChain())
+        {
             // ... which are already in a block
-            int nHeight = blit->second->nHeight;
-            BOOST_FOREACH(const CTxOut &txout, wtx.vout) {
+            int nHeight = pindexTx->nHeight;
+
+            BOOST_FOREACH(const CTxOut &txout, wtx.vout)
+            {
                 // iterate over all their outputs
                 ::ExtractAffectedKeys(*this, txout.scriptPubKey, vAffected);
-                BOOST_FOREACH(const CKeyID &keyid, vAffected) {
+
+                BOOST_FOREACH(const CKeyID &keyid, vAffected)
+                {
                     // ... and all their affected keys
-                    std::map<CKeyID, CBlockIndex*>::iterator rit = mapKeyFirstBlock.find(keyid);
+                    std::map<CKeyID, CDiskBlockIndex*>::iterator rit = mapKeyFirstBlock.find(keyid);
+
                     if (rit != mapKeyFirstBlock.end() && nHeight < rit->second->nHeight)
-                        rit->second = blit->second;
+                        rit->second = pindexTx;
                 }
+
                 vAffected.clear();
             }
         }
     }
 
     // Extract block timestamps for those keys
-    for (std::map<CKeyID, CBlockIndex*>::const_iterator it = mapKeyFirstBlock.begin(); it != mapKeyFirstBlock.end(); it++)
+    for (std::map<CKeyID, CDiskBlockIndex*>::const_iterator it = mapKeyFirstBlock.begin(); it != mapKeyFirstBlock.end(); it++)
         mapKeyBirth[it->first] = it->second->nTime - 7200; // block times can be 2h off
 }
 
 bool CWallet::AddAdrenalineNodeConfig(CAdrenalineNodeConfig nodeConfig)
 {
     bool rv = CWalletDB(strWalletFile).WriteAdrenalineNodeConfig(nodeConfig.sAlias, nodeConfig);
+
     if(rv)
 	uiInterface.NotifyAdrenalineNodeChanged(nodeConfig);
 
     return rv;
 }
-
-
 
 int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 {
@@ -3483,14 +3524,18 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     else
     {
         CBlock blockTmp;
+
         if (pblock == NULL)
         {
             // Load the block this tx is in
             CTxIndex txindex;
+
             if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
                 return 0;
+   
             if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
                 return 0;
+  
             pblock = &blockTmp;
         }
 
@@ -3499,13 +3544,17 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 
         // Locate the transaction
         for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+        {
             if (pblock->vtx[nIndex] == *(CTransaction*)this)
                 break;
+        }
+
         if (nIndex == (int)pblock->vtx.size())
         {
             vMerkleBranch.clear();
             nIndex = -1;
-            LogPrintf("ERROR: SetMerkleBranch() : couldn't find tx in block\n");
+            LogPrintf("%s : [ERROR] Couldn't find tx in block\n", __func__);
+
             return 0;
         }
 
@@ -3514,28 +3563,24 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     }
 
     // Is the tx in a block that's in the main chain
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
+    CDiskBlockIndex *pindex = blockIndex.find(hashBlock);
+
+    if (pindex  == nullptr || !pindex->IsInMainChain())
         return 0;
 
     return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
 
-int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
+int CMerkleTx::GetDepthInMainChainINTERNAL(CDiskBlockIndex* &pindexRet) const
 {
     if (hashBlock == 0 || nIndex == -1)
         return 0;
 
     // Find the block it claims to be in
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
-    if (mi == mapBlockIndex.end())
-        return 0;
-    CBlockIndex* pindex = (*mi).second;
-    if (!pindex || !pindex->IsInMainChain())
+    CDiskBlockIndex *pindex = blockIndex.find(hashBlock);
+
+    if (pindex  == nullptr || !pindex->IsInMainChain())
         return 0;
 
     // Make sure the merkle branch connects to this block
@@ -3543,6 +3588,7 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
     {
         if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
             return 0;
+
         fMerkleVerified = true;
     }
 
@@ -3550,9 +3596,10 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
     return pindexBest->nHeight - pindex->nHeight + 1;
 }
 
-int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const
+int CMerkleTx::GetDepthInMainChain(CDiskBlockIndex* &pindexRet) const
 {
     int nResult = GetDepthInMainChainINTERNAL(pindexRet);
+
     if (nResult == 0 && !mempool.exists(GetHash()))
         return -1; // Not in chain, not in mempool
 
@@ -3563,6 +3610,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 {
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
+
     return max(0, (nCoinbaseMaturity+10) - GetDepthInMainChain());
 }
 
@@ -3573,6 +3621,7 @@ bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
     {
         if (!IsInMainChain() && !ClientConnectInputs())
             return false;
+
         return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
     }
     else
