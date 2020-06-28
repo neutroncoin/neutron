@@ -914,7 +914,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         CTxDB txdb("r");
         txdb.LoadBlockIndex();
-        PrintBlockTree();
+        //PrintBlockTree();
         return false;
     }
 
@@ -937,11 +937,13 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
     if (GetBoolArg("-printblockindex") || GetBoolArg("-printblocktree"))
     {
-        PrintBlockTree();
+        //PrintBlockTree();
         return false;
     }
     else
-        PrintBlockInfo();
+    {
+        //PrintBlockInfo();
+    }
 
     // ********************************************************* Step 8: load wallet
 
@@ -1032,7 +1034,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     LogPrintf("[AppInit2]  wallet      %15dms\n", GetTimeMillis() - nStart);
 
     RegisterWallet(pwalletMain);
-    CBlockIndex *pindexRescan = pindexBest;
+    CDiskBlockIndex *pindexRescan = pindexBest;
 
     if (GetBoolArg("-rescan"))
         pindexRescan = blockIndex.find(fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet);
@@ -1192,7 +1194,6 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     RandAddSeedPerfmon();
 
     //// debug print
-    LogPrintf("[AppInit2] mapBlockIndex.size() = %u\n",   mapBlockIndex.size());
     LogPrintf("[AppInit2] nBestHeight = %d\n",            nBestHeight);
     LogPrintf("[AppInit2] setKeyPool.size() = %u\n",      pwalletMain->setKeyPool.size());
     LogPrintf("[AppInit2] mapWallet.size() = %u\n",       pwalletMain->mapWallet.size());
