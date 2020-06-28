@@ -414,8 +414,12 @@ bool CTxDB::LoadBlockIndex()
 
         // Construct block index object
         CDiskBlockIndex* pindexNew = InsertBlockIndex(blockHash);
-        pindexNew->hashPrev        = InsertBlockIndex(diskindex.hashPrev)->GetBlockHash();
-        pindexNew->hashNext        = InsertBlockIndex(diskindex.hashNext)->GetBlockHash();
+
+        if (diskindex.hashPrev != 0)
+            pindexNew->hashPrev        = InsertBlockIndex(diskindex.hashPrev)->GetBlockHash();
+
+        if (diskindex.hashNext != 0)
+            pindexNew->hashNext        = InsertBlockIndex(diskindex.hashNext)->GetBlockHash();
 
         pindexNew->nFile          = diskindex.nFile;
         pindexNew->nBlockPos      = diskindex.nBlockPos;
