@@ -123,7 +123,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
     if (!pblock.get())
         return NULL;
 
-    CBlockIndex* pindexPrev = pindexBest;
+    CDiskBlockIndex* pindexPrev = pindexBest;
 
     // Create coinbase tx
     CTransaction txNew;
@@ -412,7 +412,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
 }
 
 
-void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
+void IncrementExtraNonce(CBlock* pblock, CDiskBlockIndex* pindexPrev, unsigned int& nExtraNonce)
 {
     // Update nExtraNonce
     static uint256 hashPrevBlock;
@@ -529,10 +529,9 @@ bool CheckStake(CBlock* pblock, CWallet& wallet)
         return error("%s : %s is not a proof-of-stake block", __func__, hashBlock.GetHex().c_str());
 
     // verify hash target and signature of coinstake tx
-    if (!CheckProofOfStake(mapBlockIndex[pblock->hashPrevBlock], pblock->vtx[1], pblock->nBits, proofHash, hashTarget))
+    if (!CheckProofOfStake(blockIndex.find(pblock->hashPrevBlock), pblock->vtx[1], pblock->nBits, proofHash, hashTarget))
         return error("%s : proof-of-stake checking failed", __func__);
 
-    //// debug print
     LogPrintf("%s : new proof-of-stake block found  \n  hash: %s \nproofhash: %s  \ntarget: %s\n", __func__,
               hashBlock.GetHex().c_str(), proofHash.GetHex().c_str(), hashTarget.GetHex().c_str());
     pblock->print();
@@ -655,7 +654,7 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
 
         // Create new block
         unsigned int nTransactionsUpdatedLast = nTransactionsUpdated;
-        CBlockIndex* pindexPrev = pindexBest;
+        CDiskBlockIndex* pindexPrev = pindexBest;
         int64_t nFees;
         unique_ptr<CBlock> pblock(CreateNewBlock(pwallet, fProofOfStake, &nFees));
 
