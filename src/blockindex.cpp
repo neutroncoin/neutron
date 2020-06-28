@@ -53,3 +53,11 @@ bool BlockIndex::contains(const uint256& hash)
 
     return mapBlockIndex.count(hash) > 0 || txdb.ContainsBlockIndex(hash);
 }
+
+bool BlockIndex::persist(const CDiskBlockIndex& blockIndexToWrite)
+{
+    std::lock_guard<std::mutex> lock(mutexBlockIndex);
+
+    CTxDB txdb;
+    return txdb.WriteBlockIndex(blockIndexToWrite);
+}

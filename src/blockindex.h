@@ -23,6 +23,7 @@ private:
 public:
     CDiskBlockIndex *find(const uint256& hash);
     bool contains(const uint256& hash);
+    bool persist(const CDiskBlockIndex& blockIndexToWrite);
 };
 
 extern BlockIndex blockIndex;
