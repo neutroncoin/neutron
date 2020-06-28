@@ -349,31 +349,10 @@ bool CTxDB::WriteCheckpointPubKey(const string& strPubKey)
     return Write(string("strCheckpointPubKey"), strPubKey);
 }
 
-static CDiskBlockIndex *InsertBlockIndex(uint256 hash)
-{
-    if (hash == 0)
-        return nullptr;
-    {
-        // Return existing
-        CDiskBlockIndex *pindex = blockIndex.find(hash);
-
-        if (pindex)
-            return pindex;
-    }
-
-    // Create new
-    CDiskBlockIndex *pindexNew = new CDiskBlockIndex();
-
-    if (!pindexNew)
-        throw runtime_error(strprintf("%s : new CDiskBlockIndex failed", __func__));
-
-    blockIndex.persist(*pindexNew);
-    return pindexNew;
-}
-
 bool CTxDB::LoadBlockIndex()
 {
     static bool called = false;
+    static int counter = 0;
 
     if (called)
     {
@@ -410,47 +389,24 @@ bool CTxDB::LoadBlockIndex()
 
         CDiskBlockIndex diskindex;
         ssValue >> diskindex;
-        uint256 blockHash = diskindex.GetBlockHash();
 
-        // Construct block index object
-        CDiskBlockIndex* pindexNew = InsertBlockIndex(blockHash);
-
-        if (diskindex.hashPrev != 0)
-            pindexNew->hashPrev        = InsertBlockIndex(diskindex.hashPrev)->GetBlockHash();
-
-        if (diskindex.hashNext != 0)
-            pindexNew->hashNext        = InsertBlockIndex(diskindex.hashNext)->GetBlockHash();
-
-        pindexNew->nFile          = diskindex.nFile;
-        pindexNew->nBlockPos      = diskindex.nBlockPos;
-        pindexNew->nHeight        = diskindex.nHeight;
-        pindexNew->nMint          = diskindex.nMint;
-        pindexNew->nMoneySupply   = diskindex.nMoneySupply;
-        pindexNew->nFlags         = diskindex.nFlags;
-        pindexNew->nStakeModifier = diskindex.nStakeModifier;
-        pindexNew->prevoutStake   = diskindex.prevoutStake;
-        pindexNew->nStakeTime     = diskindex.nStakeTime;
-        pindexNew->hashProof      = diskindex.hashProof;
-        pindexNew->nVersion       = diskindex.nVersion;
-        pindexNew->hashMerkleRoot = diskindex.hashMerkleRoot;
-        pindexNew->nTime          = diskindex.nTime;
-        pindexNew->nBits          = diskindex.nBits;
-        pindexNew->nNonce         = diskindex.nNonce;
+        if (fDebug)
+            LogPrintf("%s : counter=%d, nHeight=%d\n", __func__, counter++, diskindex.nHeight);
 
         // Watch for genesis block
         // if (pindexGenesisBlock == NULL && blockHash == (!fTestNet ? hashGenesisBlock : hashGenesisBlockTestNet))
         //     pindexGenesisBlock = pindexNew;
 
-        if (!pindexNew->CheckIndex())
+        if (!diskindex.CheckIndex())
         {
             delete iterator;
-            return error("%s : CheckIndex failed at %d", __func__, pindexNew->nHeight);
+            return error("%s : CheckIndex failed at %d", __func__, diskindex.nHeight);
         }
 
-        if (pindexNew->IsProofOfStake())
-            setStakeSeen.insert(make_pair(pindexNew->prevoutStake, pindexNew->nStakeTime));
+        if (diskindex.IsProofOfStake())
+            setStakeSeen.insert(make_pair(diskindex.prevoutStake, diskindex.nStakeTime));
 
-        vSortedByHeight.push_back(make_pair(pindexNew->nHeight, pindexNew));
+        vSortedByHeight.push_back(make_pair(diskindex.nHeight, &diskindex));
         iterator->Next();
     }
 
