@@ -1191,9 +1191,6 @@ public:
         return true;
     }
 
-    static bool IsSuperMajority(int minVersion, const BaseCBlockIndex* pstart,
-                                unsigned int nRequired, unsigned int nToCheck);
-
     bool IsProofOfWork() const
     {
         return !(nFlags & BLOCK_PROOF_OF_STAKE);
@@ -1344,12 +1341,13 @@ public:
         return pbegin[(pend - pbegin) / 2];
    }
 
+   static bool IsSuperMajority(int minVersion, const CDiskBlockIndex* pstart,
+                               unsigned int nRequired, unsigned int nToCheck);
 
     bool IsInMainChain() const
     {
         return (blockIndex.contains(hashNext) || this == pindexBest);
     }
-
 
     std::string ToString() const
     {

@@ -27,7 +27,7 @@ bool CheckProofOfStake(CDiskBlockIndex* pindexPrev, const CTransaction& tx, unsi
 		       uint256& hashProofOfStake, uint256& targetProofOfStake);
 
 bool CheckCoinStakeTimestamp(int nHeight, int64_t nTimeBlock, int64_t nTimeTx);
-unsigned int GetStakeModifierChecksum(const CBlockIndex* pindex);
+unsigned int GetStakeModifierChecksum(const CDiskBlockIndex *pindex);
 bool CheckStakeModifierCheckpoints(int nHeight, unsigned int nStakeModifierChecksum);
 int64_t GetWeight(int64_t nIntervalBeginning, int64_t nIntervalEnd);
 
