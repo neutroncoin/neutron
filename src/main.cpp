@@ -1718,6 +1718,8 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
                         if (fEnforceMnWinner && postponedBlocks < sporkManager.GetSporkValue(SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD))
                         {
+                            Backtrace::output();
+
                             return DoS(nDoS_PMTs, error("%s : Stake does not pay correct masternode, "
                                        "actual=%s required=%s, block=%d\n", __func__, hasBlockPayee ? paidMN.ToString() : "",
                                        fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1));
