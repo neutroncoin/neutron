@@ -1608,6 +1608,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     if (pindex->nMoneySupply == 0)
     {
         LogPrintf("%s : pprev address: %x\n", __func__, pindex->pprev);
+
+        if (pindex->pprev)
+        {
+            LogPrintf("%s : pprev->pprev address: %x\n", __func__, pindex->pprev->pprev);
+            LogPrintf("%s : pprev->nMoneySupply: %s\n", __func__, pindex->pprev->nMoneySupply.ToString());
+        }
+
         LogPrintf("%s : Money supply was calculated to zero\n", __func__);
         Backtrace::output();
     }
