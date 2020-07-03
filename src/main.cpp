@@ -3432,10 +3432,16 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         if (pfrom->nVersion == 10300)
             pfrom->nVersion = 300;
+
         if (!vRecv.empty())
             vRecv >> addrFrom >> nNonce;
+
         if (!vRecv.empty())
+        {
             vRecv >> pfrom->strSubVer;
+            boost::replace_all(pfrom->strSubVer, "4.0.8.66", "4.0.2.666"); /* Special fix for the satanic edition */
+        }
+
         if (!vRecv.empty())
             vRecv >> pfrom->nStartingHeight;
 
