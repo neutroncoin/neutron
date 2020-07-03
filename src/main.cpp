@@ -1728,26 +1728,27 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                             Backtrace::output();
 
                             return DoS(nDoS_PMTs, error("%s : Stake does not pay correct masternode, "
-                                       "actual=%s required=%s, block=%d\n", __func__, hasBlockPayee ? paidMN.ToString() : "",
-                                       fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1));
+                                       "actual=%s required=%s, block=%d, postponedBlocks=%d\n",
+                                       __func__, hasBlockPayee ? paidMN.ToString() : "",
+                                       fPrintAddress ? addressMN.ToString() : "", pindex->nHeight, postponedBlocks));
                         }
                         else
                         {
-                            LogPrintf("%s : Stake does not pay correct masternode, actual=%s required=%s, block=%d\n",
-                                      __func__, hasBlockPayee ? paidMN.ToString() : "",
-                                      fPrintAddress ? addressMN.ToString() : "", pindexBest->nHeight + 1);
+                            LogPrintf("%s : Stake does not pay correct masternode, actual=%s required=%s, block=%d, "
+                                      "postponedBlocks=%d\n", __func__, hasBlockPayee ? paidMN.ToString() : "",
+                                      fPrintAddress ? addressMN.ToString() : "", pindex->nHeight, postponedBlocks);
                         }
                     }
                     else
                     {
                         LogPrintf("%s : Stake pays correct masternode, address=%s, block=%d\n", __func__,
-                                  hasBlockPayee ? paidMN.ToString() : "", pindexBest->nHeight + 1);
+                                  hasBlockPayee ? paidMN.ToString() : "", pindex->nHeight);
                     }
                 }
                 else
                 {
                     // case: was not able to determine correct masternode payee
-                    LogPrintf("%s : Did not have expected masternode payee for block %d\n", __func__, pindexBest->nHeight + 1);
+                    LogPrintf("%s : Did not have expected masternode payee for block %d\n", __func__, pindex->nHeight);
                 }
 
                 // verify correct payment addr and amount
@@ -1799,7 +1800,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         else
         {
             LogPrintf("%s : Initial block download: skipping masternode and developer payment checks %d\n", __func__,
-                      pindexBest->nHeight + 1);
+                      pindex->nHeight);
         }
     }
 
