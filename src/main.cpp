@@ -1457,9 +1457,6 @@ bool CTransaction::ClientConnectInputs()
     return true;
 }
 
-
-
-
 bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
 {
     // Disconnect in reverse order
@@ -1613,6 +1610,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         {
             LogPrintf("%s : pprev->pprev address: %x\n", __func__, pindex->pprev->pprev);
             LogPrintf("%s : pprev->nMoneySupply: %s\n", __func__, FormatMoney(pindex->pprev->nMoneySupply));
+
+            if (pindex->pprev->pprev)
+                LogPrintf("%: pprev->pprev->nMoneySupply: %s\n", __func__, FormatMoney(pindex->pprev->pprev->nMoneySupply));
         }
 
         LogPrintf("%s : Money supply was calculated to zero\n", __func__);
