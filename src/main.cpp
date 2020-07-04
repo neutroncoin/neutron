@@ -1971,12 +1971,12 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, int postponedBlocks)
 
 
 // Called from inside SetBestChain: attaches a block to the new best chain being built
-bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
+bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew, bool reorganize, int postponedBlocks)
 {
     uint256 hash = GetHash();
 
     // Adding to current best branch
-    if (!ConnectBlock(txdb, pindexNew) || !txdb.WriteHashBestChain(hash))
+    if (!ConnectBlock(txdb, pindexNew, reorganize, postponedBlocks) || !txdb.WriteHashBestChain(hash))
     {
         txdb.TxnAbort();
         InvalidChainFound(pindexNew);
@@ -1985,7 +1985,7 @@ bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew)
     }
 
     if (!txdb.TxnCommit())
-        return error("SetBestChain() : TxnCommit failed");
+        return error("%s : TxnCommit failed", __func__);
 
     // Add to current best branch
     if (pindexNew->pprev != NULL)
@@ -2016,7 +2016,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     }
     else if (hashPrevBlock == hashBestChain)
     {
-        if (!SetBestChainInner(txdb, pindexNew))
+        if (!SetBestChainInner(txdb, pindexNew, false))
             return error("%s : SetBestChainInner failed", __func__);
     }
     else
@@ -2040,8 +2040,10 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
 
         LogPrintf("%s : The tail of the new chain is at block %d\n", __func__, pindexNew->nHeight);
 
+        int postponedBlocks = vpindexSecondary.empty() ? -1 : vpindexSecondary.size();
+
         // Switch to new best branch
-        if (!Reorganize(txdb, pindexIntermediate, vpindexSecondary.empty() ? -1 : vpindexSecondary.size()))
+        if (!Reorganize(txdb, pindexIntermediate, postponedBlocks))
         {
             txdb.TxnAbort();
             InvalidChainFound(pindexNew);
@@ -2067,7 +2069,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
             }
 
             // Errors now are not fatal, we still did a reorganisation to a new chain in a valid way
-            if (!block.SetBestChainInner(txdb, pindex))
+            if (!block.SetBestChainInner(txdb, pindex, true, postponedBlocks))
                 break;
         }
     }
@@ -2234,7 +2236,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
 
     if (!pindexNew)
-        return error("AddToBlockIndex() : new CBlockIndex failed");
+        return error("%s : new CBlockIndex failed", __func__);
 
     pindexNew->phashBlock = &hash;
     map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
@@ -2250,7 +2252,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
 
     // ppcoin: compute stake entropy bit for stake modifier
     if (!pindexNew->SetStakeEntropyBit(GetStakeEntropyBit()))
-        return error("AddToBlockIndex() : SetStakeEntropyBit() failed");
+        return error("%s : SetStakeEntropyBit failed", __func__);
 
     // Record proof hash value
     pindexNew->hashProof = hashProof;
@@ -2260,7 +2262,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     bool fGeneratedStakeModifier = false;
 
     if (!ComputeNextStakeModifier(pindexNew->pprev, nStakeModifier, fGeneratedStakeModifier))
-        return error("AddToBlockIndex() : ComputeNextStakeModifier() failed");
+        return error("%s : ComputeNextStakeModifier failed", __func__);
 
     pindexNew->SetStakeModifier(nStakeModifier, fGeneratedStakeModifier);
     pindexNew->nStakeModifierChecksum = GetStakeModifierChecksum(pindexNew);
