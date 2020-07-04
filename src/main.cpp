@@ -2071,7 +2071,7 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
             // Errors now are not fatal, we still did a reorganisation to a new chain in a valid way
             if (!block.SetBestChainInner(txdb, pindex, true, postponedBlocks))
             {
-                pindexNew = pindex;
+                pindexNew = pindex->pprev;
                 break;
             }
         }
