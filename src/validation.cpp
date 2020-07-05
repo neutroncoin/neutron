@@ -6,7 +6,6 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "validation.h"
-
 #include "main.h"
 #include "checkpoints.h"
 #include "timedata.h"
@@ -110,11 +109,14 @@ bool IsInitialBlockDownload()
         nLastUpdate = GetTime();
     }
 
-    if (GetTime() - nLastUpdate < 15 && pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
-        return true;
+    if (GetTime() - nLastUpdate <= MAX_INACTIVITY_IBD)
+    {
+        if (GetTime() - nLastUpdate < 15 && pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
+            return true;
 
-    if (pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
-        return true;
+        if (pindexBest->GetBlockTime() < (GetTime() - nMaxTipAge))
+            return true;
+    }
 
     LogPrintf("[InitialBlockDownload] Leaving InitialBlockDownload (latching to false)\n");
     latchToFalse.store(true, std::memory_order_relaxed);
@@ -122,7 +124,6 @@ bool IsInitialBlockDownload()
     return false;
 }
 
-// Guess how far we are in the verification process at the given block index
 double GuessVerificationProgress(CBlockIndex *pindex)
 {
     if (pindex == NULL || pindexBest == NULL)
