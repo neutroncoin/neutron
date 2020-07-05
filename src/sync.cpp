@@ -1,4 +1,6 @@
 // Copyright (c) 2011-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,7 +19,7 @@ void PrintLockContention(const char* pszName, const char* pszFile, int nLine)
 #endif /* DEBUG_LOCKCONTENTION */
 
 #ifdef DEBUG_LOCKORDER
-//
+
 // Early deadlock detection.
 // Problem being solved:
 //    Thread 1 locks  A, then B, then C
@@ -26,7 +28,6 @@ void PrintLockContention(const char* pszName, const char* pszFile, int nLine)
 // Solution implemented here:
 // Keep track of pairs of locks: (A before B), (A before C), etc.
 // Complain if any thread tries to lock in a different order.
-//
 
 struct CLockLocation
 {
@@ -53,7 +54,6 @@ typedef std::vector< std::pair<void*, CLockLocation> > LockStack;
 static boost::mutex dd_mutex;
 static std::map<std::pair<void*, void*>, LockStack> lockorders;
 static boost::thread_specific_ptr<LockStack> lockstack;
-
 
 static void potential_deadlock_detected(const std::pair<void*, void*>& mismatch, const LockStack& s1, const LockStack& s2)
 {
