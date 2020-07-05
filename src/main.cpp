@@ -3557,7 +3557,6 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         cPeerBlockCounts.input(pfrom->nStartingHeight);
 
-        // ppcoin: ask for pending sync-checkpoint if any
         if (!IsInitialBlockDownload())
             Checkpoints::AskForPendingSyncCheckpoint(pfrom);
 
@@ -3773,21 +3772,37 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
             pindex = pindex->pnext;
         int nLimit = 500;
 
-        if (fDebug) LogPrintf("getblocks %d to %s limit %d from peer=%d\n", (pindex ? pindex->nHeight : -1), hashStop == uint256(0) ? "end" : hashStop.ToString(), nLimit, pfrom->id);
+        if (fDebug)
+        {
+            LogPrintf("%s : getblocks %d to %s limit %d from peer=%d\n", __func__, (pindex ? pindex->nHeight : -1),
+                      hashStop == uint256(0) ? "end" : hashStop.ToString(), nLimit, pfrom->id);
+        }
 
         for (; pindex; pindex = pindex->pnext)
         {
             if (pindex->GetBlockHash() == hashStop)
             {
-                if (fDebug) LogPrintf("getblocks stopping at %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                if (fDebug)
+                {
+                    LogPrintf("%s : getblocks stopping at %d %s\n", __func__, pindex->nHeight,
+                              pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                }
+
                 break;
             }
+
             pfrom->PushInventory(CInv(MSG_BLOCK, pindex->GetBlockHash()));
+
             if (--nLimit <= 0)
             {
                 // When this block is requested, we'll send an inv that'll make them
                 // getblocks the next batch of inventory.
-                if (fDebug) LogPrintf("getblocks stopping at limit %d %s\n", pindex->nHeight, pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                if (fDebug)
+                {
+                    LogPrintf("%s : getblocks stopping at limit %d %s\n", __func__, pindex->nHeight,
+                              pindex->GetBlockHash().ToString().substr(0,20).c_str());
+                }
+
                 pfrom->hashContinue = pindex->GetBlockHash();
                 break;
             }
