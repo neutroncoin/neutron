@@ -1615,8 +1615,10 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
                 LogPrintf("%: pprev->pprev->nMoneySupply: %s\n", __func__, FormatMoney(pindex->pprev->pprev->nMoneySupply));
         }
 
-        LogPrintf("%s : Money supply was calculated to zero\n", __func__);
         Backtrace::output();
+
+        if (!IsInitialBlockDownload())
+            return error("%s : Money supply was calculated to zero\n", __func__);
     }
 
     pindex->nMoneySupply = pindex->nMoneySupply + nValueOut - nValueIn;
