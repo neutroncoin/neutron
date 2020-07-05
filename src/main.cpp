@@ -2091,7 +2091,8 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     // New best block
     hashBestChain = hash;
     pindexBest = pindexNew;
-    pblockindexFBBHLast = NULL;
+    pindexBest->pnext = nullptr; /* Should already be null or with pnext being invalid - effectively disconnectng the rest */
+    pblockindexFBBHLast = nullptr;
     nBestHeight = pindexBest->nHeight;
     nBestChainTrust = pindexNew->nChainTrust;
     nTimeBestReceived = GetTime();
