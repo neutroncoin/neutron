@@ -3385,6 +3385,7 @@ unsigned char pchMessageStart[4] = { 0xb2, 0xd1, 0xf4, 0xa3 };
 
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, int64_t nTimeReceived)
 {
+    static int counter = 0;
     static map<CService, CPubKey> mapReuseKey;
     RandAddSeedPerfmon();
 
@@ -3579,6 +3580,12 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // pfrom->Misbehaving(msg.str(), 1);
         // TODO: Add back the misbehavior when we have made sure the protocol comforms to this requirement
         return false;
+    }
+    else if (counter++ % PUSHGETBLOCKS_RESET_INTERVAL == 0)
+    {
+        pfrom->ResetPushGetBlocks();
+        pfrom->PushGetBlocks(pindexBest, uint256(0));
+        LogPrintf("%s : Force request of new blocks from peer %d\n", __func__, pfrom->id);
     }
     else if (strCommand == NetMsgType::VERACK)
     {

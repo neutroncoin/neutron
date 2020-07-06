@@ -44,6 +44,8 @@ class CTxMemPool;
 #define START_MASTERNODE_PAYMENTS_TESTNET 2000
 #define START_MASTERNODE_PAYMENTS 1432123200
 
+static const int64_t PUSHGETBLOCKS_RESET_INTERVAL = 1024;
+
 static const int64_t MNPAYEE_MAX_BLOCK_AGE = (15 * 60); // 15 minutes
 static const int64_t DARKSEND_COLLATERAL = (25000 * COIN);
 static const int64_t DARKSEND_FEE = (0.0025000  *COIN);

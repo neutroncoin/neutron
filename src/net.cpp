@@ -94,6 +94,12 @@ unsigned short GetListenPort()
     return (unsigned short)(GetArg("-port", GetDefaultPort()));
 }
 
+void CNode::ResetPushGetBlocks()
+{
+    pindexLastGetBlocksBegin = 0;
+    hashLastGetBlocksEnd = 0;
+}
+
 void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
 {
     // Filter out duplicate requests
