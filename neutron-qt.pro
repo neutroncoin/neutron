@@ -93,7 +93,7 @@ message("Building LevelDB...")
         QMAKE_RANLIB = $$replace(QMAKE_STRIP, strip, ranlib)
     }
     LIBS += -lshlwapi
-    genleveldb.commands = TARGET_OS=OS_WINDOWS_CROSSCOMPILE cd $$PWD/src/leveldb && $$QMAKE_MKDIR build && cd build && cmake -DCMAKE_CXX_COMPILER=$$QMAKE_CXX -DMAKE_CC_COMPILER=$$QMAKE_CC-DLEVELDB_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
+    genleveldb.commands = TARGET_OS=OS_WINDOWS_CROSSCOMPILE cd $$PWD/src/leveldb && $$QMAKE_MKDIR build && cd build && cmake -DCMAKE_CXX_COMPILER=$$QMAKE_CXX -DMAKE_CC_COMPILER=$$QMAKE_CC -DLEVELDB_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 }
 genleveldb.target = $$PWD/src/leveldb/build/libleveldb.a
 genleveldb.depends = FORCE
