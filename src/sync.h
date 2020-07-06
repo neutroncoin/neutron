@@ -20,17 +20,17 @@
 /*
 
 CCriticalSection mutex;
-    boost::recursive_timed_mutex mutex;
+    boost::recursive(_timed)_mutex mutex;
 
 LOCK(mutex);
-    boost::unique_lock<boost::recursive_timed_mutex> criticalblock(mutex);
+    boost::unique_lock<boost::recursive(_timed)_mutex> criticalblock(mutex);
 
 LOCK2(mutex1, mutex2);
-    boost::unique_lock<boost::recursive_timed_mutex> criticalblock1(mutex1);
-    boost::unique_lock<boost::recursive_timed_mutex> criticalblock2(mutex2);
+    boost::unique_lock<boost::recursive(_timed)_mutex> criticalblock1(mutex1);
+    boost::unique_lock<boost::recursive(_timed)_mutex> criticalblock2(mutex2);
 
 TRY_LOCK(mutex, name);
-    boost::unique_lock<boost::recursive_timed_mutex> name(mutex, boost::try_to_lock_t);
+    boost::unique_lock<boost::recursive(_timed)_mutex> name(mutex, boost::try_to_lock_t);
 
 ENTER_CRITICAL_SECTION(mutex); // no RAII
     mutex.lock();
@@ -60,15 +60,21 @@ public:
         return PARENT::try_lock();
     }
 
+#ifdef DEBUG_LOCKCONTENTION
     bool try_lock_for(const boost::chrono::duration<long int, boost::ratio<1l, 1000l> >& duration) EXCLUSIVE_TRYLOCKFOR_FUNCTION(true)
     {
         return PARENT::try_lock_for(duration);
     }
+#endif
 };
 
 /** Wrapped boost mutex: supports recursive locking  */
 // TODO: We should move away from using the recursive lock by default.
+#ifdef DEBUG_LOCKCONTENTION
 typedef AnnotatedMixin<boost::recursive_timed_mutex> CCriticalSection;
+#else
+typedef AnnotatedMixin<boost::recursive_mutex> CCriticalSection;
+#endif
 
 /** Wrapped boost mutex: supports waiting but not recursive locking */
 typedef AnnotatedMixin<boost::mutex> CWaitableCriticalSection;
