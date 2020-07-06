@@ -98,6 +98,9 @@ void CNode::ResetPushGetBlocks()
 {
     pindexLastGetBlocksBegin = 0;
     hashLastGetBlocksEnd = 0;
+
+    LOCK(cs_inventory);
+    setInventoryKnown.clear();
 }
 
 void CNode::PushGetBlocks(CBlockIndex* pindexBegin, uint256 hashEnd)
