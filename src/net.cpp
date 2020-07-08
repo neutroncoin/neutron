@@ -2053,7 +2053,7 @@ void ThreadMessageHandler2(void* parg)
         if (fSleep)
         {
             messageHandlerCondition.timed_wait(lock, boost::posix_time::microsec_clock::universal_time() +
-                                               boost::posix_time::milliseconds(250));
+                                               boost::posix_time::milliseconds(50));
         }
     }
 }
