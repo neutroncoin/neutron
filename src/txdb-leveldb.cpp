@@ -33,11 +33,13 @@ leveldb::DB *txdb; // global pointer for LevelDB object instance
 
 static leveldb::Options GetOptions() {
     leveldb::Options options;
-    int nCacheSizeMB = GetArg("-dbcache", 25);
+    int nCacheSizeMB = GetArg("-dbcache", 64);
 
     options.block_cache = leveldb::NewLRUCache(nCacheSizeMB * 1048576);
-    options.filter_policy = leveldb::NewBloomFilterPolicy(10);
-
+    options.filter_policy = leveldb::NewBloomFilterPolicy(16);
+    options.max_open_files =  16384;
+    options.write_buffer_size = 64 * 1024 * 1024;
+    options.reuse_logs = true;
     return options;
 }
 
