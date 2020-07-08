@@ -60,7 +60,6 @@ int64_t nTimeBestReceived = 0;
 
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000
 #define ENFORCE_DEV_PAYMENT_HEIGHT 1200000
-#define ENFORCE_MNWINNERS_HEIGHT   1482200 // Approx. 12/15/2018
 
 bool fEnforceMnWinner = false;
 
