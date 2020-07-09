@@ -276,6 +276,7 @@ public:
 
     uint64_t CalculateScore(uint256 blockHash, CTxIn& vin);
     bool GetWinningMasternode(int nBlockHeight, CTxIn& vinOut);
+    bool AddPastWinningMasternode(std::vector<CTransaction>& vtx, int64_t amount, int height);
     bool AddWinningMasternode(CMasternodePaymentWinner& winner, bool reorganize=false);
     bool ProcessBlock(int nBlockHeight, bool reorganize=false);
     bool ProcessManyBlocks(int nBlockHeight);

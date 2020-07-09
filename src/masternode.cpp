@@ -950,6 +950,32 @@ bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
     return false;
 }
 
+bool CMasternodePayments::AddPastWinningMasternode(std::vector<CTransaction>& vtx, int64_t amount, int height)
+{
+   LOCK(cs_masternodes);
+
+   if (vtx.size() > 1)
+   {
+      for (const CTxOut out : vtx[1].vout)
+      {
+         if (amount == out.nValue)
+         {
+            CMasternodePaymentWinner winner;
+
+            winner.score = -1; /* We can't know this as we dont know the previous state */
+            winner.nBlockHeight = height;
+            winner.payee = out.scriptPubKey;
+
+            vWinning.erase(height);
+            vWinning.insert(make_pair(height, winner));
+            return true;
+         }
+      }
+   }
+
+   return false;
+}
+
 bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerIn, bool reorganize)
 {
     LOCK(cs_masternodes);
