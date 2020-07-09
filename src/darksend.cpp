@@ -692,7 +692,7 @@ bool CDarksendQueue::CheckSignature()
 void ThreadCheckDarkSend(CConnman& connman)
 {
     if (fDebug)
-        LogPrintf("ThreadCheckDarkSend: Started\n");
+        LogPrintf("%s : Started\n", __func__);
 
     static bool fOneThread;
 
@@ -725,7 +725,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                     // segfaults from this code without the cs_main lock.
 
                     if (fDebug)
-                        LogPrintf("ThreadCheckDarkSend: Check timeout\n");
+                        LogPrintf("%s : Check timeout\n", __func__);
 
                     mnodeman.CheckAndRemove();
                     masternodePayments.CleanPaymentList();
@@ -733,7 +733,7 @@ void ThreadCheckDarkSend(CConnman& connman)
             }
 
             if (fDebug)
-                LogPrintf("ThreadCheckDarkSend::debug %d, %d\n", nTick % 5, requestedMasterNodeList);
+                LogPrintf("%s : %d, %d\n", nTick % 5, __func__, requestedMasterNodeList);
 
             // every 5 ticks we try to send some requests (roughly 2.5 seconds)
             if (nTick % 5 == 0)
@@ -751,7 +751,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                 }
 
                 if (fDebug)
-                    LogPrintf("ThreadCheckDarkSend: Asking peers for sporks and masternode list\n");
+                    LogPrintf("%s : Asking peers for sporks and masternode list\n", __func__);
 
                 int sentRequests = 0;
 
@@ -779,7 +779,7 @@ void ThreadCheckDarkSend(CConnman& connman)
                     }
 
                     if (fDebug)
-                        LogPrintf("ThreadCheckDarkSend: Synced with peer=%s\n", pnode->id);
+                        LogPrintf("%s : Synced with peer=%s\n", __func__, pnode->id);
 
                     requestedMasterNodeList++;
 
@@ -793,16 +793,16 @@ void ThreadCheckDarkSend(CConnman& connman)
                     {
                         waitMnSyncStarted = true;
                         nMnSyncWaitTime = GetTime() + 15;
-                        LogPrintf("ThreadCheckDarkSend: Started waiting for mnsync");
+                        LogPrintf("%s : Started waiting for mnsync", __func__);
                     }
 
-                    LogPrintf("ThreadCheckDarkSend: waiting... requested=%d, enabled=%d, time_remaining=%d\n",
+                    LogPrintf("%s : waiting... requested=%d, enabled=%d, time_remaining=%d\n", __func__,
                               requestedMasterNodeList, mnodeman.CountEnabled(), nMnSyncWaitTime-GetTime());
 
                     if (waitMnSyncStarted && (GetTime() >= nMnSyncWaitTime))
                     {
-                        LogPrintf("ThreadCheckDarkSend: complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n",
-                                  requestedMasterNodeList, mnodeman.CountEnabled());
+                        LogPrintf("%s : complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n",
+                                  __func__, requestedMasterNodeList, mnodeman.CountEnabled());
 
                         // calculate a few masternode winners first
                         masternodePayments.ProcessBlock(pindexBest->nHeight);
