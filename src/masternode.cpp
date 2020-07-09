@@ -924,13 +924,13 @@ bool CMasternodePayments::Sign(CMasternodePaymentWinner& winner)
 
 bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 {
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    LOCK(cs_masternodes);
+    std::map<int, CMasternodePaymentWinner>::iterator winner = vWinning.find(nBlockHeight);
+
+    if (winner != vWinning.end() && winner->second.nBlockHeight == nBlockHeight)
     {
-        if (winner.nBlockHeight == nBlockHeight)
-        {
-            payee = winner.payee;
-            return true;
-        }
+        payee = winner->second.payee;
+        return true;
     }
 
     return false;
@@ -938,13 +938,13 @@ bool CMasternodePayments::GetBlockPayee(int nBlockHeight, CScript& payee)
 
 bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
 {
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    LOCK(cs_masternodes);
+    std::map<int, CMasternodePaymentWinner>::iterator winner = vWinning.find(nBlockHeight);
+
+    if (winner != vWinning.end() && winner->second.nBlockHeight == nBlockHeight)
     {
-        if(winner.nBlockHeight == nBlockHeight)
-        {
-            vinOut = winner.vin;
-            return true;
-        }
+        vinOut = winner->second.vin;
+        return true;
     }
 
     return false;
@@ -952,37 +952,30 @@ bool CMasternodePayments::GetWinningMasternode(int nBlockHeight, CTxIn& vinOut)
 
 bool CMasternodePayments::AddWinningMasternode(CMasternodePaymentWinner& winnerIn, bool reorganize)
 {
-    // check to see if there is already a winner set for this block.
-    // if a winner is set, compare scores and update if new winner is higher score
-    bool foundBlock = false;
+    LOCK(cs_masternodes);
+    std::map<int, CMasternodePaymentWinner>::iterator winner = vWinning.find(winnerIn.nBlockHeight);
 
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    if (winner != vWinning.end() && winner->second.nBlockHeight == winnerIn.nBlockHeight)
     {
-        if (winner.nBlockHeight == winnerIn.nBlockHeight)
+        if (reorganize || winner->second.score <= winnerIn.score)
         {
-            foundBlock = true;
+            LogPrintf("%s : new masternode winner %s - replacing\n", __func__,
+                      reorganize ? "during reorganize" : "has an equal or higher score");
 
-            if (reorganize || winner.score <= winnerIn.score)
-            {
-                LogPrintf("%s : new masternode winner %s - replacing\n", __func__,
-                          reorganize ? "during reorganize" : "has an equal or higher score");
+            winner->second.score = winnerIn.score;
+            winner->second.vin = winnerIn.vin;
+            winner->second.payee = winnerIn.payee;
+            winner->second.vchSig = winnerIn.vchSig;
 
-                winner.score = winnerIn.score;
-                winner.vin = winnerIn.vin;
-                winner.payee = winnerIn.payee;
-                winner.vchSig = winnerIn.vchSig;
-
-                return true;
-            }
-            else
-                LogPrintf("%s : new masternode winner has a lower score - ignoring\n", __func__);
+            return true;
         }
+        else
+            LogPrintf("%s : new masternode winner has a lower score - ignoring\n", __func__);
     }
-
-    if (!foundBlock)
+    else
     {
         LogPrintf("%s : adding block %d\n", __func__, winnerIn.nBlockHeight);
-        vWinning.push_back(winnerIn);
+        vWinning.insert(make_pair(winnerIn.nBlockHeight, winnerIn));
         mapSeenMasternodeVotes.insert(make_pair(winnerIn.GetHash(), winnerIn));
 
         return true;
@@ -995,25 +988,17 @@ void CMasternodePayments::CleanPaymentList()
 {
     LOCK(cs_masternodes);
 
-    if (pindexBest == NULL)
+    if (pindexBest == nullptr)
         return;
 
     int nLimit = std::max(((int) vecMasternodes.size()) * 2, 1000);
-    vector<CMasternodePaymentWinner>::iterator it;
 
-    for (it = vWinning.begin(); it < vWinning.end(); it++)
+    for (int i = 0; i < (int) vWinning.size() - nLimit; i++)
     {
-        if (pindexBest->nHeight - (*it).nBlockHeight > nLimit)
-        {
-            if (fDebug)
-            {
-                LogPrintf("%s : removing old masternode payment - block %d\n",
-                          __func__, (*it).nBlockHeight);
-            }
+       int height = pindexBest->nHeight - vWinning.size() + i;
 
-            vWinning.erase(it);
-            break;
-        }
+       if (vWinning.erase(height) > 0 && fDebug)
+           LogPrintf("%s : Removing old masternode payment block %d\n", __func__, height);
     }
 }
 
@@ -1072,17 +1057,6 @@ bool CMasternodePayments::ProcessBlock(int nBlockHeight, bool reorganize)
     LogPrintf("%s : winner, payee=%s, nBlockHeight=%d\n", __func__,
               address2.ToString(), nBlockHeight);
 
-    // LogPrintf("CMasternodePayments::ProcessBlock -- Signing Winner\n");
-    // if (Sign(winner)) {
-    //     LogPrintf("CMasternodePayments::ProcessBlock -- AddWinningMasternode\n");
-
-    //     if (AddWinningMasternode(winner)) {
-    //         LogPrintf("CMasternodePayments::ProcessBlock -- Relay Winner\n");
-    //         Relay(winner);
-    //         return true;
-    //     }
-    // }
-
     if (AddWinningMasternode(winner, reorganize))
     {
         if (enabled)
@@ -1129,13 +1103,15 @@ void CMasternodePayments::Sync(CNode* node)
 {
     int a = 0;
 
-    BOOST_FOREACH(CMasternodePaymentWinner& winner, vWinning)
+    for (auto winner : vWinning)
     {
-        if (winner.nBlockHeight >= pindexBest->nHeight-10 && winner.nBlockHeight <= pindexBest->nHeight + 20)
-            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner, a);
+        if (winner.second.nBlockHeight >= pindexBest->nHeight - 10 &&
+            winner.second.nBlockHeight <= pindexBest->nHeight + 20)
+        {
+            node->PushMessage(NetMsgType::MASTERNODEPAYMENTVOTE, winner.second, a);
+        }
     }
 }
-
 
 bool CMasternodePayments::SetPrivKey(std::string strPrivKey)
 {
@@ -1272,5 +1248,5 @@ CMasternode* CMasternodeMan::Find(const CTxIn& vin)
             return &mn;
     }
 
-    return NULL;
+    return nullptr;
 }

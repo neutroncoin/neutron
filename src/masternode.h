@@ -20,8 +20,11 @@
 #include "main.h"
 #include "timedata.h"
 #include "script.h"
-#include <boost/lexical_cast.hpp>
 #include "spork.h"
+
+#include <boost/lexical_cast.hpp>
+#include <map>
+#include <vector>
 
 class CMasternode;
 class CMasternodePayments;
@@ -239,15 +242,10 @@ public:
 
 };
 
-//
-// Masternode Payments Class
-// Keeps track of who should get paid for which blocks
-//
-
 class CMasternodePayments
 {
 private:
-    std::vector<CMasternodePaymentWinner> vWinning;
+    std::map<int, CMasternodePaymentWinner> vWinning;
     int nSyncedFromPeer;
     std::string strMasterPrivKey;
     std::string strTestPubKey;
@@ -255,7 +253,6 @@ private:
     bool enabled;
 
 public:
-
     CMasternodePayments() {
       if (sporkManager.IsSporkActive(SPORK_9_PROTOCOL_V3_ENFORCEMENT)){
         strMainPubKey = "0452218a26fde81130c8b4930c897c19d21c4bab6ad03f17f522376500b0b86ce547e3975fbe886bea7583a3b05c6f1bb4f303f141aa282da1cf35e9cb71bbf279";
