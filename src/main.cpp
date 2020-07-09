@@ -725,10 +725,6 @@ bool AcceptableInputs(CTxMemPool& pool, const CTransaction &txo, bool fLimitFree
         }
     }
 
-    // LogPrintf("AcceptableInputs : accepted %s (poolsz %u)\n",
-    //           hash.ToString().c_str(),
-    //           pool.mapTx.size());
-
     return true;
 }
 
@@ -1807,6 +1803,9 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         }
         else
         {
+            masternodePayments.AddPastWinningMasternode(vtx,
+                    GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward), pindex->nHeight);
+
             LogPrintf("%s : Initial block download: skipping masternode and developer payment checks %d\n", __func__,
                       pindex->nHeight);
         }
