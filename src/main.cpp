@@ -3105,21 +3105,27 @@ bool LoadExternalBlockFile(FILE* fileIn)
     int nLoaded = 0;
     {
         LOCK(cs_main);
+
         try {
             CAutoFile blkdat(fileIn, SER_DISK, CLIENT_VERSION);
             unsigned int nPos = 0;
+
             while (nPos != (unsigned int)-1 && blkdat.good() && !fRequestShutdown)
             {
                 unsigned char pchData[65536];
+
                 do {
                     fseek(blkdat, nPos, SEEK_SET);
                     int nRead = fread(pchData, 1, sizeof(pchData), blkdat);
+
                     if (nRead <= 8)
                     {
                         nPos = (unsigned int)-1;
                         break;
                     }
+
                     void* nFind = memchr(pchData, pchMessageStart[0], nRead+1-sizeof(pchMessageStart));
+
                     if (nFind)
                     {
                         if (memcmp(nFind, pchMessageStart, sizeof(pchMessageStart))==0)
@@ -3219,10 +3225,6 @@ string GetWarnings(string strFor)
     assert(!"GetWarnings() : invalid parameter");
     return "error";
 }
-
-
-
-
 
 bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 {
