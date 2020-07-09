@@ -1660,6 +1660,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         // Check block rewards
         if (!IsInitialBlockDownload())
         {
+            if (isMasternodeListSynced)
+            {
+                masternodePayments.ProcessBlock(pindex->nHeight + 1);
+                masternodePayments.ProcessBlock(pindex->nHeight + 2);
+                masternodePayments.ProcessBlock(pindex->nHeight + 3);
+            }
+
             CAmount nRequiredMnPmt = GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward);
             int64_t nRequiredDevPmt = GetDeveloperPayment(nCalculatedStakeReward);
             int64_t nRequiredStakePmt = nCalculatedStakeReward - nRequiredMnPmt - nRequiredDevPmt;
@@ -1832,14 +1839,6 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
     // Watch for transactions paying to me
     BOOST_FOREACH(CTransaction& tx, vtx)
         SyncWithWallets(tx, this, true);
-
-    if (!IsInitialBlockDownload())
-    {
-        masternodePayments.ProcessBlock(pindex->nHeight + 1);
-        masternodePayments.ProcessBlock(pindex->nHeight + 2);
-        masternodePayments.ProcessBlock(pindex->nHeight + 3);
-        // masternodePayments.ProcessManyBlocks(pindex->nHeight);
-    }
 
     return true;
 }
@@ -3129,20 +3128,26 @@ bool LoadExternalBlockFile(FILE* fileIn)
                             nPos += ((unsigned char*)nFind - pchData) + sizeof(pchMessageStart);
                             break;
                         }
+
                         nPos += ((unsigned char*)nFind - pchData) + 1;
                     }
                     else
                         nPos += sizeof(pchData) - sizeof(pchMessageStart) + 1;
-                } while(!fRequestShutdown);
+                }
+                while(!fRequestShutdown);
+
                 if (nPos == (unsigned int)-1)
                     break;
+
                 fseek(blkdat, nPos, SEEK_SET);
                 unsigned int nSize;
                 blkdat >> nSize;
+
                 if (nSize > 0 && nSize <= MAX_BLOCK_SIZE)
                 {
                     CBlock block;
                     blkdat >> block;
+
                     if (ProcessNewBlock(NULL,&block))
                     {
                         nLoaded++;
@@ -3151,11 +3156,12 @@ bool LoadExternalBlockFile(FILE* fileIn)
                 }
             }
         }
-        catch (std::exception &e) {
-            LogPrintf("%s() : Deserialize or I/O error caught during load\n",
-                   __PRETTY_FUNCTION__);
+        catch (std::exception &e)
+        {
+            LogPrintf("%s : Deserialize or I/O error caught during load\n", __func__);
         }
     }
+
     LogPrintf("Loaded %i blocks from external file in %dms\n", nLoaded, GetTimeMillis() - nStart);
     return nLoaded > 0;
 }
