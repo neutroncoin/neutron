@@ -3219,15 +3219,6 @@ string GetWarnings(string strFor)
 
 
 
-
-
-
-//////////////////////////////////////////////////////////////////////////////
-//
-// Messages
-//
-
-
 bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 {
     switch (inv.type)
@@ -4306,14 +4297,22 @@ bool ProcessMessages(CNode* pfrom)
 
 bool SendMessages(CNode* pto, bool fSendTrickle)
 {
+    ENTER_CRITICAL_SECTION(cs_vNodes);
     TRY_LOCK(cs_main, lockMain);
+    TRY_LOCK(pto->cs_vSend, lockSend);
 
-    if (!lockMain)
+    if (!lockMain || !lockSend)
+    {
+        LEAVE_CRITICAL_SECTION(cs_vNodes);
         return true;
+    }
 
     // Dont send anything until we get their version message
     if (pto->nVersion == 0)
+    {
+        LEAVE_CRITICAL_SECTION(cs_vNodes);
         return true;
+    }
 
     // Keep-alive ping. We send a nonce of zero because we don't use it anywhere right now
     if (pto->nLastSend && GetTime() - pto->nLastSend > 30 * 60 && pto->vSendMsg.empty())
@@ -4335,8 +4334,6 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
     if (!IsInitialBlockDownload() && (GetTime() - nLastRebroadcast > 24 * 60 * 60))
     {
         {
-            LOCK(cs_vNodes);
-
             BOOST_FOREACH(CNode* pnode, vNodes)
             {
                 // Periodically clear setAddrKnown to allow refresh broadcasts
@@ -4356,6 +4353,8 @@ bool SendMessages(CNode* pto, bool fSendTrickle)
 
         nLastRebroadcast = GetTime();
     }
+
+    LEAVE_CRITICAL_SECTION(cs_vNodes);
 
     // Message: addr
     if (fSendTrickle)

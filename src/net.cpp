@@ -2030,10 +2030,9 @@ void ThreadMessageHandler2(void* parg)
             // Send messages
             if (!fShutdown)
             {
-                TRY_LOCK(pnode->cs_vSend, lockSend);
                 TRY_LOCK(cs_Shutdown, lockShutdown);
 
-                if (lockSend && lockShutdown)
+                if (lockShutdown)
                     SendMessages(pnode, pnode == pnodeTrickle);
             }
             else
