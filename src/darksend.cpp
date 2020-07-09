@@ -735,8 +735,8 @@ void ThreadCheckDarkSend(CConnman& connman)
             if (fDebug)
                 LogPrintf("%s : %d, %d\n", nTick % 5, __func__, requestedMasterNodeList);
 
-            // every 5 ticks we try to send some requests (roughly 2.5 seconds)
-            if (nTick % 5 == 0)
+            // every 10 ticks we try to send some requests (roughly 5 seconds)
+            if (nTick % 10 == 0)
             {
                 LOCK(cs_vNodes);
 
