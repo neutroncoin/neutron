@@ -1253,37 +1253,32 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
 {
     // Find method
     const CRPCCommand *pcmd = tableRPC[request.strMethod];
+
     if (!pcmd)
         throw JSONRPCError(RPC_METHOD_NOT_FOUND, "Method not found");
 
     // Observe safe mode
     string strWarning = GetWarnings("rpc");
-    if (strWarning != "" && !GetBoolArg("-disablesafemode") &&
-        !pcmd->okSafeMode)
+
+    if (strWarning != "" && !GetBoolArg("-disablesafemode") && !pcmd->okSafeMode)
         throw JSONRPCError(RPC_FORBIDDEN_BY_SAFE_MODE, string("Safe mode: ") + strWarning);
 
-    LogPrintf("RPC: execute - %s\n", request.strMethod);
+    if (fDebug)
+        LogPrintf("%s : [RPC] - %s\n", __func__, request.strMethod);
 
     try
     {
-        // Execute
         if (pcmd->unlocked)
             return pcmd->actor(request.params, false);
+        else
+        {
+            LOCK(cs_main);
 
-            // if (request.params.isObject()) {
-            //     return pcmd->actor(transformNamedArguments(request, pcmd->argNames).params, false);
-            // } else {
-            //     return pcmd->actor(request.params, false);
-            // }
-        else {
-            LOCK2(cs_main, pwalletMain->cs_wallet);
-            return pcmd->actor(request.params, false);
+            ENTER_CRITICAL_SECTION(pwalletMain->cs_wallet);
+            auto ret = pcmd->actor(request.params, false);
+            LEAVE_CRITICAL_SECTION(pwalletMain->cs_wallet);
 
-            // if (request.params.isObject()) {
-            //     return pcmd->actor(transformNamedArguments(request, pcmd->argNames).params, false);
-            // } else {
-            //     return pcmd->actor(request.params, false);
-            // }
+            return ret;
         }
     }
     catch (std::exception& e)
@@ -1297,9 +1292,9 @@ std::vector<std::string> CRPCTable::listCommands() const
     std::vector<std::string> commandList;
     typedef std::map<std::string, const CRPCCommand*> commandMap;
 
-    std::transform( mapCommands.begin(), mapCommands.end(),
-                   std::back_inserter(commandList),
-                   boost::bind(&commandMap::value_type::first,_1) );
+    std::transform(mapCommands.begin(), mapCommands.end(), std::back_inserter(commandList),
+                   boost::bind(&commandMap::value_type::first,_1));
+
     return commandList;
 }
 
@@ -1308,8 +1303,9 @@ bool CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
     if (IsRPCRunning())
         return false;
 
-    // don't allow overwriting for now
+    // Don't allow overwriting for now
     std::map<std::string, const CRPCCommand*>::const_iterator it = mapCommands.find(name);
+
     if (it != mapCommands.end())
         return false;
 
@@ -1319,11 +1315,13 @@ bool CRPCTable::appendCommand(const std::string& name, const CRPCCommand* pcmd)
 
 UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 {
-    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "") {
+    if (mapArgs["-rpcuser"] == "" && mapArgs["-rpcpassword"] == "")
+    {
         LogPrintf(
             "You must set rpcpassword=<password> in the configuration file:\n%s\n"
               "If the file does not exist, create it with owner-readable-only file permissions.",
                 GetConfigFile().string().c_str());
+
         throw runtime_error(strprintf(
             _("You must set rpcpassword=<password> in the configuration file:\n%s\n"
               "If the file does not exist, create it with owner-readable-only file permissions."),
@@ -1338,6 +1336,7 @@ UniValue CallRPC(const std::string& strMethod, const UniValue& params)
     asio::ssl::stream<asio::ip::tcp::socket> sslStream(io_service, context);
     SSLIOStreamDevice<asio::ip::tcp> d(sslStream, fUseSSL);
     iostreams::stream< SSLIOStreamDevice<asio::ip::tcp> > stream(d);
+
     if (!d.connect(GetArg("-rpcconnect", "127.0.0.1"), GetArg("-rpcport", itostr(GetDefaultRPCPort()))))
         throw runtime_error("couldn't connect to server");
 
@@ -1355,6 +1354,7 @@ UniValue CallRPC(const std::string& strMethod, const UniValue& params)
     map<string, string> mapHeaders;
     string strReply;
     int nStatus = ReadHTTP(stream, mapHeaders, strReply);
+
     if (nStatus == HTTP_UNAUTHORIZED)
         throw runtime_error("incorrect rpcuser or rpcpassword (authorization failed)");
     else if (nStatus >= 400 && nStatus != HTTP_BAD_REQUEST && nStatus != HTTP_NOT_FOUND && nStatus != HTTP_INTERNAL_SERVER_ERROR)
@@ -1364,9 +1364,12 @@ UniValue CallRPC(const std::string& strMethod, const UniValue& params)
 
     // Parse reply
     UniValue valReply(UniValue::VSTR);
+
     if (!valReply.read(strReply))
         throw runtime_error("couldn't parse reply from server");
+
     const UniValue& reply = valReply.get_obj();
+
     if (reply.empty())
         throw runtime_error("expected reply to have result, error and id properties");
 
@@ -1519,22 +1522,26 @@ private:
 public:
     CRPCConvertTable();
 
-    bool convert(const std::string& method, int idx) {
+    bool convert(const std::string& method, int idx)
+    {
         return (members.count(std::make_pair(method, idx)) > 0);
     }
-    bool convert(const std::string& method, const std::string& name) {
+
+    bool convert(const std::string& method, const std::string& name)
+    {
         return (membersByName.count(std::make_pair(method, name)) > 0);
     }
 };
 
 CRPCConvertTable::CRPCConvertTable()
 {
-    const unsigned int n_elem =
-        (sizeof(vRPCConvertParams) / sizeof(vRPCConvertParams[0]));
+    const unsigned int n_elem = sizeof(vRPCConvertParams) / sizeof(vRPCConvertParams[0]);
 
-    for (unsigned int i = 0; i < n_elem; i++) {
+    for (unsigned int i = 0; i < n_elem; i++)
+    {
         members.insert(std::make_pair(vRPCConvertParams[i].methodName,
                                       vRPCConvertParams[i].paramIdx));
+
         membersByName.insert(std::make_pair(vRPCConvertParams[i].methodName,
                                             vRPCConvertParams[i].paramName));
     }
@@ -1548,9 +1555,10 @@ static CRPCConvertTable rpcCvtTable;
 UniValue ParseNonRFCJSONValue(const std::string& strVal)
 {
     UniValue jVal;
-    if (!jVal.read(std::string("[")+strVal+std::string("]")) ||
-        !jVal.isArray() || jVal.size()!=1)
+
+    if (!jVal.read(std::string("[")+strVal+std::string("]")) || !jVal.isArray() || jVal.size()!=1)
         throw std::runtime_error(std::string("Error parsing JSON:")+strVal);
+
     return jVal[0];
 }
 
@@ -1558,13 +1566,17 @@ UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::s
 {
     UniValue params(UniValue::VARR);
 
-    for (unsigned int idx = 0; idx < strParams.size(); idx++) {
+    for (unsigned int idx = 0; idx < strParams.size(); idx++)
+    {
         const std::string& strVal = strParams[idx];
 
-        if (!rpcCvtTable.convert(strMethod, idx)) {
+        if (!rpcCvtTable.convert(strMethod, idx))
+        {
             // insert string value directly
             params.push_back(strVal);
-        } else {
+        }
+        else
+        {
             // parse string as JSON, insert bool/number/object/etc. value
             params.push_back(ParseNonRFCJSONValue(strVal));
         }
@@ -1577,19 +1589,23 @@ UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<s
 {
     UniValue params(UniValue::VOBJ);
 
-    for (const std::string &s: strParams) {
+    for (const std::string &s: strParams)
+    {
         size_t pos = s.find("=");
-        if (pos == std::string::npos) {
+
+        if (pos == std::string::npos)
             throw(std::runtime_error("No '=' in named argument '"+s+"', this needs to be present for every argument (even if it is empty)"));
-        }
 
         std::string name = s.substr(0, pos);
         std::string value = s.substr(pos+1);
 
-        if (!rpcCvtTable.convert(strMethod, name)) {
+        if (!rpcCvtTable.convert(strMethod, name))
+        {
             // insert string value directly
             params.pushKV(name, value);
-        } else {
+        }
+        else
+        {
             // parse string as JSON, insert bool/number/object/etc. value
             params.pushKV(name, ParseNonRFCJSONValue(value));
         }
@@ -1603,6 +1619,7 @@ int CommandLineRPC(int argc, char *argv[])
 {
     std::string strPrint;
     int nRet = 0;
+
     try
     {
         // Skip switches
@@ -1615,6 +1632,7 @@ int CommandLineRPC(int argc, char *argv[])
         // Method
         if (argc < 2)
             throw runtime_error("too few parameters");
+
         string strMethod = argv[1];
 
         // Parameters default to strings
@@ -1660,11 +1678,9 @@ int CommandLineRPC(int argc, char *argv[])
     {
         fprintf((nRet == 0 ? stdout : stderr), "%s\n", strPrint.c_str());
     }
+
     return nRet;
 }
-
-
-
 
 #ifdef TEST
 int main(int argc, char *argv[])
@@ -1690,20 +1706,26 @@ int main(int argc, char *argv[])
             return CommandLineRPC(argc, argv);
         }
     }
-    catch (std::exception& e) {
+    catch (std::exception& e)
+    {
         PrintException(&e, "main()");
-    } catch (...) {
+    }
+    catch (...)
+    {
         PrintException(NULL, "main()");
     }
+
     return 0;
 }
 #endif
 
-std::string HelpExampleCli(string methodname, string args){
+std::string HelpExampleCli(string methodname, string args)
+{
     return "> neutrond " + methodname + " " + args + "\n";
 }
 
-std::string HelpExampleRpc(string methodname, string args){
+std::string HelpExampleRpc(string methodname, string args)
+{
     return "> curl --user myusername --data-binary '{\"jsonrpc\": \"1.0\", \"id\":\"curltest\", "
         "\"method\": \"" + methodname + "\", \"params\": [" + args + "] }' -H 'content-type: text/plain;' http://127.0.0.1:32001/\n";
 }

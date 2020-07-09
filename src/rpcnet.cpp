@@ -13,6 +13,7 @@
 #include "walletdb.h"
 #include "spork.h"
 #include "univalue.h"
+#include "init.h"
 
 UniValue getconnectioncount(const UniValue& params, bool fHelp)
 {
@@ -34,7 +35,11 @@ UniValue getpeerinfo(const UniValue& params, bool fHelp)
                             "network node as a json array of objects.");
     }
 
+    // Shuffle locks around to avoid deadlock
+    LEAVE_CRITICAL_SECTION(pwalletMain->cs_wallet);
     LOCK(cs_vNodes);
+    ENTER_CRITICAL_SECTION(pwalletMain->cs_wallet);
+
     UniValue ret(UniValue::VARR);
 
     BOOST_FOREACH(CNode *pnode, vNodes)
