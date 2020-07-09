@@ -789,10 +789,10 @@ void ThreadCheckDarkSend(CConnman& connman)
 
                 if (!isMasternodeListSynced)
                 {
-                    if (!waitMnSyncStarted and (requestedMasterNodeList > 3 && mnodeman.CountEnabled() > 3))
+                    if (!waitMnSyncStarted && (requestedMasterNodeList > 5 && mnodeman.CountEnabled() > 3))
                     {
                         waitMnSyncStarted = true;
-                        nMnSyncWaitTime = GetTime() + 15;
+                        nMnSyncWaitTime = GetTime() + 20;
                         LogPrintf("%s : Started waiting for mnsync", __func__);
                     }
 
