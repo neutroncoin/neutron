@@ -1,5 +1,6 @@
 // Copyright (c) 2014-2015 The Darkcoin developers
 // Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -10,6 +11,7 @@
 #include "utiltime.h"
 #include "masternode.h"
 #include "ui_interface.h"
+#include "txdb.h"
 
 #include <openssl/rand.h>
 #include <boost/algorithm/string/replace.hpp>
@@ -804,10 +806,49 @@ void ThreadCheckDarkSend(CConnman& connman)
                         LogPrintf("%s : complete... setting isMasternodeListSynced - requested=%d, enabled=%d\n",
                                   __func__, requestedMasterNodeList, mnodeman.CountEnabled());
 
-                        // calculate a few masternode winners first
+                        // Calculate a few masternode winners first
                         masternodePayments.ProcessBlock(pindexBest->nHeight);
                         masternodePayments.ProcessBlock(pindexBest->nHeight + 1);
                         masternodePayments.ProcessBlock(pindexBest->nHeight + 2);
+
+                        // ... then also fill in previous winners on this chain
+                        CBlockIndex *pindex = pindexBest;
+                        CTxDB txdb("r");
+
+                        for (int i = 0; i < 30; i++)
+                        {
+                            CBlock block;
+                            pindex = pindex->pprev;
+
+                            if (block.ReadFromDisk(pindex->nFile, pindex->nBlockPos, true))
+                            {
+                                uint64_t nCoinAge;
+
+                                if (block.vtx[1].GetCoinAge(txdb, nCoinAge))
+                                {
+
+                                    map<uint256, CTxIndex> mapQueuedChanges;
+                                    int64_t nFees = 0;
+                                    int64_t nValueIn = 0;
+                                    int64_t nValueOut = 0;
+                                    int64_t nStakeReward = 0;
+
+                                    if (block.CalculateBlockAmounts(txdb, pindex, mapQueuedChanges, nFees, nValueIn,
+                                                                    nValueOut, nStakeReward, true, true, false))
+
+                                    {
+                                        int64_t nCalculatedStakeReward = GetProofOfStakeReward(
+                                              nCoinAge, nFees, pindex->nHeight
+                                        );
+
+                                        masternodePayments.AddPastWinningMasternode(block.vtx,
+                                            GetMasternodePayment(pindex->nHeight, nCalculatedStakeReward),
+                                            pindex->nHeight
+                                        );
+                                    }
+                                }
+                            }
+                        }
 
                         isMasternodeListSynced = true;
                     }
