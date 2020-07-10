@@ -86,7 +86,7 @@ LIBS += $$PWD/src/leveldb/build/libleveldb.a
 SOURCES += src/txdb-leveldb.cpp
 message("Building LevelDB...")
 !win32 {
-    genleveldb.commands = cd $$PWD/src/leveldb && $$QMAKE_MKDIR build && cd build && cmake -DCMAKE_AR=$$QMAKE_AR -DCMAKE_CXX_COMPILER=$$QMAKE_CXX -DLEVELDB_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
+   genleveldb.commands = cd $$PWD/src/leveldb && $$QMAKE_MKDIR build && cd build && cmake -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DCMAKE_AR=$$system("which $$first(QMAKE_AR)") -DCMAKE_LINKER=$$system("which $$QMAKE_LINK") -DCMAKE_RANLIB=$$system("which $$QMAKE_RANLIB") -DCMAKE_CXX_COMPILER=$$QMAKE_CXX -DLEVELDB_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release .. && cmake --build .
 } else {
     # make an educated guess about what the ranlib command is called
     isEmpty(QMAKE_RANLIB) {
