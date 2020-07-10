@@ -37,7 +37,10 @@ ifndef ENABLE_WALLET
     override ENABLE_WALLET = 1
 endif
 ifneq (${ENABLE_WALLET}, 0)
+    $(info Wallet enabled)
     DEFS += -DENABLE_WALLET
+else
+    $(info Wallet disabled)
 endif
 
 LIBS= -dead_strip
@@ -52,6 +55,7 @@ LIBS += \
  $(BOOST_LIB_PATH)/libboost_filesystem-mt.a \
  $(BOOST_LIB_PATH)/libboost_program_options-mt.a \
  $(BOOST_LIB_PATH)/libboost_thread-mt.a \
+ $(BOOST_LIB_PATH)/libboost_chrono-mt.a \
  $(OPENSSL_LIB_PATH)/libssl.a \
  $(OPENSSL_LIB_PATH)/libcrypto.a
 else
@@ -68,7 +72,7 @@ LIBS += \
  -lz
 endif
 
-DEFS=-DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE -D__USE_MINGW_ANSI_STDIO
+DEFS += -DMAC_OSX -DMSG_NOSIGNAL=0 -DBOOST_SPIRIT_THREADSAFE -D__USE_MINGW_ANSI_STDIO
 
 ifdef RELEASE
 # Compile for maximum compatibility and smallest size.
@@ -87,6 +91,7 @@ OBJS= \
     obj/addrdb.o \
     obj/addrman.o \
     obj/alert.o \
+    obj/backtrace.o \
     obj/bitcoinrpc.o \
     obj/checkpoints.o \
     obj/clientversion.o \
@@ -152,16 +157,16 @@ endif
 all: neutrond
 
 # LevelDB library
-LIBS += $(CURDIR)/leveldb/libleveldb.a $(CURDIR)/leveldb/libmemenv.a
+LIBS += $(CURDIR)/leveldb/build/libleveldb.a
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/include)
 DEFS += $(addprefix -I,$(CURDIR)/leveldb/helpers)
 OBJS += obj/txdb-leveldb.o
-leveldb/libleveldb.a:
-	@echo "Building LevelDB ..." && cd leveldb && $(MAKE) CC=$(CC) CXX=$(CXX) OPT="$(CFLAGS)" libleveldb.a libmemenv.a && cd ..
-obj/txdb-leveldb.o: leveldb/libleveldb.a
+leveldb/build/libleveldb.a:
+	@echo "Building LevelDB..." && cd leveldb && mkdir -p build && cd build && cmake -DCMAKE_BUILD_TYPE=Release .. && cmake --build . && cd ..
+obj/txdb-leveldb.o: leveldb/build/libleveldb.a
 
 # UniValue library
-LIBS += -L$(CURDIR)/univalue/libunivalue.la
+LIBS += -L$(CURDIR)/univalue
 DEFS += $(addprefix -I,$(CURDIR)/univalue/include)
 OBJS += univalue/lib/libunivalue_la-univalue.o univalue/lib/libunivalue_la-univalue_get.o univalue/lib/libunivalue_la-univalue_read.o univalue/lib/libunivalue_la-univalue_write.o
 univalue/libunivalue.la:
@@ -171,12 +176,12 @@ univalue/lib/libunivalue_la-univalue.o: univalue/libunivalue.la
 # RPC commands
 OBJS += rpc/rpcmasternode.o
 rpc/rpcmasternode.o: rpc/rpcmasternode.cpp
-	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 # Scripts
 OBJS += script/standard.o
 script/standard.o: script/standard.cpp
-	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 # auto-generated dependencies:
 -include obj/*.P
@@ -194,13 +199,13 @@ obj/%.o: %.cpp
 	  rm -f $(@:%.o=%.d)
 
 obj/scrypt-x86.o: scrypt-x86.S
-	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 obj/scrypt-x86_64.o: scrypt-x86_64.S
-	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 obj/scrypt-arm.o: scrypt-arm.S
-	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+	$(CXX) -c $(CFLAGS) -MMD -o $@ $<
 
 neutrond: $(OBJS:obj/%=obj/%)
 	$(CXX) $(CFLAGS) -o $@ $(LIBPATHS) $^ $(LIBS)
