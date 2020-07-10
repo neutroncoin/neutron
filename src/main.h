@@ -1083,6 +1083,9 @@ public:
 
 
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
+    bool CalculateBlockAmounts(CTxDB& txdb, CBlockIndex *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
+                               int64_t& nFees,  int64_t& nValueIn, int64_t& nValueOut, int64_t& nStakeReward,
+                               bool fJustCheck, bool skipTxCheck, bool connectInputs);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck=false, bool reorganize=false, int postponedBlocks=-1);
     bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);

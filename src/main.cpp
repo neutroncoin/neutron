@@ -1476,16 +1476,11 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return true;
 }
 
-bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, bool reorganize, int postponedBlocks)
+bool CBlock::CalculateBlockAmounts(CTxDB& txdb, CBlockIndex *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
+                                   int64_t& nFees, int64_t& nValueIn, int64_t& nValueOut, int64_t& nStakeReward,
+                                   bool fJustCheck, bool skipTxCheck, bool connectInputs)
 {
-    // Check it again in case a previous version let a bad block in, but skip BlockSig checking
-    if (!CheckBlock(!fJustCheck, !fJustCheck, false))
-    {
-        LogPrintf("%s : block check failed\n", __func__);
-        return false;
-    }
-
-    // issue here: it doesn't know the version
+    unsigned int nSigOps = 0;
     unsigned int nTxPos;
 
     if (fJustCheck)
@@ -1500,13 +1495,6 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         nTxPos = pindex->nBlockPos + ::GetSerializeSize(CBlock(), SER_DISK, CLIENT_VERSION) -
                  (2 * GetSizeOfCompactSize(0)) + GetSizeOfCompactSize(vtx.size());
     }
-
-    map<uint256, CTxIndex> mapQueuedChanges;
-    int64_t nFees = 0;
-    int64_t nValueIn = 0;
-    int64_t nValueOut = 0;
-    int64_t nStakeReward = 0;
-    unsigned int nSigOps = 0;
 
     BOOST_FOREACH(CTransaction& tx, vtx)
     {
@@ -1526,7 +1514,7 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         // initial block download.
         CTxIndex txindexOld;
 
-        if (!reorganize && txdb.ReadTxIndex(hashTx, txindexOld))
+        if (!skipTxCheck && txdb.ReadTxIndex(hashTx, txindexOld))
         {
             BOOST_FOREACH(CDiskTxPos &pos, txindexOld.vSpent)
                 if (pos.IsNull())
@@ -1578,10 +1566,13 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
 
             bool txAlreadyUsed = false;
 
-            if (!tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, &txAlreadyUsed))
+            if (connectInputs && !tx.ConnectInputs(txdb, mapInputs, mapQueuedChanges, posThisTx, pindex, true, false, &txAlreadyUsed))
             {
-                if (reorganize && txAlreadyUsed)
-                    LogPrintf("%s : Reorganizing, did not connect previously connected inputs\n", __func__);
+                if (skipTxCheck && txAlreadyUsed)
+                {
+                    if (fDebug)
+                        LogPrintf("%s : Skipping, did not connect previously connected inputs\n", __func__);
+                }
                 else
                 {
                     LogPrintf("%s : failed to connect inputs\n", __func__);
@@ -1591,6 +1582,31 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
         }
 
         mapQueuedChanges[hashTx] = CTxIndex(posThisTx, tx.vout.size());
+    }
+
+    return true;
+}
+
+bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex *pindex, bool fJustCheck, bool reorganize, int postponedBlocks)
+{
+    // Check it again in case a previous version let a bad block in, but skip BlockSig checking
+    if (!CheckBlock(!fJustCheck, !fJustCheck, false))
+    {
+        LogPrintf("%s : block check failed\n", __func__);
+        return false;
+    }
+
+    map<uint256, CTxIndex> mapQueuedChanges;
+    int64_t nFees = 0;
+    int64_t nValueIn = 0;
+    int64_t nValueOut = 0;
+    int64_t nStakeReward = 0;
+
+    if (!CalculateBlockAmounts(txdb, pindex, mapQueuedChanges, nFees, nValueIn, nValueOut, nStakeReward,
+                               fJustCheck, reorganize, true))
+    {
+        LogPrintf("%s : Block transaction scan and amount calculations failed\n", __func__);
+        return false;
     }
 
     // ppcoin: track money supply and mint amount info
@@ -1632,7 +1648,6 @@ bool CBlock::ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck, boo
             return DoS(50, error("%s : coinbase reward exceeded (actual=%d vs calculated=%d)",
                                  __func__, vtx[0].GetValueOut(), nReward));
         }
-
     }
     else if (IsProofOfStake())
     {
