@@ -3593,7 +3593,7 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         // TODO: Add back the misbehavior when we have made sure the protocol comforms to this requirement
         return false;
     }
-    else if (counter++ % PUSHGETBLOCKS_RESET_INTERVAL == 0)
+    else if (counter++ % PUSHGETBLOCKS_RESET_INTERVAL == 0 && !IsInitialBlockDownload())
     {
         pfrom->ResetPushGetBlocks();
         pfrom->PushGetBlocks(pindexBest, uint256(0));
