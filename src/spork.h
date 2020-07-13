@@ -24,7 +24,7 @@ using namespace boost;
    getting confused about which spork is for what */
 
 #define SPORK_START                                           10001
-#define SPORK_END                                             10013
+#define SPORK_END                                             10014
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT               10001 // DEPRECATED
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT                 10002
@@ -39,6 +39,7 @@ using namespace boost;
 #define SPORK_11_PROTOCOL_V301_ENFORCEMENT                    10011
 #define SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD                10012
 #define SPORK_13_PROTOCOL_V4_ENFORCEMENT                      10013
+#define SPORK_14_MASTERNODE_DISTRIBUTION_TICK                 10014
 
 #define SPORK_1_MASTERNODE_PAYMENTS_ENFORCEMENT_DEFAULT       1525030000 // OFF
 #define SPORK_2_MASTERNODE_WINNER_ENFORCEMENT_DEFAULT         1567330017 // OFF
@@ -53,6 +54,7 @@ using namespace boost;
 #define SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT            1567330017 // 2019-09-01 00:00 GMT
 #define SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD_DEFAULT        5
 #define SPORK_13_PROTOCOL_V4_ENFORCEMENT_DEFAULT              1591488000 // 2020-06-7 00:00 GMT
+#define SPORK_14_MASTERNODE_DISTRIBUTION_TICK_DEFAULT         10
 
 #define REJECT_OLD_SPORKKEY_TIME                              1567330017 // 2019-09-01 00:00 GMT
 

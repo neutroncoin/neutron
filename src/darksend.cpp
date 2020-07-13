@@ -737,8 +737,8 @@ void ThreadCheckDarkSend(CConnman& connman)
             if (fDebug)
                 LogPrintf("%s : %d, %d\n", nTick % 5, __func__, requestedMasterNodeList);
 
-            // every 10 ticks we try to send some requests (roughly 5 seconds)
-            if (nTick % 10 == 0)
+            // every X ticks we try to send some requests (as controlled by the spork)
+            if (nTick % sporkManager.GetSporkValue(SPORK_14_MASTERNODE_DISTRIBUTION_TICK) == 0)
             {
                 LOCK(cs_vNodes);
 

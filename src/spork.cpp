@@ -124,6 +124,7 @@ bool CSporkManager::IsSporkActive(int nSporkID)
             case SPORK_11_PROTOCOL_V301_ENFORCEMENT:       r = SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT; break;
             case SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD:   r = SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD_DEFAULT; break;
             case SPORK_13_PROTOCOL_V4_ENFORCEMENT:         r = SPORK_13_PROTOCOL_V4_ENFORCEMENT_DEFAULT; break;
+            case SPORK_14_MASTERNODE_DISTRIBUTION_TICK:    r = SPORK_14_MASTERNODE_DISTRIBUTION_TICK_DEFAULT; break;
             default:
                 LogPrintf("%s : unknown spork ID %d\n", __func__, nSporkID);
                 r = 4070908800ULL; // off by default
@@ -155,6 +156,7 @@ int64_t CSporkManager::GetSporkValue(int nSporkID)
         else if (nSporkID == SPORK_11_PROTOCOL_V301_ENFORCEMENT)       r = SPORK_11_PROTOCOL_V301_ENFORCEMENT_DEFAULT;
         else if (nSporkID == SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD)   r = SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD_DEFAULT;
         else if (nSporkID == SPORK_13_PROTOCOL_V4_ENFORCEMENT)         r = SPORK_13_PROTOCOL_V4_ENFORCEMENT_DEFAULT;
+        else if (nSporkID == SPORK_14_MASTERNODE_DISTRIBUTION_TICK)    r = SPORK_14_MASTERNODE_DISTRIBUTION_TICK_DEFAULT;
 
         if (r == -1 && fDebug)
             LogPrintf("%s : unknown spork %d\n", __func__, nSporkID);
@@ -178,6 +180,7 @@ int CSporkManager::GetSporkIDByName(std::string strName)
     else if (strName == "SPORK_11_PROTOCOL_V301_ENFORCEMENT")       return SPORK_11_PROTOCOL_V301_ENFORCEMENT;
     else if (strName == "SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD")   return SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD;
     else if (strName == "SPORK_13_PROTOCOL_V4_ENFORCEMENT")         return SPORK_13_PROTOCOL_V4_ENFORCEMENT;
+    else if (strName == "SPORK_14_MASTERNODE_DISTRIBUTION_TICK")    return SPORK_14_MASTERNODE_DISTRIBUTION_TICK;
 
     LogPrintf("%s : unknown spork name '%s'\n", __func__, strName);
     return -1;
@@ -198,6 +201,7 @@ std::string CSporkManager::GetSporkNameByID(int id)
     else if (id == SPORK_11_PROTOCOL_V301_ENFORCEMENT)       return "SPORK_11_PROTOCOL_V301_ENFORCEMENT";
     else if (id == SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD)   return "SPORK_12_PAYMENT_ENFORCEMENT_THRESHOLD";
     else if (id == SPORK_13_PROTOCOL_V4_ENFORCEMENT)         return "SPORK_13_PROTOCOL_V4_ENFORCEMENT";
+    else if (id == SPORK_14_MASTERNODE_DISTRIBUTION_TICK)    return "SPORK_14_MASTERNODE_DISTRIBUTION_TICK";
 
     LogPrintf("%s : unknown spork id '%s'\n", __func__, id);
     return "Unknown";
