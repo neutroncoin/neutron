@@ -33,7 +33,7 @@ using namespace boost;
 
 extern std::atomic<bool> fRequestShutdown;
 CCriticalSection cs_setpwalletRegistered;
-set<CWallet*> setpwalletRegistered;
+std::set<CWallet*> setpwalletRegistered;
 CCriticalSection cs_main;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
@@ -2418,53 +2418,56 @@ bool CBlock::CheckBlock(bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig) c
 bool CBlock::AcceptBlock()
 {
     if (fTestNet && nVersion > CURRENT_VERSION)
-        return DoS(10, error("AcceptBlock() : reject unknown block version %d", nVersion));
+        return DoS(10, error("%s : reject unknown block version %d", __func__, nVersion));
 
     // Check for duplicate
     uint256 hash = GetHash();
 
     if (mapBlockIndex.count(hash))
-        return error("AcceptBlock() : block already in mapBlockIndex");
+        return error("%s : block already in mapBlockIndex", __func__);
 
-    // Get prev block index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashPrevBlock);
+    auto mi = mapBlockIndex.find(hashPrevBlock);
 
     if (mi == mapBlockIndex.end())
-        return DoS(10, error("AcceptBlock() : prev block not found"));
+        return DoS(10, error("%s : prev block not found", __func__));
 
     CBlockIndex* pindexPrev = (*mi).second;
     int nHeight = pindexPrev->nHeight + 1;
 
     if (IsProofOfWork() && nHeight > LAST_POW_BLOCK)
-        return DoS(100, error("AcceptBlock() : reject proof-of-work at height %d", nHeight));
+        return DoS(100, error("%s : reject proof-of-work at height %d", __func__, nHeight));
 
     // Check proof-of-work or proof-of-stake
     if (nBits != GetNextTargetRequired(pindexPrev, IsProofOfStake()))
     {
-        return DoS(100, error("AcceptBlock() : incorrect %s",
+        return DoS(100, error("%s : incorrect %s", __func__,
                               IsProofOfWork() ? "proof-of-work" : "proof-of-stake"));
     }
 
     // Check timestamp against prev
     if (GetBlockTime() <= pindexPrev->GetPastTimeLimit() ||
         FutureDrift(GetBlockTime()) < pindexPrev->GetBlockTime())
-        return error("AcceptBlock() : block's timestamp is too early");
+    {
+        return error("%s : block's timestamp is too early", __func__);
+    }
 
     // Check coinstake timestamp
     if (IsProofOfStake() && !CheckCoinStakeTimestamp(nHeight, GetBlockTime(), (int64_t)vtx[1].nTime))
-        return DoS(50, error("AcceptBlock() : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u", GetBlockTime(), vtx[1].nTime));
-
+    {
+        return DoS(50, error("%s : coinstake timestamp violation nTimeBlock=%d nTimeTx=%u",
+                             __func__, GetBlockTime(), vtx[1].nTime));
+    }
 
     // Check that all transactions are finalized
     BOOST_FOREACH(const CTransaction& tx, vtx)
     {
         if (!tx.IsFinal(nHeight, GetBlockTime()))
-            return DoS(10, error("AcceptBlock() : contains a non-final transaction"));
+            return DoS(10, error("%s : contains a non-final transaction", __func__));
     }
 
     // Check that the block chain matches the known block chain up to a checkpoint
     if (!Checkpoints::CheckHardened(nHeight, hash))
-        return DoS(100, error("AcceptBlock() : rejected by hardened checkpoint lock-in at %d", nHeight));
+        return DoS(100, error("%s : rejected by hardened checkpoint lock-in at %d", __func__, nHeight));
 
     uint256 hashProof;
 
@@ -2490,7 +2493,7 @@ bool CBlock::AcceptBlock()
 
     // Check that the block satisfies synchronized checkpoint
     if (CheckpointsMode == Checkpoints::STRICT && !cpSatisfies)
-        return error("AcceptBlock() : rejected by synchronized checkpoint");
+        return error("%s : rejected by synchronized checkpoint", __func__);
 
     if (CheckpointsMode == Checkpoints::ADVISORY && !cpSatisfies)
         strMiscWarning = _("WARNING: syncronized checkpoint violation detected, but skipped!");
@@ -2500,20 +2503,20 @@ bool CBlock::AcceptBlock()
 
     if (vtx[0].vin[0].scriptSig.size() < expect.size() ||
         !std::equal(expect.begin(), expect.end(), vtx[0].vin[0].scriptSig.begin()))
-        return DoS(100, error("AcceptBlock() : block height mismatch in coinbase"));
+        return DoS(100, error("%s : block height mismatch in coinbase", __func__));
 
     // Write block to history file
     if (!CheckDiskSpace(::GetSerializeSize(*this, SER_DISK, CLIENT_VERSION)))
-        return error("AcceptBlock() : out of disk space");
+        return error("%s : out of disk space", __func__);
 
     unsigned int nFile = -1;
     unsigned int nBlockPos = 0;
 
     if (!WriteToDisk(nFile, nBlockPos))
-        return error("AcceptBlock() : WriteToDisk failed");
+        return error("%s : WriteToDisk failed", __func__);
 
     if (!AddToBlockIndex(nFile, nBlockPos, hashProof))
-        return error("AcceptBlock() : AddToBlockIndex failed");
+        return error("%s : AddToBlockIndex failed", __func__);
 
     // Relay inventory, but don't relay old inventory during initial block download
     int nBlockEstimate = Checkpoints::GetTotalBlocksEstimate();
