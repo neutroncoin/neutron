@@ -7,20 +7,17 @@
 #include <boost/assign/list_of.hpp>
 #include <boost/lexical_cast.hpp>
 
+#include "collectionhashing.h"
 #include "kernel.h"
 #include "txdb.h"
 
-using namespace std;
+//using namespace std;
 
 typedef std::map<int, unsigned int> MapModifierCheckpoints;
 
 // Hard checkpoints of stake modifiers to ensure they are deterministic
-static std::map<int, unsigned int> mapStakeModifierCheckpoints =
-    boost::assign::map_list_of(0, 0xfd11f4e7);
-
-// Hard checkpoints of stake modifiers to ensure they are deterministic (testNet)
-static std::map<int, unsigned int> mapStakeModifierCheckpointsTestNet =
-    boost::assign::map_list_of(0, 0xfd11f4e7);
+static std::map<int, unsigned int> mapStakeModifierCheckpoints = boost::assign::map_list_of(0, 0xfd11f4e7);
+static std::map<int, unsigned int> mapStakeModifierCheckpointsTestNet = boost::assign::map_list_of(0, 0xfd11f4e7);
 
 int64_t GetWeight(int64_t nIntervalBeginning, int64_t nIntervalEnd)
 {
@@ -311,7 +308,6 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
 //   block/tx hash should not be used here as they can be generated in vast
 //   quantities so as to generate blocks faster, degrading the system back into
 //   a proof-of-work situation.
-
 static bool CheckStakeKernelHashV1(unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset,
                                    const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx,
                                    uint256& hashProofOfStake, uint256& targetProofOfStake, bool fPrintProofOfStake)
@@ -416,7 +412,6 @@ static bool CheckStakeKernelHashV1(unsigned int nBits, const CBlock& blockFrom, 
 //   block/tx hash should not be used here as they can be generated in vast
 //   quantities so as to generate blocks faster, degrading the system back into
 //   a proof-of-work situation.
-
 static bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom, const CTransaction& txPrev,
                                    const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake,
                                    bool fPrintProofOfStake)
