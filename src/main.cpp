@@ -3254,6 +3254,7 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
             LOCK(mempool.cs);
             txInMap = (mempool.exists(inv.hash));
         }
+
         return txInMap ||
                 mapOrphanTransactions.count(inv.hash) ||
                 txdb.ContainsTx(inv.hash);
@@ -3262,8 +3263,10 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
     case MSG_BLOCK:
         return mapBlockIndex.count(inv.hash) ||
                 mapOrphanBlocks.count(inv.hash);
+
     case MSG_SPORK:
         return mapSporks.count(inv.hash);
+
     case MSG_MASTERNODE_WINNER:
         return mapSeenMasternodeVotes.count(inv.hash);
 
@@ -3275,12 +3278,11 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 void static ProcessGetData(CNode* pfrom)
 {
     std::deque<CInv>::iterator it = pfrom->vRecvGetData.begin();
-
     vector<CInv> vNotFound;
-
     LOCK(cs_main);
 
-    while (it != pfrom->vRecvGetData.end()) {
+    while (it != pfrom->vRecvGetData.end())
+    {
         // Don't bother if send buffer is too full to respond anyway
         if (pfrom->nSendSize >= SendBufferSize())
             break;
@@ -3877,13 +3879,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 
         vector<CBlock> vHeaders;
         int nLimit = 2000;
-        LogPrintf("getheaders %d to %s\n", (pindex ? pindex->nHeight : -1), hashStop.ToString().substr(0,20).c_str());
+
+        LogPrintf("%s : getheaders %d to %s\n", __func__, (pindex ? pindex->nHeight : -1),
+                  hashStop.ToString().substr(0,20).c_str());
+
         for (; pindex; pindex = pindex->pnext)
         {
             vHeaders.push_back(pindex->GetBlockHeader());
+
             if (--nLimit <= 0 || pindex->GetBlockHash() == hashStop)
                 break;
         }
+
         pfrom->PushMessage(NetMsgType::HEADERS, vHeaders);
     }
     else if (strCommand == NetMsgType::TX || strCommand == NetMsgType::DSTX)
