@@ -4,3 +4,6 @@
 [submodule "src/robin-hood-hashing"]
 	path = src/robin-hood-hashing
 	url = https://github.com/martinus/robin-hood-hashing.git
+[submodule "src/jemalloc"]
+	path = src/jemalloc
+	url = https://github.com/jemalloc/jemalloc.git
