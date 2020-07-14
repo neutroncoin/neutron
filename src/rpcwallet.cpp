@@ -1,5 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -56,17 +58,21 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
 {
     int confirms = wtx.GetDepthInMainChain();
     entry.push_back(Pair("confirmations", confirms));
+
     if (wtx.IsCoinBase() || wtx.IsCoinStake())
         entry.push_back(Pair("generated", true));
+
     if (confirms > 0)
     {
         entry.push_back(Pair("blockhash", wtx.hashBlock.GetHex()));
         entry.push_back(Pair("blockindex", wtx.nIndex));
-        entry.push_back(Pair("blocktime", (int64_t)(mapBlockIndex[wtx.hashBlock]->nTime)));
+        entry.push_back(Pair("blocktime", (int64_t) (mapBlockIndex[wtx.hashBlock]->nTime)));
     }
+
     entry.push_back(Pair("txid", wtx.GetHash().GetHex()));
-    entry.push_back(Pair("time", (int64_t)wtx.GetTxTime()));
-    entry.push_back(Pair("timereceived", (int64_t)wtx.nTimeReceived));
+    entry.push_back(Pair("time", (int64_t) wtx.GetTxTime()));
+    entry.push_back(Pair("timereceived", (int64_t) wtx.nTimeReceived));
+
     BOOST_FOREACH(const PAIRTYPE(string,string)& item, wtx.mapValue)
         entry.push_back(Pair(item.first, item.second));
 }
@@ -74,8 +80,10 @@ void WalletTxToJSON(const CWalletTx& wtx, UniValue& entry)
 string AccountFromValue(const UniValue& value)
 {
     string strAccount = value.get_str();
+
     if (strAccount == "*")
         throw JSONRPCError(RPC_WALLET_INVALID_ACCOUNT_NAME, "Invalid account name");
+
     return strAccount;
 }
 
@@ -1336,15 +1344,18 @@ UniValue gettransaction(const UniValue& params, bool fHelp)
     {
         CTransaction tx;
         uint256 hashBlock = 0;
+
         if (GetTransaction(hash, tx, hashBlock))
         {
             TxToJSON(tx, 0, entry);
+
             if (hashBlock == 0)
                 entry.push_back(Pair("confirmations", 0));
             else
             {
                 entry.push_back(Pair("blockhash", hashBlock.GetHex()));
-                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+                auto mi = mapBlockIndex.find(hashBlock);
+
                 if (mi != mapBlockIndex.end() && (*mi).second)
                 {
                     CBlockIndex* pindex = (*mi).second;

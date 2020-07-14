@@ -474,17 +474,19 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
     uint256 hash = wtxIn.GetHash();
     {
         LOCK(cs_wallet);
+
         // Inserts only if not already there, returns tx inserted or tx found
         pair<map<uint256, CWalletTx>::iterator, bool> ret = mapWallet.insert(make_pair(hash, wtxIn));
         CWalletTx& wtx = (*ret.first).second;
         wtx.BindWallet(this);
         bool fInsertedNew = ret.second;
+
         if (fInsertedNew)
         {
             wtx.nTimeReceived = GetAdjustedTime();
             wtx.nOrderPos = IncOrderPosNext();
-
             wtx.nTimeSmart = wtx.nTimeReceived;
+
             if (wtxIn.hashBlock != 0)
             {
                 if (mapBlockIndex.count(wtxIn.hashBlock))
@@ -496,26 +498,34 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                         int64_t latestTolerated = latestNow + 300;
                         std::list<CAccountingEntry> acentries;
                         TxItems txOrdered = OrderedTxItems(acentries);
+
                         for (TxItems::reverse_iterator it = txOrdered.rbegin(); it != txOrdered.rend(); ++it)
                         {
                             CWalletTx *const pwtx = (*it).second.first;
+
                             if (pwtx == &wtx)
                                 continue;
+
                             CAccountingEntry *const pacentry = (*it).second.second;
                             int64_t nSmartTime;
+
                             if (pwtx)
                             {
                                 nSmartTime = pwtx->nTimeSmart;
+
                                 if (!nSmartTime)
                                     nSmartTime = pwtx->nTimeReceived;
                             }
                             else
                                 nSmartTime = pacentry->nTime;
+
                             if (nSmartTime <= latestTolerated)
                             {
                                 latestEntry = nSmartTime;
+
                                 if (nSmartTime > latestNow)
                                     latestNow = nSmartTime;
+
                                 break;
                             }
                         }
@@ -525,13 +535,14 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                     wtx.nTimeSmart = std::max(latestEntry, std::min(blocktime, latestNow));
                 }
                 else
-                    LogPrintf("AddToWallet() : found %s in block %s not in index\n",
+                    LogPrintf("%s : found %s in block %s not in index\n", __func__,
                            wtxIn.GetHash().ToString().substr(0,10).c_str(),
                            wtxIn.hashBlock.ToString().c_str());
             }
         }
 
         bool fUpdated = false;
+
         if (!fInsertedNew)
         {
             // Merge
@@ -540,17 +551,20 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                 wtx.hashBlock = wtxIn.hashBlock;
                 fUpdated = true;
             }
+
             if (wtxIn.nIndex != -1 && (wtxIn.vMerkleBranch != wtx.vMerkleBranch || wtxIn.nIndex != wtx.nIndex))
             {
                 wtx.vMerkleBranch = wtxIn.vMerkleBranch;
                 wtx.nIndex = wtxIn.nIndex;
                 fUpdated = true;
             }
+
             if (wtxIn.fFromMe && wtxIn.fFromMe != wtx.fFromMe)
             {
                 wtx.fFromMe = wtxIn.fFromMe;
                 fUpdated = true;
             }
+
             fUpdated |= wtx.UpdateSpent(wtxIn.vfSpent);
         }
 
@@ -3436,35 +3450,45 @@ void CWallet::GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const {
 
     // find first block that affects those keys, if there are any left
     std::vector<CKeyID> vAffected;
-    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++) {
+
+    for (std::map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); it++)
+    {
         // iterate over all wallet transactions...
         const CWalletTx &wtx = (*it).second;
-        std::map<uint256, CBlockIndex*>::const_iterator blit = mapBlockIndex.find(wtx.hashBlock);
+        auto blit = mapBlockIndex.find(wtx.hashBlock);
+
         if (blit != mapBlockIndex.end() && blit->second->IsInMainChain()) {
             // ... which are already in a block
             int nHeight = blit->second->nHeight;
-            BOOST_FOREACH(const CTxOut &txout, wtx.vout) {
+
+            BOOST_FOREACH(const CTxOut &txout, wtx.vout)
+            {
                 // iterate over all their outputs
                 ::ExtractAffectedKeys(*this, txout.scriptPubKey, vAffected);
-                BOOST_FOREACH(const CKeyID &keyid, vAffected) {
+
+                BOOST_FOREACH(const CKeyID &keyid, vAffected)
+                {
                     // ... and all their affected keys
-                    std::map<CKeyID, CBlockIndex*>::iterator rit = mapKeyFirstBlock.find(keyid);
+                    auto rit = mapKeyFirstBlock.find(keyid);
+
                     if (rit != mapKeyFirstBlock.end() && nHeight < rit->second->nHeight)
                         rit->second = blit->second;
                 }
+
                 vAffected.clear();
             }
         }
     }
 
     // Extract block timestamps for those keys
-    for (std::map<CKeyID, CBlockIndex*>::const_iterator it = mapKeyFirstBlock.begin(); it != mapKeyFirstBlock.end(); it++)
+    for (auto it = mapKeyFirstBlock.begin(); it != mapKeyFirstBlock.end(); it++)
         mapKeyBirth[it->first] = it->second->nTime - 7200; // block times can be 2h off
 }
 
 bool CWallet::AddAdrenalineNodeConfig(CAdrenalineNodeConfig nodeConfig)
 {
     bool rv = CWalletDB(strWalletFile).WriteAdrenalineNodeConfig(nodeConfig.sAlias, nodeConfig);
+
     if(rv)
 	uiInterface.NotifyAdrenalineNodeChanged(nodeConfig);
 
@@ -3487,10 +3511,13 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
         {
             // Load the block this tx is in
             CTxIndex txindex;
+
             if (!CTxDB("r").ReadTxIndex(GetHash(), txindex))
                 return 0;
+
             if (!blockTmp.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos))
                 return 0;
+
             pblock = &blockTmp;
         }
 
@@ -3499,8 +3526,11 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
 
         // Locate the transaction
         for (nIndex = 0; nIndex < (int)pblock->vtx.size(); nIndex++)
+        {
             if (pblock->vtx[nIndex] == *(CTransaction*)this)
                 break;
+        }
+
         if (nIndex == (int)pblock->vtx.size())
         {
             vMerkleBranch.clear();
@@ -3514,10 +3544,13 @@ int CMerkleTx::SetMerkleBranch(const CBlock* pblock)
     }
 
     // Is the tx in a block that's in the main chain
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    auto mi = mapBlockIndex.find(hashBlock);
+
     if (mi == mapBlockIndex.end())
         return 0;
+
     CBlockIndex* pindex = (*mi).second;
+
     if (!pindex || !pindex->IsInMainChain())
         return 0;
 
@@ -3530,11 +3563,13 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
     if (hashBlock == 0 || nIndex == -1)
         return 0;
 
-    // Find the block it claims to be in
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+    auto mi = mapBlockIndex.find(hashBlock);
+
     if (mi == mapBlockIndex.end())
         return 0;
+
     CBlockIndex* pindex = (*mi).second;
+
     if (!pindex || !pindex->IsInMainChain())
         return 0;
 
@@ -3543,6 +3578,7 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
     {
         if (CBlock::CheckMerkleBranch(GetHash(), vMerkleBranch, nIndex) != pindex->hashMerkleRoot)
             return 0;
+
         fMerkleVerified = true;
     }
 
@@ -3553,6 +3589,7 @@ int CMerkleTx::GetDepthInMainChainINTERNAL(CBlockIndex* &pindexRet) const
 int CMerkleTx::GetDepthInMainChain(CBlockIndex* &pindexRet) const
 {
     int nResult = GetDepthInMainChainINTERNAL(pindexRet);
+
     if (nResult == 0 && !mempool.exists(GetHash()))
         return -1; // Not in chain, not in mempool
 
@@ -3563,6 +3600,7 @@ int CMerkleTx::GetBlocksToMaturity() const
 {
     if (!(IsCoinBase() || IsCoinStake()))
         return 0;
+
     return max(0, (nCoinbaseMaturity+10) - GetDepthInMainChain());
 }
 
@@ -3573,6 +3611,7 @@ bool CMerkleTx::AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs)
     {
         if (!IsInMainChain() && !ClientConnectInputs())
             return false;
+
         return CTransaction::AcceptToMemoryPool(txdb, fCheckInputs);
     }
     else

@@ -6,17 +6,17 @@
 // file license.txt or http://www.opensource.org/licenses/mit-license.php.
 
 #include <map>
-
 #include <boost/version.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-
 #include <leveldb/env.h>
 #include <leveldb/cache.h>
 #include <leveldb/filter_policy.h>
 #include <memenv/memenv.h>
 
 #include "backtrace.h"
+#include "collectionhashing.h"
+#include "robin-hood-hashing/src/include/robin_hood.h"
 #include "kernel.h"
 #include "checkpoints.h"
 #include "txdb.h"
@@ -347,19 +347,17 @@ static CBlockIndex *InsertBlockIndex(uint256 hash)
     if (hash == 0)
         return NULL;
 
-    // Return existing
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hash);
+    auto mi = mapBlockIndex.find(hash);
 
     if (mi != mapBlockIndex.end())
         return (*mi).second;
 
-    // Create new
     CBlockIndex* pindexNew = new CBlockIndex();
 
     if (!pindexNew)
         throw runtime_error(strprintf("%s : new CBlockIndex failed", __func__));
 
-    mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
+    mi = mapBlockIndex.emplace(hash, pindexNew).first;
     pindexNew->phashBlock = &((*mi).first);
     return pindexNew;
 }
@@ -446,7 +444,7 @@ bool CTxDB::LoadBlockIndex()
     vector<pair<int, CBlockIndex*> > vSortedByHeight;
     vSortedByHeight.reserve(mapBlockIndex.size());
 
-    BOOST_FOREACH(const PAIRTYPE(uint256, CBlockIndex*)& item, mapBlockIndex)
+    for (auto& item : mapBlockIndex)
     {
         CBlockIndex* pindex = item.second;
         vSortedByHeight.push_back(make_pair(pindex->nHeight, pindex));

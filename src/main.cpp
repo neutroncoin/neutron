@@ -14,6 +14,7 @@
 #include "init.h"
 #include "ui_interface.h"
 #include "kernel.h"
+#include "robin-hood-hashing/src/include/robin_hood.h"
 #include <boost/algorithm/string/replace.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -36,8 +37,8 @@ set<CWallet*> setpwalletRegistered;
 CCriticalSection cs_main;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
-map<uint256, CBlockIndex*> mapBlockIndex;
-set<pair<COutPoint, unsigned int> > setStakeSeen;
+robin_hood::unordered_node_map<uint256, CBlockIndex *> mapBlockIndex;
+std::set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Starting Difficulty: results with 0,000244140625 proof-of-work difficulty
 CBigNum bnProofOfWorkLimitTestNet(~uint256(0) >> 2);
@@ -64,7 +65,7 @@ int64_t nTimeBestReceived = 0;
 bool fEnforceMnWinner = false;
 
 CMedianFilter<int> cPeerBlockCounts(5, 0); // Amount of blocks that other nodes claim to have
-map<uint256, CBlock*> mapOrphanBlocks;
+robin_hood::unordered_node_map<uint256, CBlock*> mapOrphanBlocks;
 multimap<uint256, CBlock*> mapOrphanBlocksByPrev;
 set<pair<COutPoint, unsigned int> > setStakeSeenOrphan;
 map<uint256, CTransaction> mapOrphanTransactions;
@@ -789,7 +790,7 @@ int CTxIndex::GetDepthInMainChain() const
         return 0;
 
     // Find the block in the index
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(block.GetHash());
+    auto mi = mapBlockIndex.find(block.GetHash());
 
     if (mi == mapBlockIndex.end())
         return 0;
@@ -2250,14 +2251,13 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     if (mapBlockIndex.count(hash))
         return error("%s : %s already exists", __func__, hash.ToString());
 
-    // Construct new block index object
     CBlockIndex* pindexNew = new CBlockIndex(nFile, nBlockPos, *this);
 
     if (!pindexNew)
-        return error("%s : new CBlockIndex failed", __func__);
+        return error("%s : CBlockIndex allocation failed", __func__);
 
     pindexNew->phashBlock = &hash;
-    map<uint256, CBlockIndex*>::iterator miPrev = mapBlockIndex.find(hashPrevBlock);
+    auto miPrev = mapBlockIndex.find(hashPrevBlock);
 
     if (miPrev != mapBlockIndex.end())
     {
@@ -2289,8 +2289,7 @@ bool CBlock::AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const u
     //     return error("AddToBlockIndex() : Rejected by stake modifier checkpoint height=%d, modifier=0x%016"
     //                  PRIx64, pindexNew->nHeight, nStakeModifier);
 
-    // Add to mapBlockIndex
-    map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.insert(make_pair(hash, pindexNew)).first;
+    auto mi = mapBlockIndex.emplace(hash, pindexNew).first;
 
     if (pindexNew->IsProofOfStake())
         setStakeSeen.insert(make_pair(pindexNew->prevoutStake, pindexNew->nStakeTime));
@@ -2604,7 +2603,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
 
         if (pblock->IsProofOfStake())
         {
-            map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(pblock->hashPrevBlock);
+            auto mi = mapBlockIndex.find(pblock->hashPrevBlock);
             int height = 0; // presume zero, relaxing the check if the height can't be determined
 
             if (mi != mapBlockIndex.end())
@@ -2668,7 +2667,7 @@ bool ProcessNewBlock(CNode* pfrom, CBlock* pblock)
                 setStakeSeenOrphan.insert(pblock2->GetProofOfStake());
         }
 
-        mapOrphanBlocks.insert(make_pair(hash, pblock2));
+        mapOrphanBlocks.emplace(hash, pblock2);
         mapOrphanBlocksByPrev.insert(make_pair(pblock2->hashPrevBlock, pblock2));
 
         // Ask this guy to fill in what we're missing
@@ -3037,7 +3036,7 @@ void PrintBlockTree()
 {
     // pre-compute tree structure
     map<CBlockIndex*, vector<CBlockIndex*> > mapNext;
-    for (map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
+    for (auto mi = mapBlockIndex.begin(); mi != mapBlockIndex.end(); ++mi)
     {
         CBlockIndex* pindex = (*mi).second;
         mapNext[pindex->pprev].push_back(pindex);
@@ -3292,7 +3291,8 @@ void static ProcessGetData(CNode* pfrom)
             if (inv.type == MSG_BLOCK || inv.type == MSG_FILTERED_BLOCK)
             {
                 // Send block from disk
-                map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(inv.hash);
+                auto mi = mapBlockIndex.find(inv.hash);
+
                 if (mi != mapBlockIndex.end())
                 {
                     CBlock block;
@@ -3856,15 +3856,18 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
         if (locator.IsNull())
         {
             // If locator is null, return the hashStop block
-            map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashStop);
+            auto mi = mapBlockIndex.find(hashStop);
+
             if (mi == mapBlockIndex.end())
                 return true;
+
             pindex = (*mi).second;
         }
         else
         {
             // Find the last block the caller has in the main chain
             pindex = locator.GetBlockIndex();
+
             if (pindex)
                 pindex = pindex->pnext;
         }

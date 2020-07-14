@@ -20,6 +20,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
+#include "robin-hood-hashing/src/include/robin_hood.h"
 
 #include <iostream>
 #include <list>
@@ -97,7 +98,7 @@ inline CBigNum GetPOSLimit(int nHeight) { return CBigNum(~uint256(0) >> (GetPOSP
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
-extern std::map<uint256, CBlockIndex*> mapBlockIndex;
+extern robin_hood::unordered_node_map<uint256, CBlockIndex*> mapBlockIndex;
 extern std::set<std::pair<COutPoint, unsigned int> > setStakeSeen;
 extern CBlockIndex* pindexGenesisBlock;
 extern unsigned int nTargetSpacing;
@@ -119,7 +120,7 @@ extern int64_t nTimeBestReceived;
 extern CCriticalSection cs_setpwalletRegistered;
 extern std::set<CWallet*> setpwalletRegistered;
 extern unsigned char pchMessageStart[4];
-extern std::map<uint256, CBlock*> mapOrphanBlocks;
+extern robin_hood::unordered_node_map<uint256, CBlock*> mapOrphanBlocks;
 
 // Settings
 extern int64_t nTransactionFee;
@@ -227,9 +228,7 @@ public:
     }
 };
 
-
-
-/** An inpoint - a combination of a transaction and an index n into its vin */
+// A combination of a transaction and an index n into its vin
 class CInPoint
 {
 public:
@@ -242,9 +241,7 @@ public:
     bool IsNull() const { return (ptx == NULL && n == (unsigned int) -1); }
 };
 
-
-
-/** An outpoint - a combination of a transaction hash and an index n into its vout */
+// A combination of a transaction hash and an index n into its vout
 class COutPoint
 {
 public:
@@ -289,9 +286,6 @@ public:
         LogPrintf("%s\n", ToString().c_str());
     }
 };
-
-
-
 
 /** An input of a transaction.  It contains the location of the previous
  * transaction's output that it claims and a signature that matches the
@@ -374,9 +368,6 @@ public:
     }
 };
 
-
-
-
 /** An output of a transaction.  It contains the public key that the next input
  * must be able to sign with to claim it.
  */
@@ -457,9 +448,6 @@ public:
         LogPrintf("%s\n", ToString().c_str());
     }
 };
-
-
-
 
 enum GetMinFee_mode
 {
@@ -751,11 +739,6 @@ protected:
     const CTxOut& GetOutputFor(const CTxIn& input, const MapPrevTx& inputs) const;
 };
 
-
-
-
-
-
 /**  A txdb record that contains the disk location of a transaction and the
  * locations of transactions that spend its outputs.  vSpent is really only
  * used as a flag, but having the location is very helpful for debugging.
@@ -809,8 +792,6 @@ public:
     int GetDepthInMainChain() const;
 
 };
-
-
 
 /** Nodes collect new transactions into a block, hash them into a hash tree,
  * and scan through nonce values to make the block's hash satisfy proof-of-work

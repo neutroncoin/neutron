@@ -1,5 +1,7 @@
 // Copyright (c) 2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -13,7 +15,6 @@
 #include "net.h"
 #include "wallet.h"
 #include "script/standard.h"
-
 #include "univalue.h"
 
 using namespace std;
@@ -41,8 +42,10 @@ void ScriptPubKeyToJSON(const CScript& scriptPubKey, UniValue& out, bool fInclud
     out.push_back(Pair("type", GetTxnOutputType(type)));
 
     UniValue a(UniValue::VARR);
+
     BOOST_FOREACH(const CTxDestination& addr, addresses)
         a.push_back(CBitcoinAddress(addr).ToString());
+
     out.push_back(Pair("addresses", a));
 }
 
@@ -50,36 +53,47 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 {
     entry.push_back(Pair("txid", tx.GetHash().GetHex()));
     entry.push_back(Pair("version", tx.nVersion));
-    entry.push_back(Pair("time", (int64_t)tx.nTime));
-    entry.push_back(Pair("locktime", (int64_t)tx.nLockTime));
+    entry.push_back(Pair("time", (int64_t) tx.nTime));
+    entry.push_back(Pair("locktime", (int64_t) tx.nLockTime));
+
     UniValue vin(UniValue::VARR);
+
     BOOST_FOREACH(const CTxIn& txin, tx.vin)
     {
         UniValue in(UniValue::VOBJ);
+
         if (tx.IsCoinBase())
             in.push_back(Pair("coinbase", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
         else
         {
             in.push_back(Pair("txid", txin.prevout.hash.GetHex()));
             in.push_back(Pair("vout", (int64_t)txin.prevout.n));
+
             UniValue o(UniValue::VOBJ);
+
             o.push_back(Pair("asm", txin.scriptSig.ToString()));
             o.push_back(Pair("hex", HexStr(txin.scriptSig.begin(), txin.scriptSig.end())));
             in.push_back(Pair("scriptSig", o));
         }
+
         in.push_back(Pair("sequence", (int64_t)txin.nSequence));
         vin.push_back(in);
     }
+
     entry.push_back(Pair("vin", vin));
     UniValue vout(UniValue::VARR);
+
     for (unsigned int i = 0; i < tx.vout.size(); i++)
     {
         const CTxOut& txout = tx.vout[i];
         UniValue out(UniValue::VOBJ);
+
         out.push_back(Pair("value", ValueFromAmount(txout.nValue)));
         out.push_back(Pair("n", (int64_t)i));
+
         UniValue o(UniValue::VOBJ);
         ScriptPubKeyToJSON(txout.scriptPubKey, o, false);
+
         out.push_back(Pair("scriptPubKey", o));
         vout.push_back(out);
     }
@@ -88,10 +102,12 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
     if (hashBlock != 0)
     {
         entry.push_back(Pair("blockhash", hashBlock.GetHex()));
-        map<uint256, CBlockIndex*>::iterator mi = mapBlockIndex.find(hashBlock);
+        auto mi = mapBlockIndex.find(hashBlock);
+
         if (mi != mapBlockIndex.end() && (*mi).second)
         {
             CBlockIndex* pindex = (*mi).second;
+
             if (pindex->IsInMainChain())
             {
                 entry.push_back(Pair("confirmations", 1 + nBestHeight - pindex->nHeight));
@@ -107,12 +123,14 @@ void TxToJSON(const CTransaction& tx, const uint256 hashBlock, UniValue& entry)
 UniValue getrawtransaction(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
+    {
         throw runtime_error(
             "getrawtransaction <txid> [verbose=0]\n"
             "If verbose=0, returns a string that is\n"
             "serialized, hex-encoded data for <txid>.\n"
             "If verbose is non-zero, returns an Object\n"
             "with information about <txid>.");
+    }
 
     uint256 hash;
     hash.SetHex(params[0].get_str());
@@ -123,6 +141,7 @@ UniValue getrawtransaction(const UniValue& params, bool fHelp)
 
     CTransaction tx;
     uint256 hashBlock = 0;
+
     if (!GetTransaction(hash, tx, hashBlock))
         throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "No information available about transaction");
 
