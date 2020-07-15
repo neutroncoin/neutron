@@ -351,22 +351,22 @@ public:
 
     unsigned char* begin()
     {
-        return (unsigned char*)&pn[0];
+        return (unsigned char *) &pn[0];
     }
 
     unsigned char* end()
     {
-        return (unsigned char*)&pn[WIDTH];
+        return (unsigned char *) &pn[WIDTH];
     }
 
     const unsigned char* begin() const
     {
-        return (unsigned char*)&pn[0];
+        return (unsigned char *) &pn[0];
     }
 
     const unsigned char* end() const
     {
-        return (unsigned char*)&pn[WIDTH];
+        return (unsigned char *) &pn[WIDTH];
     }
 
     unsigned int size() const

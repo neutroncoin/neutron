@@ -12,6 +12,7 @@
 #include <tr1/functional>
 #include <boost/functional/hash.hpp>
 
+#include "robin-hood-hashing/src/include/robin_hood.h"
 #include "uint256.h"
 
 namespace std
@@ -20,7 +21,7 @@ namespace std
     {
         size_t operator()(const uint256& v) const
         {
-            return boost::hash_range(v.begin(), v.end());
+            return robin_hood::hash_bytes(v.begin(), v.size());
         }
     };
 }
