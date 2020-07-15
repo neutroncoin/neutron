@@ -29,6 +29,7 @@ using namespace std;
 
 class CWallet;
 class CBlock;
+class CBlockIndexMapEntry;
 class CBlockIndex;
 class CKeyItem;
 class CReserveKey;
@@ -98,9 +99,9 @@ inline CBigNum GetPOSLimit(int nHeight) { return CBigNum(~uint256(0) >> (GetPOSP
 
 extern CScript COINBASE_FLAGS;
 extern CCriticalSection cs_main;
-extern robin_hood::unordered_node_map<uint256, CBlockIndex*> mapBlockIndex;
+extern robin_hood::unordered_node_map<uint256, CBlockIndexMapEntry *> mapBlockIndex;
 extern std::set<std::pair<COutPoint, unsigned int> > setStakeSeen;
-extern CBlockIndex* pindexGenesisBlock;
+extern CBlockIndexMapEntry *pindexGenesisBlock;
 extern unsigned int nTargetSpacing;
 extern unsigned int nStakeMinAge;
 extern unsigned int nStakeMaxAge;
@@ -110,7 +111,7 @@ extern int nBestHeight;
 extern uint256 nBestChainTrust;
 extern uint256 nBestInvalidTrust;
 extern uint256 hashBestChain;
-extern CBlockIndex* pindexBest;
+extern CBlockIndexMapEntry *pindexBest;
 extern unsigned int nTransactionsUpdated;
 extern uint64_t nLastBlockTx;
 extern uint64_t nLastBlockSize;
@@ -1077,7 +1078,7 @@ public:
                                int64_t& nFees,  int64_t& nValueIn, int64_t& nValueOut, int64_t& nStakeReward,
                                bool fJustCheck, bool skipTxCheck, bool connectInputs);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck=false, bool reorganize=false, int postponedBlocks=-1);
-    bool ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions=true);
+    bool ReadFromDisk(const CBlockIndexMapEntry *pindex, bool fReadTransactions=true);
     bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const uint256& hashProof);
     bool CheckBlock(bool fCheckPOW=true, bool fCheckMerkleRoot=true, bool fCheckSig=true) const;
@@ -1098,6 +1099,25 @@ private:
  * to it, but pnext will only point forward to the longest branch, or will
  * be null if the block is not part of the longest chain.
  */
+class CBlockIndexMapEntry
+{
+public:
+    const uint256* phashBlock;
+    CBlockIndexMapEntry *pprev;
+    CBlockIndexMapEntry *pnext;
+    int nHeight;
+
+    uint256 GetBlockHash() const
+    {
+        return *phashBlock;
+    }
+
+    bool IsInMainChain() const
+    {
+        return (pnext || this->GetBlockHash() == pindexBest->GetBlockHash());
+    }
+};
+
 class CBlockIndex
 {
 public:
@@ -1198,12 +1218,15 @@ public:
     {
         CBlock block;
         block.nVersion       = nVersion;
+
         if (pprev)
             block.hashPrevBlock = pprev->GetBlockHash();
+
         block.hashMerkleRoot = hashMerkleRoot;
         block.nTime          = nTime;
         block.nBits          = nBits;
         block.nNonce         = nNonce;
+
         return block;
     }
 
@@ -1219,10 +1242,10 @@ public:
 
     uint256 GetBlockTrust() const;
 
-    bool IsInMainChain() const
+    /*bool IsInMainChain() const
     {
-        return (pnext || this == pindexBest);
-    }
+        return (pnext || this->GetBlockHash() == pindexBest->GetBlockHash());
+    }*/
 
     bool CheckIndex() const
     {

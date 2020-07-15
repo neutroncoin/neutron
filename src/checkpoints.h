@@ -1,8 +1,11 @@
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #ifndef BITCOIN_CHECKPOINT_H
-#define  BITCOIN_CHECKPOINT_H
+#define BITCOIN_CHECKPOINT_H
 
 #include <map>
 #include "net.h"
@@ -40,15 +43,14 @@ namespace Checkpoints
     // Return conservative estimate of total number of blocks, 0 if unknown
     int GetTotalBlocksEstimate();
 
-    // Returns last CBlockIndex* in mapBlockIndex that is a checkpoint
-    CBlockIndex* GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex);
+    CBlockIndexMapEntry *GetLastCheckpoint(const std::map<uint256, CBlockIndex*>& mapBlockIndex);
 
     extern uint256 hashSyncCheckpoint;
     extern CSyncCheckpoint checkpointMessage;
     extern uint256 hashInvalidCheckpoint;
     extern CCriticalSection cs_hashSyncCheckpoint;
 
-    CBlockIndex* GetLastSyncCheckpoint();
+    CBlockIndexMapEntry *GetLastSyncCheckpoint();
     bool WriteSyncCheckpoint(const uint256& hashCheckpoint);
     bool AcceptPendingSyncCheckpoint();
     uint256 AutoSelectSyncCheckpoint();
@@ -142,8 +144,10 @@ public:
         {
             pnode->hashCheckpointKnown = hashCheckpoint;
             pnode->PushMessage("checkpoint", *this);
+
             return true;
         }
+
         return false;
     }
 

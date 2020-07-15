@@ -37,7 +37,7 @@ std::set<CWallet*> setpwalletRegistered;
 CCriticalSection cs_main;
 CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
-robin_hood::unordered_node_map<uint256, CBlockIndex *> mapBlockIndex;
+robin_hood::unordered_node_map<uint256, CBlockIndexMapEntry *> mapBlockIndex;
 std::set<pair<COutPoint, unsigned int> > setStakeSeen;
 
 CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // Starting Difficulty: results with 0,000244140625 proof-of-work difficulty
@@ -51,12 +51,12 @@ unsigned int nStakeMaxAge = 5 * 60 * 60; // Neutron - 5 hours
 unsigned int nModifierInterval = 10 * 60; // Neutron - time to elapse before new modifier is computed
 
 int nCoinbaseMaturity = 80;
-CBlockIndex* pindexGenesisBlock = NULL;
+CBlockIndexMapEntry *pindexGenesisBlock = nullptr;
 int nBestHeight = -1;
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
-CBlockIndex* pindexBest = NULL;
+CBlockIndexMapEntryu *pindexBest = nullptr;
 int64_t nTimeBestReceived = 0;
 
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000
@@ -861,7 +861,7 @@ CBlockIndex* FindBlockByHeight(int nHeight)
     return pblockindex;
 }
 
-bool CBlock::ReadFromDisk(const CBlockIndex* pindex, bool fReadTransactions)
+bool CBlock::ReadFromDisk(const CBlockIndexMapEntry *pindex, bool fReadTransactions)
 {
     if (!fReadTransactions)
     {
