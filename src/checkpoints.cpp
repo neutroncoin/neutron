@@ -253,7 +253,7 @@ namespace Checkpoints
 
     uint256 AutoSelectSyncCheckpoint()
     {
-        const CBlockIndex *pindex = pindexBest;
+        const CBlockIndexMapEntry *pindex = pindexBest;
 
         // Search backward for a block within max span and maturity window
         while (pindex->pprev && (pindex->GetBlockTime() + nCheckpointSpan * nTargetSpacing > pindexBest->GetBlockTime() ||
@@ -266,7 +266,7 @@ namespace Checkpoints
     }
 
     // Check against synchronized checkpoint
-    bool CheckSync(const uint256& hashBlock, const CBlockIndex* pindexPrev)
+    bool CheckSync(const uint256& hashBlock, const CBlockIndexMapEntry *pindexPrev)
     {
         if (fTestNet)
             return true;
@@ -276,12 +276,12 @@ namespace Checkpoints
 
         // sync-checkpoint should always be accepted block
         assert(mapBlockIndex.count(hashSyncCheckpoint));
-        const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
+        const CBlockIndexMapEntry *pindexSync = mapBlockIndex[hashSyncCheckpoint];
 
         if (nHeight > pindexSync->nHeight)
         {
             // trace back to same height as sync-checkpoint
-            const CBlockIndex* pindex = pindexPrev;
+            const CBlockIndexMapEntry *pindex = pindexPrev;
 
             while (pindex->nHeight > pindexSync->nHeight)
             {
@@ -434,7 +434,7 @@ namespace Checkpoints
 
         // sync-checkpoint should always be accepted block
         assert(mapBlockIndex.count(hashSyncCheckpoint));
-        const CBlockIndex* pindexSync = mapBlockIndex[hashSyncCheckpoint];
+        const CBlockIndexMapEntry *pindexSync = mapBlockIndex[hashSyncCheckpoint];
 
         return (nBestHeight >= pindexSync->nHeight + nCoinbaseMaturity ||
                 pindexSync->GetBlockTime() + nStakeMinAge < GetAdjustedTime());
@@ -493,7 +493,7 @@ bool CSyncCheckpoint::ProcessSyncCheckpoint(CNode* pfrom)
         return false;
 
     CTxDB txdb;
-    CBlockIndex* pindexCheckpoint = mapBlockIndex[hashCheckpoint];
+    CBlockIndexMapEntry *pindexCheckpoint = mapBlockIndex[hashCheckpoint];
     if (!pindexCheckpoint->IsInMainChain())
     {
         // checkpoint chain received but not yet main chain

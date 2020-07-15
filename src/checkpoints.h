@@ -54,7 +54,7 @@ namespace Checkpoints
     bool WriteSyncCheckpoint(const uint256& hashCheckpoint);
     bool AcceptPendingSyncCheckpoint();
     uint256 AutoSelectSyncCheckpoint();
-    bool CheckSync(const uint256& hashBlock, const CBlockIndex* pindexPrev);
+    bool CheckSync(const uint256& hashBlock, const CBlockIndexMapEntry *pindexPrev);
     bool WantedByPendingSyncCheckpoint(uint256 hashBlock);
     bool ResetSyncCheckpoint();
     void AskForPendingSyncCheckpoint(CNode* pfrom);
