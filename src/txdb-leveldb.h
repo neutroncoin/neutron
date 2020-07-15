@@ -1,4 +1,6 @@
-// Copyright (c) 2009-2012 The Bitcoin Developers.
+// Copyright (c) 2009-2012 The Bitcoin Developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
 // Authored by Google, Inc.
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
@@ -98,8 +100,7 @@ protected:
         return true;
     }
 
-    template<typename K, typename T>
-    bool Write(const K& key, const T& value)
+    template<typename K, typename T> bool Write(const K& key, const T& value)
     {
         if (fReadOnly)
             assert(!"Write called on database in read-only mode");
@@ -111,33 +112,40 @@ protected:
         ssValue.reserve(10000);
         ssValue << value;
 
-        if (activeBatch) {
+        if (activeBatch)
+        {
             activeBatch->Put(ssKey.str(), ssValue.str());
             return true;
         }
+
         leveldb::Status status = pdb->Put(leveldb::WriteOptions(), ssKey.str(), ssValue.str());
-        if (!status.ok()) {
+
+        if (!status.ok())
+        {
             printf("LevelDB write failure: %s\n", status.ToString().c_str());
             return false;
         }
+
         return true;
     }
 
-    template<typename K>
-    bool Erase(const K& key)
+    template<typename K> bool Erase(const K& key)
     {
         if (!pdb)
             return false;
+
         if (fReadOnly)
             assert(!"Erase called on database in read-only mode");
 
         CDataStream ssKey(SER_DISK, CLIENT_VERSION);
         ssKey.reserve(1000);
         ssKey << key;
+
         if (activeBatch) {
             activeBatch->Delete(ssKey.str());
             return true;
         }
+
         leveldb::Status status = pdb->Delete(leveldb::WriteOptions(), ssKey.str());
         return (status.ok() || status.IsNotFound());
     }
@@ -193,6 +201,7 @@ public:
     bool ReadDiskTx(uint256 hash, CTransaction& tx);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx, CTxIndex& txindex);
     bool ReadDiskTx(COutPoint outpoint, CTransaction& tx);
+    bool ReadBlockIndex(const uint256& hash, CDiskBlockIndex& blockindex);
     bool WriteBlockIndex(const CDiskBlockIndex& blockindex);
     bool ReadHashBestChain(uint256& hashBestChain);
     bool WriteHashBestChain(uint256 hashBestChain);
