@@ -13,6 +13,7 @@
 #include <leveldb/cache.h>
 #include <leveldb/filter_policy.h>
 #include <memenv/memenv.h>
+#include <chrono>
 
 #include "backtrace.h"
 #include "collectionhashing.h"
@@ -26,6 +27,7 @@
 
 using namespace std;
 using namespace boost;
+using namespace std::chrono;
 
 extern std::atomic<bool> fRequestShutdown;
 
@@ -364,6 +366,8 @@ static CBlockIndex *InsertBlockIndex(uint256 hash)
 
 bool CTxDB::LoadBlockIndex()
 {
+    auto start = high_resolution_clock::now();
+
     if (mapBlockIndex.size() > 0)
     {
         // Already loaded once in this session. It can happen during migration from BDB
@@ -670,5 +674,7 @@ bool CTxDB::LoadBlockIndex()
         block.SetBestChain(txdb, pindexFork);
     }
 
+    auto duration = duration_cast<milliseconds>(high_resolution_clock::now() - start);
+    LogPrintf("%s : Loading took %ld ms\n", __func__, duration.count());
     return true;
 }
