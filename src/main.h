@@ -803,8 +803,6 @@ public:
  * Blocks are appended to blk0001.dat files on disk.  Their location on disk
  * is indexed by CBlockIndex objects in memory.
  */
-
-
 class CBlock
 {
 public:
@@ -886,12 +884,7 @@ public:
 
     uint256 GetPoWHash() const
     {
-        //return scrypt_blockhash(CVOIDBEGIN(nVersion));
-    return Hash(BEGIN(nVersion), END(nNonce));
-        //uint256 thash;
-       // scrypt_1024_1_1_256(CVOIDBEGIN(nVersion), (char*)thash);
-       // return thash;
-
+        return Hash(BEGIN(nVersion), END(nNonce));
     }
 
     int64_t GetBlockTime() const
@@ -906,12 +899,13 @@ public:
     {
         // Take last bit of block hash as entropy bit
         unsigned int nEntropyBit = ((GetHash().Get64()) & 1llu);
+
         if (fDebug && GetBoolArg("-printstakemodifier"))
             LogPrintf("GetStakeEntropyBit: hashBlock=%s nEntropyBit=%u\n", GetHash().ToString().c_str(), nEntropyBit);
+
         return nEntropyBit;
     }
 
-    // ppcoin: two types of block: proof-of-work or proof-of-stake
     bool IsProofOfStake() const
     {
         return (vtx.size() > 1 && vtx[1].IsCoinStake());
@@ -927,21 +921,25 @@ public:
         return IsProofOfStake()? std::make_pair(vtx[1].vin[0].prevout, vtx[1].nTime) : std::make_pair(COutPoint(), (unsigned int)0);
     }
 
-    // ppcoin: get max transaction timestamp
     int64_t GetMaxTransactionTime() const
     {
         int64_t maxTransactionTime = 0;
+
         BOOST_FOREACH(const CTransaction& tx, vtx)
             maxTransactionTime = std::max(maxTransactionTime, (int64_t)tx.nTime);
+
         return maxTransactionTime;
     }
 
     uint256 BuildMerkleTree() const
     {
         vMerkleTree.clear();
+
         BOOST_FOREACH(const CTransaction& tx, vtx)
             vMerkleTree.push_back(tx.GetHash());
+
         int j = 0;
+
         for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
         {
             for (int i = 0; i < nSize; i += 2)
@@ -950,8 +948,10 @@ public:
                 vMerkleTree.push_back(Hash(BEGIN(vMerkleTree[j+i]),  END(vMerkleTree[j+i]),
                                            BEGIN(vMerkleTree[j+i2]), END(vMerkleTree[j+i2])));
             }
+
             j += nSize;
         }
+
         return (vMerkleTree.empty() ? 0 : vMerkleTree.back());
     }
 
@@ -959,8 +959,10 @@ public:
     {
         if (vMerkleTree.empty())
             BuildMerkleTree();
+
         std::vector<uint256> vMerkleBranch;
         int j = 0;
+
         for (int nSize = vtx.size(); nSize > 1; nSize = (nSize + 1) / 2)
         {
             int i = std::min(nIndex^1, nSize-1);
@@ -968,6 +970,7 @@ public:
             nIndex >>= 1;
             j += nSize;
         }
+
         return vMerkleBranch;
     }
 
@@ -975,38 +978,40 @@ public:
     {
         if (nIndex == -1)
             return 0;
+
         BOOST_FOREACH(const uint256& otherside, vMerkleBranch)
         {
             if (nIndex & 1)
                 hash = Hash(BEGIN(otherside), END(otherside), BEGIN(hash), END(hash));
             else
                 hash = Hash(BEGIN(hash), END(hash), BEGIN(otherside), END(otherside));
+
             nIndex >>= 1;
         }
+
         return hash;
     }
 
 
     bool WriteToDisk(unsigned int& nFileRet, unsigned int& nBlockPosRet)
     {
-        // Open history file to append
         CAutoFile fileout = CAutoFile(AppendBlockFile(nFileRet), SER_DISK, CLIENT_VERSION);
+
         if (!fileout)
             return error("CBlock::WriteToDisk() : AppendBlockFile failed");
 
-        // Write index header
         unsigned int nSize = fileout.GetSerializeSize(*this);
         fileout << FLATDATA(pchMessageStart) << nSize;
 
-        // Write block
         long fileOutPos = ftell(fileout);
+
         if (fileOutPos < 0)
             return error("CBlock::WriteToDisk() : ftell failed");
+
         nBlockPosRet = fileOutPos;
         fileout << *this;
-
-        // Flush stdio buffers and commit to disk before returning
         fflush(fileout);
+
         if (!IsInitialBlockDownload() || (nBestHeight+1) % 500 == 0)
             FileCommit(fileout);
 
@@ -1016,23 +1021,23 @@ public:
     bool ReadFromDisk(unsigned int nFile, unsigned int nBlockPos, bool fReadTransactions=true)
     {
         SetNull();
-
-        // Open history file to read
         CAutoFile filein = CAutoFile(OpenBlockFile(nFile, nBlockPos, "rb"), SER_DISK, CLIENT_VERSION);
+
         if (!filein)
             return error("CBlock::ReadFromDisk() : OpenBlockFile failed");
+
         if (!fReadTransactions)
             filein.nType |= SER_BLOCKHEADERONLY;
 
-        // Read block
-        try {
+        try
+        {
             filein >> *this;
         }
-        catch (std::exception &e) {
+        catch (std::exception &e)
+        {
             return error("%s() : deserialize or I/O error", __PRETTY_FUNCTION__);
         }
 
-        // Check the header
         if (fReadTransactions && IsProofOfWork() && !CheckProofOfWork(GetPoWHash(), nBits))
             return error("CBlock::ReadFromDisk() : errors in block header");
 
@@ -1051,14 +1056,18 @@ public:
             nTime, nBits, nNonce,
             vtx.size(),
             HexStr(vchBlockSig.begin(), vchBlockSig.end()).c_str());
+
         for (unsigned int i = 0; i < vtx.size(); i++)
         {
             LogPrintf("  ");
             vtx[i].print();
         }
+
         LogPrintf("  vMerkleTree: ");
+
         for (unsigned int i = 0; i < vMerkleTree.size(); i++)
             LogPrintf("%s ", vMerkleTree[i].ToString().substr(0,10).c_str());
+
         LogPrintf("\n");
     }
 
@@ -1082,11 +1091,6 @@ private:
     bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew, bool reorganize, int postponedBlocks=-1);
 };
 
-
-
-
-
-
 /** The block chain is a tree shaped structure starting with the
  * genesis block at the root, with each block potentially having multiple
  * candidates to be the next block.  pprev and pnext link a path through the
@@ -1104,11 +1108,10 @@ public:
     unsigned int nBlockPos;
     uint256 nChainTrust; // ppcoin: trust score of block chain
     int nHeight;
-
     int64_t nMint;
     int64_t nMoneySupply;
+    unsigned int nFlags;
 
-    unsigned int nFlags;  // ppcoin: block index flags
     enum
     {
         BLOCK_PROOF_OF_STAKE = (1 << 0), // is proof-of-stake block
@@ -1122,7 +1125,6 @@ public:
     // proof-of-stake specific fields
     COutPoint prevoutStake;
     unsigned int nStakeTime;
-
     uint256 hashProof;
 
     // block header
@@ -1172,6 +1174,7 @@ public:
         nStakeModifier = 0;
         nStakeModifierChecksum = 0;
         hashProof = 0;
+
         if (block.IsProofOfStake())
         {
             SetProofOfStake();
@@ -1254,7 +1257,6 @@ public:
     static bool IsSuperMajority(int minVersion, const CBlockIndex* pstart,
                                 unsigned int nRequired, unsigned int nToCheck);
 
-
     bool IsProofOfWork() const
     {
         return !(nFlags & BLOCK_PROOF_OF_STAKE);
@@ -1279,6 +1281,7 @@ public:
     {
         if (nEntropyBit > 1)
             return false;
+
         nFlags |= (nEntropyBit? BLOCK_STAKE_ENTROPY : 0);
         return true;
     }
@@ -1291,6 +1294,7 @@ public:
     void SetStakeModifier(uint64_t nModifier, bool fGeneratedStakeModifier)
     {
         nStakeModifier = nModifier;
+
         if (fGeneratedStakeModifier)
             nFlags |= BLOCK_STAKE_MODIFIER;
     }
