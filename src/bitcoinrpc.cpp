@@ -717,10 +717,8 @@ bool ClientAllowed(const boost::asio::ip::address& address)
     return false;
 }
 
-// IOStream device that speaks SSL but can also speak non-SSL
-
-template <typename Protocol>
-class SSLIOStreamDevice : public iostreams::device<iostreams::bidirectional> {
+template<typename Protocol> class SSLIOStreamDevice : public iostreams::device<iostreams::bidirectional>
+{
 public:
     SSLIOStreamDevice(asio::ssl::stream<typename Protocol::socket> &streamIn, bool fUseSSLIn) : stream(streamIn)
     {
@@ -793,14 +791,11 @@ public:
     virtual void close() = 0;
 };
 
-template <typename Protocol>
-class AcceptedConnectionImpl : public AcceptedConnection
+template<typename Protocol> class AcceptedConnectionImpl : public AcceptedConnection
 {
 public:
     AcceptedConnectionImpl(asio::io_service& io_service, ssl::context &context, bool fUseSSL) :
-        sslStream(io_service, context), _d(sslStream, fUseSSL), _stream(_d)
-    {
-    }
+        sslStream(io_service, context), _d(sslStream, fUseSSL), _stream(_d) { /* Intentionally left empty */ }
 
     virtual std::iostream& stream()
     {
@@ -975,9 +970,9 @@ void ThreadRPCServer2(void* parg)
     boost::shared_ptr<ip::tcp::acceptor> acceptor(new ip::tcp::acceptor(io_service));
 
     boost::signals2::signal<void ()> StopRequests;
-
     bool fListening = false;
     std::string strerr;
+
     try
     {
         acceptor->open(endpoint.protocol());
@@ -988,8 +983,8 @@ void ThreadRPCServer2(void* parg)
 
         acceptor->bind(endpoint);
         acceptor->listen(socket_base::max_connections);
-
         RPCListen(acceptor, context, fUseSSL);
+
         // Cancel outstanding listen-requests for this acceptor when shutting down
         StopRequests.connect(signals2::slot<void ()>(
                     static_cast<void (ip::tcp::acceptor::*)()>(&ip::tcp::acceptor::close), acceptor.get())
@@ -999,10 +994,12 @@ void ThreadRPCServer2(void* parg)
     }
     catch(boost::system::system_error &e)
     {
-        strerr = strprintf(_("An error occurred while setting up the RPC port %u for listening on IPv6, falling back to IPv4: %s"), endpoint.port(), e.what());
+        strerr = strprintf(_("An error occurred while setting up the RPC port %u for listening on IPv6, "
+                           "falling back to IPv4: %s"), endpoint.port(), e.what());
     }
 
-    try {
+    try
+    {
         // If dual IPv6/IPv4 failed (or we're opening loopback interfaces only), open IPv4 separately
         if (!fListening || loopback || v6_only_error)
         {
@@ -1016,10 +1013,11 @@ void ThreadRPCServer2(void* parg)
             acceptor->listen(socket_base::max_connections);
 
             RPCListen(acceptor, context, fUseSSL);
+
             // Cancel outstanding listen-requests for this acceptor when shutting down
             StopRequests.connect(signals2::slot<void ()>(
-                        static_cast<void (ip::tcp::acceptor::*)()>(&ip::tcp::acceptor::close), acceptor.get())
-                    .track(acceptor));
+                static_cast<void (ip::tcp::acceptor::*)()>(&ip::tcp::acceptor::close), acceptor.get()).track(acceptor)
+            );
 
             fListening = true;
         }
@@ -1029,41 +1027,44 @@ void ThreadRPCServer2(void* parg)
         strerr = strprintf(_("An error occurred while setting up the RPC port %u for listening on IPv4: %s"), endpoint.port(), e.what());
     }
 
-    if (!fListening) {
+    if (!fListening)
+    {
         uiInterface.ThreadSafeMessageBox(strerr, _("Error"), CClientUIInterface::OK | CClientUIInterface::MODAL);
         StartShutdown();
         return;
     }
 
     vnThreadsRunning[THREAD_RPCLISTENER]--;
+
     while (!fShutdown)
         io_service.run_one();
+
     vnThreadsRunning[THREAD_RPCLISTENER]++;
     StopRequests();
 }
 
 void JSONRPCRequest::parse(const UniValue& valRequest)
 {
-    // Parse request
     if (!valRequest.isObject())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Invalid Request object");
+
     const UniValue& request = valRequest.get_obj();
-
-    // Parse id now so errors from here on will have the id
     id = find_value(request, "id");
-
-    // Parse method
     UniValue valMethod = find_value(request, "method");
+
     if (valMethod.isNull())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Missing method");
+
     if (!valMethod.isStr())
         throw JSONRPCError(RPC_INVALID_REQUEST, "Method must be a string");
+
     strMethod = valMethod.get_str();
+
     if (strMethod != "getblocktemplate")
         LogPrint("rpc", "ThreadRPCServer method=%s\n", SanitizeString(strMethod));
 
-    // Parse params
     UniValue valParams = find_value(request, "params");
+
     if (valParams.isArray() || valParams.isObject())
         params = valParams;
     else if (valParams.isNull())
@@ -1075,11 +1076,11 @@ void JSONRPCRequest::parse(const UniValue& valRequest)
 static UniValue JSONRPCExecOne(const UniValue& req)
 {
     UniValue rpc_result(UniValue::VOBJ);
-
     JSONRPCRequest jreq;
-    try {
-        jreq.parse(req);
 
+    try
+    {
+        jreq.parse(req);
         UniValue result = tableRPC.execute(jreq);
         rpc_result = JSONRPCReplyObj(result, NullUniValue, jreq.id);
     }
@@ -1099,6 +1100,7 @@ static UniValue JSONRPCExecOne(const UniValue& req)
 std::string JSONRPCExecBatch(const UniValue& vReq)
 {
     UniValue ret(UniValue::VARR);
+
     for (unsigned int reqIdx = 0; reqIdx < vReq.size(); reqIdx++)
         ret.push_back(JSONRPCExecOne(vReq[reqIdx]));
 
@@ -1115,36 +1117,44 @@ static inline JSONRPCRequest transformNamedArguments(const JSONRPCRequest& in, c
 {
     JSONRPCRequest out = in;
     out.params = UniValue(UniValue::VARR);
+
     // Build a map of parameters, and remove ones that have been processed, so that we can throw a focused error if
     // there is an unknown one.
     const std::vector<std::string>& keys = in.params.getKeys();
     const std::vector<UniValue>& values = in.params.getValues();
     std::unordered_map<std::string, const UniValue*> argsIn;
-    for (size_t i=0; i<keys.size(); ++i) {
+
+    for (size_t i=0; i<keys.size(); ++i)
         argsIn[keys[i]] = &values[i];
-    }
-    // Process expected parameters.
+
     int hole = 0;
-    for (const std::string &argName: argNames) {
+
+    for (const std::string &argName: argNames)
+    {
         auto fr = argsIn.find(argName);
-        if (fr != argsIn.end()) {
-            for (int i = 0; i < hole; ++i) {
+
+        if (fr != argsIn.end())
+        {
+            for (int i = 0; i < hole; ++i)
+            {
                 // Fill hole between specified parameters with JSON nulls,
                 // but not at the end (for backwards compatibility with calls
                 // that act based on number of specified parameters).
                 out.params.push_back(UniValue());
             }
+
             hole = 0;
             out.params.push_back(*fr->second);
             argsIn.erase(fr);
-        } else {
-            hole += 1;
         }
+        else
+            hole += 1;
     }
+
     // If there are still arguments in the argsIn map, this is an error.
-    if (!argsIn.empty()) {
+    if (!argsIn.empty())
         throw JSONRPCError(RPC_INVALID_PARAMETER, "Unknown named parameter " + argsIn.begin()->first);
-    }
+
     // Return request with named arguments transformed to positional arguments
     return out;
 }
@@ -1153,29 +1163,31 @@ void ThreadRPCServer3(void* parg)
 {
     // Make this thread recognisable as the RPC handler
     RenameThread("Neutron-rpchand");
-
     {
         LOCK(cs_THREAD_RPCHANDLER);
         vnThreadsRunning[THREAD_RPCHANDLER]++;
     }
-    AcceptedConnection *conn = (AcceptedConnection *) parg;
 
+    AcceptedConnection *conn = (AcceptedConnection *) parg;
     bool fRun = true;
+
     while (true)
     {
         if (fShutdown || !fRun)
         {
             conn->close();
             delete conn;
+
             {
                 LOCK(cs_THREAD_RPCHANDLER);
                 --vnThreadsRunning[THREAD_RPCHANDLER];
             }
+
             return;
         }
+
         map<string, string> mapHeaders;
         string strRequest;
-
         ReadHTTP(conn->stream(), mapHeaders, strRequest);
 
         // Check authorization
@@ -1184,9 +1196,11 @@ void ThreadRPCServer3(void* parg)
             conn->stream() << HTTPReply(HTTP_UNAUTHORIZED, "", false) << std::flush;
             break;
         }
+
         if (!HTTPAuthorized(mapHeaders))
         {
             LogPrintf("ThreadRPCServer incorrect password attempt from %s\n", conn->peer_address_to_string().c_str());
+
             /* Deter brute-forcing short passwords.
                If this results in a DOS the user really
                shouldn't have their RPC port exposed.*/
@@ -1196,33 +1210,32 @@ void ThreadRPCServer3(void* parg)
             conn->stream() << HTTPReply(HTTP_UNAUTHORIZED, "", false) << std::flush;
             break;
         }
+
         if (mapHeaders["connection"] == "close")
             fRun = false;
 
         JSONRPCRequest jreq;
+
         try
         {
-            // Parse request
             UniValue valRequest;
+
             if (!valRequest.read(strRequest))
                 throw JSONRPCError(RPC_PARSE_ERROR, "Parse error");
 
             // // Set the URI
             // jreq.URI = req->GetURI();
+            // TODO: Why was this disabled ?
 
             string strReply;
 
-            // singleton request
-            if (valRequest.isObject()) {
+            if (valRequest.isObject())
+            {
                 jreq.parse(valRequest);
-
                 UniValue result = tableRPC.execute(jreq);
-
-                // Send reply
                 strReply = JSONRPCReply(result, NullUniValue, jreq.id);
-
-            // array of requests
-            } else if (valRequest.isArray())
+            }
+            else if (valRequest.isArray())
                 strReply = JSONRPCExecBatch(valRequest.get_array());
             else
                 throw JSONRPCError(RPC_PARSE_ERROR, "Top-level object parse error");
@@ -1242,6 +1255,7 @@ void ThreadRPCServer3(void* parg)
     }
 
     delete conn;
+
     {
         LOCK(cs_THREAD_RPCHANDLER);
         vnThreadsRunning[THREAD_RPCHANDLER]--;
@@ -1249,9 +1263,7 @@ void ThreadRPCServer3(void* parg)
 }
 
 UniValue CRPCTable::execute(const JSONRPCRequest &request) const
-// UniValue CRPCTable::execute(const std::string &method, const UniValue &params) const
 {
-    // Find method
     const CRPCCommand *pcmd = tableRPC[request.strMethod];
 
     if (!pcmd)
@@ -1385,6 +1397,7 @@ public:
     int paramIdx;           //!< 0-based idx of param to convert
     std::string paramName;  //!< parameter name
 };
+
 /**
  * Specifiy a (method, idx, name) here if the argument is a non-string RPC
  * argument and needs to be converted from JSON.
@@ -1571,15 +1584,9 @@ UniValue RPCConvertValues(const std::string &strMethod, const std::vector<std::s
         const std::string& strVal = strParams[idx];
 
         if (!rpcCvtTable.convert(strMethod, idx))
-        {
-            // insert string value directly
             params.push_back(strVal);
-        }
         else
-        {
-            // parse string as JSON, insert bool/number/object/etc. value
             params.push_back(ParseNonRFCJSONValue(strVal));
-        }
     }
 
     return params;
@@ -1600,15 +1607,9 @@ UniValue RPCConvertNamedValues(const std::string &strMethod, const std::vector<s
         std::string value = s.substr(pos+1);
 
         if (!rpcCvtTable.convert(strMethod, name))
-        {
-            // insert string value directly
             params.pushKV(name, value);
-        }
         else
-        {
-            // parse string as JSON, insert bool/number/object/etc. value
             params.pushKV(name, ParseNonRFCJSONValue(value));
-        }
     }
 
     return params;
@@ -1629,33 +1630,25 @@ int CommandLineRPC(int argc, char *argv[])
             argv++;
         }
 
-        // Method
         if (argc < 2)
             throw runtime_error("too few parameters");
 
         string strMethod = argv[1];
 
-        // Parameters default to strings
         std::vector<std::string> strParams(&argv[2], &argv[argc]);
         UniValue params = RPCConvertValues(strMethod, strParams);
-
-        // Execute
         const UniValue reply = CallRPC(strMethod, params);
-
-        // Parse reply
         const UniValue& result = find_value(reply, "result");
         const UniValue& error  = find_value(reply, "error");
 
         if (!error.isNull())
         {
-            // Error
             strPrint = "error: " + error.write();
             int code = find_value(error.get_obj(), "code").get_int();
             nRet = abs(code);
         }
         else
         {
-            // Result
             if (result.isNull())
                 strPrint = "";
             else if (result.isStr())
