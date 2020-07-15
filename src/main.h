@@ -1074,12 +1074,12 @@ public:
 
 
     bool DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex);
-    bool CalculateBlockAmounts(CTxDB& txdb, CBlockIndex *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
+    bool CalculateBlockAmounts(CTxDB& txdb, CBlockIndexMapEntry *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
                                int64_t& nFees,  int64_t& nValueIn, int64_t& nValueOut, int64_t& nStakeReward,
                                bool fJustCheck, bool skipTxCheck, bool connectInputs);
     bool ConnectBlock(CTxDB& txdb, CBlockIndex* pindex, bool fJustCheck=false, bool reorganize=false, int postponedBlocks=-1);
     bool ReadFromDisk(const CBlockIndexMapEntry *pindex, bool fReadTransactions=true);
-    bool SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew);
+    bool SetBestChain(CTxDB& txdb, CBlockIndexMapEntry *pindexNew);
     bool AddToBlockIndex(unsigned int nFile, unsigned int nBlockPos, const uint256& hashProof);
     bool CheckBlock(bool fCheckPOW=true, bool fCheckMerkleRoot=true, bool fCheckSig=true) const;
     bool AcceptBlock();
@@ -1089,7 +1089,14 @@ public:
     bool CheckBlockSignature() const;
 
 private:
-    bool SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew, bool reorganize, int postponedBlocks=-1);
+    bool SetBestChainInner(CTxDB& txdb, CBlockIndexMapEntry *pindexNew, bool reorganize, int postponedBlocks=-1);
+};
+
+enum
+{
+    BLOCK_PROOF_OF_STAKE = (1 << 0), // is proof-of-stake block
+    BLOCK_STAKE_ENTROPY  = (1 << 1), // entropy bit for stake modifier
+    BLOCK_STAKE_MODIFIER = (1 << 2), // regenerated stake modifie
 };
 
 /** The block chain is a tree shaped structure starting with the
@@ -1105,16 +1112,41 @@ public:
     const uint256* phashBlock;
     CBlockIndexMapEntry *pprev;
     CBlockIndexMapEntry *pnext;
+    unsigned int nFile;
+    unsigned int nBlockPos;
     int nHeight;
+    unsigned int nTime;
+    unsigned int nFlags;
 
     uint256 GetBlockHash() const
     {
         return *phashBlock;
     }
 
+    bool GeneratedStakeModifier() const
+    {
+        return (nFlags & BLOCK_STAKE_MODIFIER);
+    }
+
+
+    int64_t GetBlockTime() const
+    {
+        return (int64_t)nTime;
+    }
+
     bool IsInMainChain() const
     {
         return (pnext || this->GetBlockHash() == pindexBest->GetBlockHash());
+    }
+
+    bool IsProofOfWork() const
+    {
+        return !(nFlags & BLOCK_PROOF_OF_STAKE);
+    }
+
+    bool IsProofOfStake() const
+    {
+        return (nFlags & BLOCK_PROOF_OF_STAKE);
     }
 };
 
@@ -1131,13 +1163,6 @@ public:
     int64_t nMint;
     int64_t nMoneySupply;
     unsigned int nFlags;
-
-    enum
-    {
-        BLOCK_PROOF_OF_STAKE = (1 << 0), // is proof-of-stake block
-        BLOCK_STAKE_ENTROPY  = (1 << 1), // entropy bit for stake modifier
-        BLOCK_STAKE_MODIFIER = (1 << 2), // regenerated stake modifier
-    };
 
     uint64_t nStakeModifier; // hash modifier for proof-of-stake
     unsigned int nStakeModifierChecksum; // checksum of index; in-memeory only

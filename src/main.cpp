@@ -56,7 +56,7 @@ int nBestHeight = -1;
 uint256 nBestChainTrust = 0;
 uint256 nBestInvalidTrust = 0;
 uint256 hashBestChain = 0;
-CBlockIndexMapEntryu *pindexBest = nullptr;
+CBlockIndexMapEntry *pindexBest = nullptr;
 int64_t nTimeBestReceived = 0;
 
 #define ENFORCE_MN_PAYMENT_HEIGHT  1100000
@@ -1477,7 +1477,7 @@ bool CBlock::DisconnectBlock(CTxDB& txdb, CBlockIndex* pindex)
     return true;
 }
 
-bool CBlock::CalculateBlockAmounts(CTxDB& txdb, CBlockIndex *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
+bool CBlock::CalculateBlockAmounts(CTxDB& txdb, CBlockIndexMapEntru *pindex, std::map<uint256, CTxIndex>& mapQueuedChanges,
                                    int64_t& nFees, int64_t& nValueIn, int64_t& nValueOut, int64_t& nStakeReward,
                                    bool fJustCheck, bool skipTxCheck, bool connectInputs)
 {
@@ -1984,9 +1984,8 @@ bool static Reorganize(CTxDB& txdb, CBlockIndex* pindexNew, int postponedBlocks)
     return true;
 }
 
-
 // Called from inside SetBestChain: attaches a block to the new best chain being built
-bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew, bool reorganize, int postponedBlocks)
+bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndexMapEntry *pindexNew, bool reorganize, int postponedBlocks)
 {
     uint256 hash = GetHash();
 
@@ -2013,7 +2012,7 @@ bool CBlock::SetBestChainInner(CTxDB& txdb, CBlockIndex *pindexNew, bool reorgan
     return true;
 }
 
-bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
+bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndexMapEntry *pindexNew)
 {
     uint256 hash = GetHash();
 

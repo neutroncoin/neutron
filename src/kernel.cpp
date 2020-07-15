@@ -27,20 +27,33 @@ int64_t GetWeight(int64_t nIntervalBeginning, int64_t nIntervalEnd)
     return min(nIntervalEnd - nIntervalBeginning - nStakeMinAge, (int64_t) nStakeMaxAge);
 }
 
-static bool GetLastStakeModifier(const CBlockIndex* pindex, uint64_t& nStakeModifier, int64_t& nModifierTime)
+static bool GetLastStakeModifier(const CBlockIndexMapEntry *pindex, uint64_t& nStakeModifier, int64_t& nModifierTime)
 {
     if (!pindex)
         return error("%s : null pindex", __func__);
 
-    while (pindex && pindex->pprev && !pindex->GeneratedStakeModifier())
-        pindex = pindex->pprev;
+    CTxDB txdb("r");
+    CDiskBlockIndex blockindex;
 
-    if (!pindex->GeneratedStakeModifier())
+    while (pindex && pindex->pprev)
+    {
+       if (!txdb.ReadBlockIndex(pindex->GetBlockHash(), blockindex))
+       {
+           return error("%s : failed to find block %s for stake modifier in database", __func__,
+                        pindex->GetBlockHash().ToString().c_str());
+       }
+
+       if (blockindex.GeneratedStakeModifier())
+           break;
+
+       pindex = pindex->pprev;
+    }
+
+    if (!blockindex.GeneratedStakeModifier())
         return error("%s : no generation at genesis block", __func__);
 
-    nStakeModifier = pindex->nStakeModifier;
-    nModifierTime = pindex->GetBlockTime();
-
+    nStakeModifier = blockindex.nStakeModifier;
+    nModifierTime = blockindex.GetBlockTime();
     return true;
 }
 
@@ -65,12 +78,13 @@ static int64_t GetStakeModifierSelectionInterval()
 // Select a block from the candidate blocks in vSortedByTimestamp, excluding
 // already selected blocks in vSelectedBlocks, and with timestamp up to nSelectionIntervalStop.
 static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedByTimestamp, map<uint256,
-                                      const CBlockIndex*>& mapSelectedBlocks, int64_t nSelectionIntervalStop,
-                                      uint64_t nStakeModifierPrev, const CBlockIndex** pindexSelected)
+                                      const CBlockIndexMapEntry *>& mapSelectedBlocks, int64_t nSelectionIntervalStop,
+                                      uint64_t nStakeModifierPrev, const CBlockIndexMapEntry** pindexSelected)
 {
     bool fSelected = false;
     uint256 hashBest = 0;
-    *pindexSelected = (const CBlockIndex*) 0;
+    *pindexSelected = (const CBlockIndexMapEntry *) 0;
+    CTxDB txdb("r");
 
     BOOST_FOREACH(const PAIRTYPE(int64_t, uint256)& item, vSortedByTimestamp)
     {
@@ -80,36 +94,44 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
                          __func__, item.second.ToString().c_str());
         }
 
-        const CBlockIndex* pindex = mapBlockIndex[item.second];
+        const CBlockIndexMapEntry *pindexMapEntry = mapBlockIndex[item.second];
 
-        if (fSelected && pindex->GetBlockTime() > nSelectionIntervalStop)
+        if (fSelected && pindexMapEntry->GetBlockTime() > nSelectionIntervalStop)
             break;
 
-        if (mapSelectedBlocks.count(pindex->GetBlockHash()) > 0)
+        if (mapSelectedBlocks.count(pindexMapEntry->GetBlockHash()) > 0)
             continue;
+
+        CDiskBlockIndex blockindex;
+
+        if (!txdb.ReadBlockIndex(pindexMapEntry->GetBlockHash(), blockindex))
+        {
+            return error("%s : failed to find block candidate %s in database", __func__,
+                         pindexMapEntry->GetBlockHash().ToString().c_str());
+        }
 
         // compute the selection hash by hashing its proof-hash and the
         // previous proof-of-stake modifier
         CDataStream ss(SER_GETHASH, 0);
-        ss << pindex->hashProof << nStakeModifierPrev;
+        ss << blockindex.hashProof << nStakeModifierPrev;
         uint256 hashSelection = Hash(ss.begin(), ss.end());
 
         // the selection hash is divided by 2**32 so that proof-of-stake block
         // is always favored over proof-of-work block. this is to preserve
         // the energy efficiency property
-        if (pindex->IsProofOfStake())
+        if (blockindex.IsProofOfStake())
             hashSelection >>= 32;
 
         if (fSelected && hashSelection < hashBest)
         {
             hashBest = hashSelection;
-            *pindexSelected = (const CBlockIndex*) pindex;
+            *pindexSelected = (const CBlockIndexMapEntry *) pindexMapEntry;
         }
         else if (!fSelected)
         {
             fSelected = true;
             hashBest = hashSelection;
-            *pindexSelected = (const CBlockIndex*) pindex;
+            *pindexSelected = (const CBlockIndexMapEntry *) pindexMapEntry;
         }
     }
 
@@ -132,7 +154,7 @@ static bool SelectBlockFromCandidates(vector<pair<int64_t, uint256> >& vSortedBy
 // block. This is to make it difficult for an attacker to gain control of
 // additional bits in the stake modifier, even after generating a chain of
 // blocks.
-bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeModifier, bool& fGeneratedStakeModifier)
+bool ComputeNextStakeModifier(const CBlockIndexMapEntry *pindexPrev, uint64_t& nStakeModifier, bool& fGeneratedStakeModifier)
 {
     nStakeModifier = 0;
     fGeneratedStakeModifier = false;
@@ -165,7 +187,7 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     vSortedByTimestamp.reserve(64 * nModifierInterval / nTargetSpacing);
     int64_t nSelectionInterval = GetStakeModifierSelectionInterval();
     int64_t nSelectionIntervalStart = (pindexPrev->GetBlockTime() / nModifierInterval) * nModifierInterval - nSelectionInterval;
-    const CBlockIndex* pindex = pindexPrev;
+    const CBlockIndexMapEntry *pindex = pindexPrev;
 
     while (pindex && pindex->GetBlockTime() >= nSelectionIntervalStart)
     {
@@ -180,9 +202,10 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
     // Select 64 blocks from candidate blocks to generate stake modifier
     uint64_t nStakeModifierNew = 0;
     int64_t nSelectionIntervalStop = nSelectionIntervalStart;
-    map<uint256, const CBlockIndex*> mapSelectedBlocks;
+    map<uint256, const CBlockIndexMapEntry *> mapSelectedBlocks;
+    CTxDB txdb("r");
 
-    for (int nRound=0; nRound<min(64, (int)vSortedByTimestamp.size()); nRound++)
+    for (int nRound=0; nRound<min(64, (int) vSortedByTimestamp.size()); nRound++)
     {
         // add an interval section to the current selection round
         nSelectionIntervalStop += GetStakeModifierSelectionIntervalSection(nRound);
@@ -191,16 +214,26 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         if (!SelectBlockFromCandidates(vSortedByTimestamp, mapSelectedBlocks, nSelectionIntervalStop, nStakeModifier, &pindex))
             return error("%s : unable to select block at round %d", __func__, nRound);
 
+        CDiskBlockIndex blockindex;
+
+        if (!txdb.ReadBlockIndex(pindex->GetBlockHash(), blockindex))
+        {
+            return error("%s : failed to find selected block %s in database", __func__,
+                         pindex->GetBlockHash().ToString().c_str());
+        }
+
         // write the entropy bit of the selected block
-        nStakeModifierNew |= (((uint64_t)pindex->GetStakeEntropyBit()) << nRound);
+        nStakeModifierNew |= (((uint64_t) blockindex.GetStakeEntropyBit()) << nRound);
 
         // add the selected block from candidates to selected list
         mapSelectedBlocks.insert(make_pair(pindex->GetBlockHash(), pindex));
 
         if (fDebug && GetBoolArg("-printstakemodifier"))
+        {
             LogPrintf("%s : selected round %d stop=%s height=%d bit=%d\n", __func__,
                       nRound, DateTimeStrFormat(nSelectionIntervalStop).c_str(), pindex->nHeight,
-                      pindex->GetStakeEntropyBit());
+                      blockindex.GetStakeEntropyBit());
+        }
     }
 
     // Print selection map for visualization of the selected blocks
@@ -211,17 +244,26 @@ bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeMod
         // '-' indicates proof-of-work blocks not selected
         strSelectionMap.insert(0, pindexPrev->nHeight - nHeightFirstCandidate + 1, '-');
         pindex = pindexPrev;
+        CTxDB txdb("r");
 
         while (pindex && pindex->nHeight >= nHeightFirstCandidate)
         {
+            CDiskBlockIndex blockindex;
+
+            if (!txdb.ReadBlockIndex(pindex->GetBlockHash(), blockindex))
+            {
+                return error("%s : failed to find block %s in database", __func__,
+                             pindex->GetBlockHash().ToString().c_str());
+            }
+
             // '=' indicates proof-of-stake blocks not selected
-            if (pindex->IsProofOfStake())
+            if (blockindex.IsProofOfStake())
                 strSelectionMap.replace(pindex->nHeight - nHeightFirstCandidate, 1, "=");
 
             pindex = pindex->pprev;
         }
 
-        BOOST_FOREACH(const PAIRTYPE(uint256, const CBlockIndex*)& item, mapSelectedBlocks)
+        for (auto& item : mapSelectedBlocks)
         {
             // 'S' indicates selected proof-of-stake blocks
             // 'W' indicates selected proof-of-work blocks
@@ -254,11 +296,11 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
     if (!mapBlockIndex.count(hashBlockFrom))
         return error("%s : block not indexed", __func__);
 
-    const CBlockIndex* pindexFrom = mapBlockIndex[hashBlockFrom];
+    const CBlockIndexMapEntry *pindexFrom = mapBlockIndex[hashBlockFrom];
     nStakeModifierHeight = pindexFrom->nHeight;
     nStakeModifierTime = pindexFrom->GetBlockTime();
     int64_t nStakeModifierSelectionInterval = GetStakeModifierSelectionInterval();
-    const CBlockIndex* pindex = pindexFrom;
+    const CBlockIndexMapEntry *pindex = pindexFrom;
 
     // loop to find the stake modifier later by a selection interval
     while (nStakeModifierTime < pindexFrom->GetBlockTime() + nStakeModifierSelectionInterval)
@@ -284,7 +326,16 @@ static bool GetKernelStakeModifier(uint256 hashBlockFrom, uint64_t& nStakeModifi
         }
     }
 
-    nStakeModifier = pindex->nStakeModifier;
+    CTxDB txdb("r");
+    CDiskBlockIndex blockindex;
+
+    if (!txdb.ReadBlockIndex(pindex->GetBlockHash(), blockindex))
+    {
+        return error("%s : failed to find block %s in database", __func__,
+                     pindex->GetBlockHash().ToString().c_str());
+    }
+
+    nStakeModifier = blockindex.nStakeModifier;
     return true;
 }
 

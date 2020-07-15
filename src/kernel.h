@@ -15,7 +15,7 @@ static const int MODIFIER_INTERVAL_RATIO = 3;
 static const int64_t POS_HASHCHECK_MAX_BLOCK_AGE = (60 * 60 * 24 * 2); // 2 days
 static const int STAKE_TIMESTAMP_MASK = 15;
 
-bool ComputeNextStakeModifier(const CBlockIndex* pindexPrev, uint64_t& nStakeModifier,
+bool ComputeNextStakeModifier(const CBlockIndexMapEntry *pindexPrev, uint64_t& nStakeModifier,
 		              bool& fGeneratedStakeModifier);
 
 bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBlock& blockFrom,
