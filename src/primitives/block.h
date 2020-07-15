@@ -29,7 +29,7 @@ public:
     {
     }
 
-    explicit CBlockLocator(const CBlockIndex* pindex)
+    explicit CBlockLocator(const CBlockIndexMapEntry *pindex)
     {
         Set(pindex);
     }
@@ -65,7 +65,7 @@ public:
         return vHave.empty();
     }
 
-    void Set(const CBlockIndex* pindex)
+    void Set(const CBlockIndexMapEntry *pindex)
     {
         vHave.clear();
         int nStep = 1;
@@ -97,7 +97,7 @@ public:
 
             if (mi != mapBlockIndex.end())
             {
-                CBlockIndex* pindex = (*mi).second;
+                CBlockIndexMapEntry *pindex = (*mi).second;
 
                 if (pindex->IsInMainChain())
                     return nDistance;
@@ -112,7 +112,7 @@ public:
         return nDistance;
     }
 
-    CBlockIndex* GetBlockIndex()
+    CBlockIndexMapEntry *GetBlockIndexMapEntry()
     {
         // Find the first block the caller has in the main chain
         BOOST_FOREACH(const uint256& hash, vHave)
@@ -121,7 +121,7 @@ public:
 
             if (mi != mapBlockIndex.end())
             {
-                CBlockIndex* pindex = (*mi).second;
+                CBlockIndexMapEntry *pindex = (*mi).second;
 
                 if (pindex->IsInMainChain())
                     return pindex;
@@ -140,7 +140,7 @@ public:
 
             if (mi != mapBlockIndex.end())
             {
-                CBlockIndex* pindex = (*mi).second;
+                CBlockIndexMapEntry *pindex = (*mi).second;
 
                 if (pindex->IsInMainChain())
                     return hash;
@@ -152,7 +152,7 @@ public:
 
     int GetHeight()
     {
-        CBlockIndex* pindex = GetBlockIndex();
+        CBlockIndexMapEntry *pindex = GetBlockIndexMapEntry();
 
         if (!pindex)
             return 0;
