@@ -400,8 +400,7 @@ bool CTransaction::AreInputsStandard(const MapPrevTx& mapInputs) const
     return true;
 }
 
-unsigned int
-CTransaction::GetLegacySigOpCount() const
+unsigned int CTransaction::GetLegacySigOpCount() const
 {
     unsigned int nSigOps = 0;
 
@@ -1009,21 +1008,21 @@ unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime)
     return ComputeMaxBits(bnProofOfWorkLimit, nBase, nTime);
 }
 
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake)
+unsigned int GetNextTargetRequired(const CBlockIndexMapEntry *pindexLast, bool fProofOfStake)
 {
     CBigNum bnTargetLimit = fProofOfStake ? GetPOSLimit(pindexLast->nHeight) : bnProofOfWorkLimit;
 
-    if (pindexLast == NULL)
+    if (pindexLast == nullptr)
         return bnTargetLimit.GetCompact(); // Genesis block
 
-    const CBlockIndex* pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
+    const CBlockIndexMapEntry *pindexPrev = GetLastBlockIndex(pindexLast, fProofOfStake);
 
-    if (pindexPrev->pprev == NULL)
+    if (pindexPrev->pprev == nullptr)
         return bnTargetLimit.GetCompact(); // First block
 
     const CBlockIndex* pindexPrevPrev = GetLastBlockIndex(pindexPrev->pprev, fProofOfStake);
 
-    if (pindexPrevPrev->pprev == NULL)
+    if (pindexPrevPrev->pprev == nullptr)
         return bnTargetLimit.GetCompact(); // Second block
 
     int64_t nActualSpacing = pindexPrev->GetBlockTime() - pindexPrevPrev->GetBlockTime();
@@ -1094,7 +1093,7 @@ void static InvalidChainFound(CBlockIndex* pindexNew)
               nBestBlockTrust.Get64(), DateTimeStrFormat("%x %H:%M:%S", pindexBest->GetBlockTime()).c_str());
 }
 
-void CBlock::UpdateTime(const CBlockIndex* pindexPrev)
+void CBlock::UpdateTime(const CBlockIndexMapEntry *pindexPrev)
 {
     nTime = max(GetBlockTime(), GetAdjustedTime());
 }
@@ -1281,7 +1280,7 @@ unsigned int CTransaction::GetP2SHSigOpCount(const MapPrevTx& inputs) const
 }
 
 bool CTransaction::ConnectInputs(CTxDB& txdb, MapPrevTx inputs, map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx,
-                                 const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool *txAlreadyUsed)
+                                 const CBlockIndexMapEntry* pindexBlock, bool fBlock, bool fMiner, bool *txAlreadyUsed)
 {
     // Take over previous transactions' spent pointers
     // fBlock is true when this is called from AcceptBlock when a new best-block is added to the blockchain

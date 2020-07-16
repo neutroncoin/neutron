@@ -463,7 +463,7 @@ static bool CheckStakeKernelHashV1(unsigned int nBits, const CBlock& blockFrom, 
 //   block/tx hash should not be used here as they can be generated in vast
 //   quantities so as to generate blocks faster, degrading the system back into
 //   a proof-of-work situation.
-static bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom, const CTransaction& txPrev,
+static bool CheckStakeKernelHashV2(CBlockIndexMapEntry *pindexPrev, unsigned int nBits, unsigned int nTimeBlockFrom, const CTransaction& txPrev,
                                    const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake,
                                    bool fPrintProofOfStake)
 {
@@ -484,7 +484,13 @@ static bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, 
 
     targetProofOfStake = bnTarget.getuint256();
 
-    uint64_t nStakeModifier = pindexPrev->nStakeModifier;
+    CTxDB txdb("r");
+    CDiskBlockIndex blockindexPrev;
+
+    if (!txdb.ReadBlockIndex(pindexPrev->GetBlockHash(), blockindexPrev))
+        return error("%s : failed to load block %s from database", __func__, pindexPrev->GetBlockHash().ToString().c_str());
+
+    uint64_t nStakeModifier = blockindexPrev.nStakeModifier;
     int nStakeModifierHeight = pindexPrev->nHeight;
     int64_t nStakeModifierTime = pindexPrev->nTime;
 
@@ -519,7 +525,7 @@ static bool CheckStakeKernelHashV2(CBlockIndex* pindexPrev, unsigned int nBits, 
         return true;
 }
 
-bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset,
+bool CheckStakeKernelHash(CBlockIndexMapEntry *pindexPrev, unsigned int nBits, const CBlock& blockFrom, unsigned int nTxPrevOffset,
                           const CTransaction& txPrev, const COutPoint& prevout, unsigned int nTimeTx, uint256& hashProofOfStake,
                           uint256& targetProofOfStake, bool fPrintProofOfStake)
 {
@@ -536,7 +542,8 @@ bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBl
 }
 
 // Check kernel hash target and coinstake signature
-bool CheckProofOfStake(CBlockIndex *pindexPrev, const CTransaction& tx, unsigned int nBits, uint256& hashProofOfStake, uint256& targetProofOfStake)
+bool CheckProofOfStake(CBlockIndexMapEntry *pindexPrev, const CTransaction& tx, unsigned int nBits,
+                       uint256& hashProofOfStake, uint256& targetProofOfStake)
 {
     if (!tx.IsCoinStake())
         return error("%s : called on non-coinstake %s", __func__, tx.GetHash().ToString().c_str());
@@ -562,11 +569,18 @@ bool CheckProofOfStake(CBlockIndex *pindexPrev, const CTransaction& tx, unsigned
                                  __func__, tx.GetHash().ToString().c_str()));
     }
 
-    // Read block header
     CBlock block;
 
     if (!block.ReadFromDisk(txindex.pos.nFile, txindex.pos.nBlockPos, false))
         return fDebug? error("%s : read block failed", __func__) : false; // unable to read block of previous transaction
+
+ /*   CDiskBlockIndex blockindex;
+
+    if (!txdb.ReadBlockIndex(pindex->GetBlockHash(), blockindex))
+    {
+         return error("%s : failed to load block index %s  database", __func__,
+                      pindex->GetBlockHash().ToString().c_str());
+    }*/
 
     if (!CheckStakeKernelHash(pindexPrev, nBits, block, txindex.pos.nTxPos - txindex.pos.nBlockPos, txPrev,
                               txin.prevout, tx.nTime, hashProofOfStake, targetProofOfStake, fDebug))

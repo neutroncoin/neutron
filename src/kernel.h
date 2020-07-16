@@ -18,12 +18,12 @@ static const int STAKE_TIMESTAMP_MASK = 15;
 bool ComputeNextStakeModifier(const CBlockIndexMapEntry *pindexPrev, uint64_t& nStakeModifier,
 		              bool& fGeneratedStakeModifier);
 
-bool CheckStakeKernelHash(CBlockIndex* pindexPrev, unsigned int nBits, const CBlock& blockFrom,
+bool CheckStakeKernelHash(CBlockIndexMapEntry *pindexPrev, unsigned int nBits, const CBlock& blockFrom,
 		          unsigned int nTxPrevOffset, const CTransaction& txPrev, const COutPoint& prevout,
 			  unsigned int nTimeTx, uint256& hashProofOfStake, uint256& targetProofOfStake,
 			  bool fPrintProofOfStake=false);
 
-bool CheckProofOfStake(CBlockIndex* pindexPrev, const CTransaction& tx, unsigned int nBits,
+bool CheckProofOfStake(CBlockIndexMapEntry *pindexPrev, const CTransaction& tx, unsigned int nBits,
 		       uint256& hashProofOfStake, uint256& targetProofOfStake);
 
 bool CheckCoinStakeTimestamp(int nHeight, int64_t nTimeBlock, int64_t nTimeTx);

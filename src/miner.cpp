@@ -7,6 +7,7 @@
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
 #include "txdb.h"
+#include "txdb-leveldb.h"
 #include "miner.h"
 #include "kernel.h"
 #include "utiltime.h"
@@ -121,9 +122,9 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
     std::unique_ptr<CBlock> pblock(new CBlock());
 
     if (!pblock.get())
-        return NULL;
+        return nullptr;
 
-    CBlockIndex* pindexPrev = pindexBest;
+    CBlockIndexMapEntry *pindexPrev = pindexBest;
 
     // Create coinbase tx
     CTransaction txNew;
@@ -137,7 +138,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
         CPubKey pubkey;
 
         if (!reservekey.GetReservedKey(pubkey))
-            return NULL;
+            return nullptr;
 
         txNew.vout[0].scriptPubKey << pubkey << OP_CHECKSIG;
     }
@@ -397,9 +398,20 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
         if (pFees)
             *pFees = nFees;
 
+        CDiskBlockIndex blockindexPrev;
+
+        if (!txdb.ReadBlockIndex(pindexPrev->GetBlockHash(), blockindexPrev))
+        {
+            LogPrintf("%s : failed to read block %s from database", __func__,
+                      pindexPrev->GetBlockHash().ToString().c_str());
+
+            pblock.release();
+            return nullptr;
+        }
+
         // Fill in header
         pblock->hashPrevBlock = pindexPrev->GetBlockHash();
-        pblock->nTime = max(pindexPrev->GetPastTimeLimit()+1, pblock->GetMaxTransactionTime());
+        pblock->nTime = max(blockindexPrev.GetPastTimeLimit() + 1, pblock->GetMaxTransactionTime());
         pblock->nTime = max(pblock->GetBlockTime(), PastDrift(pindexPrev->GetBlockTime()));
 
         if (!fProofOfStake)
@@ -412,7 +424,7 @@ CBlock* CreateNewBlock(CWallet* pwallet, bool fProofOfStake, int64_t* pFees)
 }
 
 
-void IncrementExtraNonce(CBlock* pblock, CBlockIndex* pindexPrev, unsigned int& nExtraNonce)
+void IncrementExtraNonce(CBlock* pblock, CBlockIndexMapEntry *pindexPrev, unsigned int& nExtraNonce)
 {
     // Update nExtraNonce
     static uint256 hashPrevBlock;
@@ -655,7 +667,7 @@ void StakeMiner(CWallet *pwallet, bool fProofOfStake)
 
         // Create new block
         unsigned int nTransactionsUpdatedLast = nTransactionsUpdated;
-        CBlockIndex* pindexPrev = pindexBest;
+        CBlockIndexMapEntry *pindexPrev = pindexBest;
         int64_t nFees;
         unique_ptr<CBlock> pblock(CreateNewBlock(pwallet, fProofOfStake, &nFees));
 

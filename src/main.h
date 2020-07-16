@@ -154,7 +154,7 @@ bool ProcessMessages(CNode* pfrom);
 bool SendMessages(CNode* pto, bool fSendTrickle);
 
 bool CheckProofOfWork(uint256 hash, unsigned int nBits);
-unsigned int GetNextTargetRequired(const CBlockIndex* pindexLast, bool fProofOfStake);
+unsigned int GetNextTargetRequired(const CBlockIndexMapEntry *pindexLast, bool fProofOfStake);
 int64_t GetProofOfWorkReward(int64_t nFees, int nHeight);
 int64_t GetProofOfStakeReward(int64_t nCoinAge, int64_t nFees, int nHeight);
 unsigned int ComputeMinWork(unsigned int nBase, int64_t nTime);
@@ -730,7 +730,7 @@ public:
      */
     bool ConnectInputs(CTxDB& txdb, MapPrevTx inputs,
                        std::map<uint256, CTxIndex>& mapTestPool, const CDiskTxPos& posThisTx,
-                       const CBlockIndex* pindexBlock, bool fBlock, bool fMiner, bool *txAlreadyUsed=nullptr);
+                       const CBlockIndexMapEntry *pindexBlock, bool fBlock, bool fMiner, bool *txAlreadyUsed=nullptr);
     bool ClientConnectInputs();
     bool CheckTransaction() const;
     bool AcceptToMemoryPool(CTxDB& txdb, bool fCheckInputs=true, bool* pfMissingInputs=NULL);
@@ -893,7 +893,7 @@ public:
         return (int64_t)nTime;
     }
 
-    void UpdateTime(const CBlockIndex* pindexPrev);
+    void UpdateTime(const CBlockIndexMapEntry *pindexPrev);
 
     // entropy bit for stake modifier if chosen by modifier
     unsigned int GetStakeEntropyBit() const
