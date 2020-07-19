@@ -470,7 +470,7 @@ bool CActiveMasternode::SelectCoinsMasternode(CTxIn& vin, int64& nValueIn, CScri
     std::istringstream(strOutputIndex) >> outputIndex;
 
     if(pwalletMain->GetTransaction(txHash, ctx)) {
-        if(ctx.vout[outputIndex].nValue == 1000*COIN) { //exactly
+        if(ctx.vout[outputIndex].nValue == 25000*COIN) { //exactly
             vin = CTxIn(ctx.GetHash(), outputIndex);
             pubScript = ctx.vout[outputIndex].scriptPubKey; // the inputs PubKey
             nValueIn = ctx.vout[outputIndex].nValue;
