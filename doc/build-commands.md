@@ -19,7 +19,7 @@ sudo apt-get install build-essential libminiupnpc-dev automake libtool cmake zli
 
 	# configure build
 	cd db-4.8.30.NC/build_unix/
-    # resolve build issue with Ubuntu 19.04 and above (ref: https://www.fsanmartin.co/compiling-berkeley-db-4-8-30-in-ubuntu-19/)
+	# resolve build issue with Ubuntu 19.04 and above (ref: https://www.fsanmartin.co/compiling-berkeley-db-4-8-30-in-ubuntu-19/)
 	sed -i 's/__atomic_compare_exchange/__atomic_compare_exchange_db/g' ../dbinc/atomic.h
 	../dist/configure --enable-cxx --disable-shared --with-pic
 
@@ -28,6 +28,19 @@ sudo apt-get install build-essential libminiupnpc-dev automake libtool cmake zli
 
 	# verify install
 	ls -l /usr/local/BerkeleyDB.4.8
+```
+
+##### Manually compile latest libssl1.0.2
+```
+	mkdir -p ~/compile/openssl1.0
+	cd ~/compile/openssl1.0
+	wget https://www.openssl.org/source/openssl-1.0.2u.tar.gz  
+	gunzip openssl-1.0.2u.tar.gz 
+	tar xf openssl-1.0.2u.tar 
+	cd openssl-1.0.2u/
+	./config --prefix=/usr/local/openssl/openssl-1.0.2u --openssldir=/usr/local/openssl/openssl-1.0.2u
+	make install
+	ls /usr/local/openssl/openssl-1.0.2u/
 ```
 
 ##### Manually compile boost 1.62 (ref: https://anycoder.wordpress.com/2014/04/28/building-boost/, https://www.boost.org/doc/libs/1_62_0/more/getting_started/unix-variants.html)
