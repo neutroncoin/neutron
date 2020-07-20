@@ -3,7 +3,7 @@
 ## Install dependencies
 ```
 sudo apt-get update
-sudo apt-get install build-essential libboost1.62-all-dev libssl1.0-dev libminiupnpc-dev automake libtool
+sudo apt-get install build-essential libboost1.62-all-dev libssl1.0-dev libminiupnpc-dev automake libtool cmake
 
 # [optional] only needed for GUI
 sudo apt-get install qt5-default qttools5-dev-tools
