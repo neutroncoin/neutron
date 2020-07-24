@@ -24,6 +24,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/filesystem/fstream.hpp>
+#include <boost/scope_exit.hpp>
 #include <boost/shared_ptr.hpp>
 #include <list>
 #include <unordered_map>
@@ -1286,11 +1287,12 @@ UniValue CRPCTable::execute(const JSONRPCRequest &request) const
         {
             LOCK(cs_main);
 
-            ENTER_CRITICAL_SECTION(pwalletMain->cs_wallet);
-            auto ret = pcmd->actor(request.params, false);
-            LEAVE_CRITICAL_SECTION(pwalletMain->cs_wallet);
+            BOOST_SCOPE_EXIT(pwalletMain) {
+                LEAVE_CRITICAL_SECTION(pwalletMain->cs_wallet);
+            } BOOST_SCOPE_EXIT_END
 
-            return ret;
+            ENTER_CRITICAL_SECTION(pwalletMain->cs_wallet);
+            return pcmd->actor(request.params, false);
         }
     }
     catch (std::exception& e)
