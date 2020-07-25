@@ -69,7 +69,6 @@ static const unsigned int MAX_ORPHAN_TRANSACTIONS = MAX_BLOCK_SIZE/100;
 static const unsigned int MAX_INV_SZ = 50000;
 static const int64_t MIN_TX_FEE =  1000000;
 static const int64_t MIN_RELAY_TX_FEE = MIN_TX_FEE;
-static const int64_t COIN_YEAR_REWARD = 5 * CENT; // 5% per year
 
 static const string DEVELOPER_ADDRESS_MAINNET_V3 = "9iVqNgAHN4BWR8nEyaV3sMxa3ZPHcKc8NN";
 static const string DEVELOPER_ADDRESS_TESTNET_V3 = "mrNsqXKuw9n52z9bijLDn6DkReqRKnZPVj";

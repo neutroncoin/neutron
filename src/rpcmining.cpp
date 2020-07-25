@@ -46,7 +46,6 @@ UniValue getmininginfo(const UniValue& params, bool fHelp)
     obj.push_back(Pair("Errors", GetWarnings("statusbar")));
     obj.push_back(Pair("Pooled Tx", (uint64_t) mempool.size()));
     obj.push_back(Pair("Stake Weight", pwalletMain->GetStakeWeight()));
-    obj.push_back(Pair("Stake Interest",    (uint64_t)COIN_YEAR_REWARD));
     obj.push_back(Pair("Testnet",  fTestNet));
 
     return obj;
