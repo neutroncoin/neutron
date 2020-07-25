@@ -1,9 +1,11 @@
-/*
- * Qt4 bitcoin GUI.
- *
- * W.J. van der Laan 2011-2012
- * The Bitcoin Developers 2011-2012
- */
+// Copyright (c) 2009-2010 Satoshi Nakamoto
+// Copyright (c) 2011-2012 W.J. van der Laan
+// Copyright (c) 2011-2012 The Bitcoin developers
+// Copyright (c) 2015-2020 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "bitcoingui.h"
 #include "transactiontablemodel.h"
 #include "addressbookpage.h"
@@ -1328,8 +1330,7 @@ void BitcoinGUI::updateWeight()
     if (!lockWallet)
         return;
 
-    uint64_t nMinWeight = 0, nMaxWeight = 0;
-    pwalletMain->GetStakeWeight(*pwalletMain, nMinWeight, nMaxWeight, nWeight);
+    pwalletMain->GetStakeWeight();
 }
 
 void BitcoinGUI::updateStakingIcon()
