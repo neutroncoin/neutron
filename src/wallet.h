@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2017-2020 The Swipp developers
 // Copyright (c) 2015-2020 The Neutron Developers
 //
 // Distributed under the MIT/X11 software license, see the accompanying
@@ -262,7 +263,7 @@ public:
 
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
 
-    bool GetStakeWeight(const CKeyStore& keystore, uint64_t& nMinWeight, uint64_t& nMaxWeight, uint64_t& nWeight);
+    uint64_t GetStakeWeight() const;
     bool CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, int64_t nFees,
                          CTransaction& txNew, CKey& key);
 
