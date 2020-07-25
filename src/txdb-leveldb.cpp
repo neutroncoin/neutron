@@ -17,7 +17,7 @@
 
 #include "backtrace.h"
 #include "collectionhashing.h"
-#include "robin-hood-hashing/src/include/robin_hood.h"
+#include "robinhood.h"
 #include "kernel.h"
 #include "checkpoints.h"
 #include "txdb.h"

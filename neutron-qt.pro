@@ -196,6 +196,7 @@ HEADERS += src/activemasternode.h \
     src/pbkdf2.h \
     src/protocol.h \
     src/random.h \
+    src/robinhood.h \
     src/scheduler.h \
     src/script.h \
     src/scrypt.h \

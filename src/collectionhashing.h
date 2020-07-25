@@ -12,7 +12,7 @@
 #include <tr1/functional>
 #include <boost/functional/hash.hpp>
 
-#include "robin-hood-hashing/src/include/robin_hood.h"
+#include "robinhood.h"
 #include "uint256.h"
 
 namespace std

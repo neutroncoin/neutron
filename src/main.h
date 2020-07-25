@@ -20,7 +20,7 @@
 #include "util.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
-#include "robin-hood-hashing/src/include/robin_hood.h"
+#include "robinhood.h"
 
 #include <iostream>
 #include <list>
