@@ -171,8 +171,6 @@ public:
     bool CanSupportFeature(enum WalletFeature wf) { return nWalletMaxVersion >= wf; }
 
     void AvailableCoinsMinConf(std::vector<COutput>& vCoins, int nConf) const;
-    // void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true,
-    //                     const CCoinControl *coinControl=NULL) const;
 
     void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl = NULL,
                         AvailableCoinsType coin_type=ALL_COINS, bool useIX = false) const;
@@ -191,9 +189,6 @@ public:
     void UnlockAllCoins();
     void ListLockedCoins(std::vector<COutPoint>& vOutpts);
     CAmount GetTotalValue(std::vector<CTxIn> vCoins);
-
-    // keystore implementation
-    // Generate a new key
     CPubKey GenerateNewKey();
 
     // Adds a key to the store, and saves it to disk.
@@ -214,15 +209,12 @@ public:
     bool LoadCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
     bool AddCScript(const CScript& redeemScript);
     bool LoadCScript(const CScript& redeemScript) { return CCryptoKeyStore::AddCScript(redeemScript); }
-
     bool Unlock(const SecureString& strWalletPassphrase, bool anonimizeOnly = false);
     bool ChangeWalletPassphrase(const SecureString& strOldWalletPassphrase, const SecureString& strNewWalletPassphrase);
     bool EncryptWallet(const SecureString& strWalletPassphrase);
-
     void GetKeyBirthTimes(std::map<CKeyID, int64_t> &mapKeyBirth) const;
 
     int64_t IncOrderPosNext(CWalletDB *pwalletdb = NULL);
-
     typedef std::pair<CWalletTx*, CAccountingEntry*> TxPair;
     typedef std::multimap<int64_t, TxPair > TxItems;
 
@@ -249,9 +241,6 @@ public:
     double GetAverageAnonymizedRounds() const;
     CAmount GetNormalizedAnonymizedBalance() const;
     CAmount GetDenominatedBalance(bool onlyDenom=true, bool onlyUnconfirmed=false) const;
-
-    // bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend, CWalletTx& wtxNew,
-    //                        CReserveKey& reservekey, int64_t& nFeeRet, const CCoinControl *coinControl=NULL);
 
     bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend, CWalletTx& wtxNew,
                            CReserveKey& reservekey, int64_t& nFeeRet, std::string& strFailReason,

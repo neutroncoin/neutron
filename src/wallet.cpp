@@ -958,26 +958,36 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 
         // no need to read and scan block, if block was created before
         // our wallet birthday (as adjusted for block time variability)
-        while (pindex && nTimeFirstKey && (pindex->nTime < (nTimeFirstKey - 7200))) {
+        while (pindex && nTimeFirstKey && (pindex->nTime < (nTimeFirstKey - 7200)))
             pindex = pindex->pnext;
-        }
 
         ShowProgress(_("Rescanning..."), 0); // show rescan progress in GUI as dialog or on splashscreen, if -rescan on startup
         double dProgressStart = GuessVerificationProgress(pindex);
         double dProgressTip = GuessVerificationProgress(pindexBest);
-        if (fDebug) LogPrintf("[Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n", pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
+
+        if (fDebug)
+        {
+            LogPrintf("[Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n",
+                      pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
+        }
+
         while (pindex)
         {
-            if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0) {
-                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((GuessVerificationProgress(pindex) - dProgressStart) / (dProgressTip - dProgressStart) * 100))));
+            if (pindex->nHeight % 100 == 0 && dProgressTip - dProgressStart > 0.0)
+            {
+                ShowProgress(_("Rescanning..."), std::max(1, std::min(99, (int)((GuessVerificationProgress(pindex) -
+                                                 dProgressStart) / (dProgressTip - dProgressStart) * 100))));
             }
-            if (GetTime() >= nNow + 60) {
+
+            if (GetTime() >= nNow + 60)
+            {
                 nNow = GetTime();
                 LogPrintf("[Rescan] Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, GuessVerificationProgress(pindex));
             }
 
             CBlock block;
             block.ReadFromDisk(pindex, true);
+
             BOOST_FOREACH(CTransaction& tx, block.vtx)
             {
                 if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
@@ -987,6 +997,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
         }
         ShowProgress(_("Rescanning..."), 100); // hide progress dialog in GUI
     }
+
     return ret;
 }
 
@@ -1426,7 +1437,6 @@ int64_t CWallet::GetImmatureBalance() const
     return nTotal;
 }
 
-// populate vCoins with vector of spendable COutputs
 void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const CCoinControl *coinControl,
                              AvailableCoinsType coin_type, bool useIX) const
 {
@@ -1491,7 +1501,6 @@ void CWallet::AvailableCoins(vector<COutput>& vCoins, bool fOnlyConfirmed, const
                 if(!found)
                     continue;
 
-		//isminetype mine = IsMine(pcoin->vout[i]);
 	        bool mine = IsMine(pcoin->vout[i]);
 
                 // if (!(IsSpent(wtxid, i)) && mine != ISMINE_NO &&
@@ -1519,6 +1528,7 @@ void CWallet::AvailableCoinsMN(vector<COutput>& vCoins, bool fOnlyConfirmed, con
 
     {
         LOCK2(cs_main, cs_wallet);
+
         for (map<uint256, CWalletTx>::const_iterator it = mapWallet.begin(); it != mapWallet.end(); ++it)
         {
             const CWalletTx* pcoin = &(*it).second;
@@ -1543,6 +1553,7 @@ void CWallet::AvailableCoinsMN(vector<COutput>& vCoins, bool fOnlyConfirmed, con
                 if (!(pcoin->IsSpent(i)) && IsMine(pcoin->vout[i]) && pcoin->vout[i].nValue >= nMinimumInputValue &&
                 (!coinControl || !coinControl->HasSelected() || coinControl->IsSelected((*it).first, i)))
                     vCoins.push_back(COutput(pcoin, i, nDepth));*/
+
             // do not use IX for inputs that have less then 6 blockchain confirmations
             if (useIX && nDepth < 6)
                 continue;
@@ -2353,7 +2364,8 @@ bool CWallet::CreateTransaction(const vector<pair<CScript, int64_t> >& vecSend, 
     return true;
 }
 
-bool CWallet::CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet, const CCoinControl* coinControl)
+bool CWallet::CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey,
+                                int64_t& nFeeRet, const CCoinControl* coinControl)
 {
     vector< pair<CScript, int64_t> > vecSend;
     vecSend.push_back(make_pair(scriptPubKey, nValue));
