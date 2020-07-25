@@ -9,7 +9,7 @@
 
 #include <cstddef>
 #include <utility>
-#include <tr1/functional>
+#include <functional>
 #include <boost/functional/hash.hpp>
 
 #include "robinhood.h"
