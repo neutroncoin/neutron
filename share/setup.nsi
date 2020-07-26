@@ -5,7 +5,7 @@ SetCompressor /SOLID lzma
 
 # General Symbol Definitions
 !define REGKEY "SOFTWARE\$(^Name)"
-!define VERSION 4.1.0
+!define VERSION 4.1.1
 !define COMPANY "Neutron project"
 !define URL https://www.neutroncoin.com/
 
