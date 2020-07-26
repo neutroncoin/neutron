@@ -7,3 +7,6 @@
 [submodule "src/jemalloc"]
 	path = src/jemalloc
 	url = https://github.com/jemalloc/jemalloc.git
+[submodule "src/univalue"]
+	path = src/univalue
+	url = https://github.com/jgarzik/univalue.git
