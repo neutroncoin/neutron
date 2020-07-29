@@ -295,6 +295,43 @@ UniValue getblockbynumber(const UniValue& params, bool fHelp)
     return blockToJSON(block, pblockindex, params.size() > 1 ? params[1].get_bool() : false);
 }
 
+UniValue getblockbyrange(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() < 2 || params.size() > 3)
+        throw runtime_error(
+            "getblockbyrange <from> <to> [txinfo]\n"
+            "txinfo optional to print more detailed tx info\n"
+            "Returns list of blocsk within the given block range.");
+
+    int low = std::min(params[0].get_int(), params[1].get_int());
+    int high = std::max(params[0].get_int(), params[1].get_int());
+
+    if (low < 0 || high > nBestHeight)
+        throw runtime_error("One of the block numbers are of range.");
+
+    if (high - low >= 1000)
+    {
+        throw runtime_error("Block range can be at most 1000 blocks.");
+    }
+
+    CBlock block;
+    CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
+
+    while (pblockindex->nHeight > high)
+        pblockindex = pblockindex->pprev;
+
+    UniValue blocks(UniValue::VARR);
+
+    while (pblockindex != nullptr && pblockindex->nHeight >= low)
+    {
+        block.ReadFromDisk(pblockindex, true);
+        blocks.push_back(blockToJSON(block, pblockindex, params.size() > 2 ? params[2].get_bool() : false));
+        pblockindex = pblockindex->pprev;
+    }
+
+    return blocks;
+}
+
 // ppcoin: get information of sync-checkpoint
 UniValue getcheckpoint(const UniValue& params, bool fHelp)
 {

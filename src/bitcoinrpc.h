@@ -268,6 +268,7 @@ extern UniValue getrawmempool(const UniValue& params, bool fHelp);
 extern UniValue getblockhash(const UniValue& params, bool fHelp);
 extern UniValue getblock(const UniValue& params, bool fHelp);
 extern UniValue getblockbynumber(const UniValue& params, bool fHelp);
+extern UniValue getblockbyrange(const UniValue& params, bool fHelp);
 extern UniValue getcheckpoint(const UniValue& params, bool fHelp);
 extern UniValue getblockversionstats(const UniValue& params, bool fHelp);
 extern UniValue invalidateblock(const UniValue& params, bool fHelp);
