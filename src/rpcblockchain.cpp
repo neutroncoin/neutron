@@ -283,15 +283,9 @@ UniValue getblockbynumber(const UniValue& params, bool fHelp)
         throw runtime_error("Block number out of range.");
 
     CBlock block;
-    CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
-
-    while (pblockindex->nHeight > nHeight)
-        pblockindex = pblockindex->pprev;
-
-    uint256 hash = *pblockindex->phashBlock;
-
-    pblockindex = mapBlockIndex[hash];
+    CBlockIndex* pblockindex = FindBlockByHeight(nHeight);
     block.ReadFromDisk(pblockindex, true);
+
     return blockToJSON(block, pblockindex, params.size() > 1 ? params[1].get_bool() : false);
 }
 
