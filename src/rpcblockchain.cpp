@@ -310,23 +310,17 @@ UniValue getblockbyrange(const UniValue& params, bool fHelp)
         throw runtime_error("One of the block numbers are of range.");
 
     if (high - low >= 1000)
-    {
         throw runtime_error("Block range can be at most 1000 blocks.");
-    }
 
     CBlock block;
-    CBlockIndex* pblockindex = mapBlockIndex[hashBestChain];
-
-    while (pblockindex->nHeight > high)
-        pblockindex = pblockindex->pprev;
-
+    CBlockIndex* pblockindex = FindBlockByHeight(low);
     UniValue blocks(UniValue::VARR);
 
-    while (pblockindex != nullptr && pblockindex->nHeight >= low)
+    while (pblockindex != nullptr && pblockindex->nHeight <= high)
     {
         block.ReadFromDisk(pblockindex, true);
         blocks.push_back(blockToJSON(block, pblockindex, params.size() > 2 ? params[2].get_bool() : false));
-        pblockindex = pblockindex->pprev;
+        pblockindex = pblockindex->pnext;
     }
 
     return blocks;
