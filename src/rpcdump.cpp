@@ -106,18 +106,24 @@ public:
 UniValue importprivkey(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 1 || params.size() > 2)
+    {
         throw runtime_error(
             "importprivkey <Neutronprivkey> [label]\n"
             "Adds a private key (as returned by dumpprivkey) to your wallet.");
+    }
 
     string strSecret = params[0].get_str();
     string strLabel = "";
+
     if (params.size() > 1)
         strLabel = params[1].get_str();
+
     CBitcoinSecret vchSecret;
     bool fGood = vchSecret.SetString(strSecret);
 
-    if (!fGood) throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+    if (!fGood)
+        throw JSONRPCError(RPC_INVALID_ADDRESS_OR_KEY, "Invalid private key");
+
     if (fWalletUnlockStakingOnly)
         throw JSONRPCError(RPC_WALLET_UNLOCK_NEEDED, "Wallet is unlocked for staking only.");
 
@@ -126,26 +132,31 @@ UniValue importprivkey(const UniValue& params, bool fHelp)
     CSecret secret = vchSecret.GetSecret(fCompressed);
     key.SetSecret(secret, fCompressed);
     CKeyID vchAddress = key.GetPubKey().GetID();
+
     {
         LOCK2(cs_main, pwalletMain->cs_wallet);
-
         pwalletMain->MarkDirty();
         pwalletMain->SetAddressBookName(vchAddress, strLabel);
 
         // Don't throw error in case a key is already there
         if (pwalletMain->HaveKey(vchAddress))
+        {
+            LogPrintf("%s: Supplied key is already in wallet\n", __func__);
             return NullUniValue;
+        }
 
         pwalletMain->mapKeyMetadata[vchAddress].nCreateTime = 1;
 
         if (!pwalletMain->AddKey(key))
             throw JSONRPCError(RPC_WALLET_ERROR, "Error adding key to wallet");
+        else
+            LogPrintf("%s : Added key for address %s\n", __func__, CBitcoinAddress(key.GetPubKey().GetID()).ToString());
 
         // whenever a key is imported, we need to scan the whole chain
         pwalletMain->nTimeFirstKey = 1; // 0 would be considered 'no value'
-
         pwalletMain->ScanForWalletTransactions(pindexGenesisBlock, true);
         pwalletMain->ReacceptWalletTransactions();
+        pwalletMain->MarkDirty();
     }
 
     return NullUniValue;
