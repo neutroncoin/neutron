@@ -1000,7 +1000,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
                                                  dProgressStart) / (dProgressTip - dProgressStart) * 100))));
             }
 
-            if (GetTime() >= nNow + 60)
+            if (GetTime() >= nNow + 30)
             {
                 nNow = GetTime();
                 LogPrintf("[Rescan] Still rescanning. At block %d. Progress=%f\n", pindex->nHeight, GuessVerificationProgress(pindex));
@@ -1014,6 +1014,7 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
                 if (AddToWalletIfInvolvingMe(tx, &block, fUpdate))
                     ret++;
             }
+
             pindex = pindex->pnext;
         }
         ShowProgress(_("Rescanning..."), 100); // hide progress dialog in GUI
