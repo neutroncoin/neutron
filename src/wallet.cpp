@@ -384,11 +384,12 @@ bool CWallet::EncryptWallet(const SecureString& strWalletPassphrase)
 int64_t CWallet::IncOrderPosNext(CWalletDB *pwalletdb)
 {
     int64_t nRet = nOrderPosNext++;
-    if (pwalletdb) {
+
+    if (pwalletdb)
         pwalletdb->WriteOrderPosNext(nOrderPosNext);
-    } else {
+    else
         CWalletDB(strWalletFile).WriteOrderPosNext(nOrderPosNext);
-    }
+
     return nRet;
 }
 
@@ -406,8 +407,10 @@ CWallet::TxItems CWallet::OrderedTxItems(std::list<CAccountingEntry>& acentries,
         CWalletTx* wtx = &((*it).second);
         txOrdered.insert(make_pair(wtx->nOrderPos, TxPair(wtx, (CAccountingEntry*)0)));
     }
+
     acentries.clear();
     walletdb.ListAccountCreditDebit(strAccount, acentries);
+
     BOOST_FOREACH(CAccountingEntry& entry, acentries)
     {
         txOrdered.insert(make_pair(entry.nOrderPos, TxPair((CWalletTx*)0, &entry)));
@@ -423,17 +426,24 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx, bool fBlock)
     // restored from backup or the user making copies of wallet.dat.
     {
         LOCK(cs_wallet);
+
         BOOST_FOREACH(const CTxIn& txin, tx.vin)
         {
             map<uint256, CWalletTx>::iterator mi = mapWallet.find(txin.prevout.hash);
+
             if (mi != mapWallet.end())
             {
                 CWalletTx& wtx = (*mi).second;
+
                 if (txin.prevout.n >= wtx.vout.size())
-                    LogPrintf("WalletUpdateSpent: bad wtx %s\n", wtx.GetHash().ToString().c_str());
+                {
+                    LogPrintf("%s : bad wtx %s\n", __func__, wtx.GetHash().ToString().c_str());
+                }
                 else if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
                 {
-                    LogPrintf("WalletUpdateSpent found spent coin %s TC %s\n", FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+                    LogPrintf("%s : found spent coin %s TC %s\n", __func__,
+                              FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
+
                     wtx.MarkSpent(txin.prevout.n);
                     wtx.WriteToDisk();
                     NotifyTransactionChanged(this, txin.prevout.hash, CT_UPDATED);
@@ -463,11 +473,10 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx, bool fBlock)
 
 void CWallet::MarkDirty()
 {
-    {
-        LOCK(cs_wallet);
-        BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
-            item.second.MarkDirty();
-    }
+    LOCK(cs_wallet);
+
+    BOOST_FOREACH(PAIRTYPE(const uint256, CWalletTx)& item, mapWallet)
+        item.second.MarkDirty();
 }
 
 bool CWallet::AddToWallet(const CWalletTx& wtxIn)
@@ -537,8 +546,8 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
                 }
                 else
                     LogPrintf("%s : found %s in block %s not in index\n", __func__,
-                           wtxIn.GetHash().ToString().substr(0,10).c_str(),
-                           wtxIn.hashBlock.ToString().c_str());
+                              wtxIn.GetHash().ToString().substr(0,10).c_str(),
+                              wtxIn.hashBlock.ToString().c_str());
             }
         }
 
@@ -569,10 +578,9 @@ bool CWallet::AddToWallet(const CWalletTx& wtxIn)
             fUpdated |= wtx.UpdateSpent(wtxIn.vfSpent);
         }
 
-        //// debug print
-        LogPrintf("AddToWallet %s  %s%s\n", wtxIn.GetHash().ToString().substr(0,10).c_str(), (fInsertedNew ? "new" : ""), (fUpdated ? "update" : ""));
+        LogPrintf("AddToWallet %s  %s%s\n", wtxIn.GetHash().ToString().substr(0,10).c_str(),
+                  fInsertedNew ? "new" : "", fUpdated ? "update" : "");
 
-        // Write to disk
         if (fInsertedNew || fUpdated)
             if (!wtx.WriteToDisk())
                 return false;
@@ -623,18 +631,24 @@ bool CWallet::AddToWalletIfInvolvingMe(const CTransaction& tx, const CBlock* pbl
     {
         LOCK(cs_wallet);
         bool fExisted = mapWallet.count(hash);
-        if (fExisted && !fUpdate) return false;
+
+        if (fExisted && !fUpdate)
+            return false;
+
         if (fExisted || IsMine(tx) || IsFromMe(tx))
         {
-            CWalletTx wtx(this,tx);
+            CWalletTx wtx(this, tx);
+
             // Get merkle branch if transaction was found in a block
             if (pblock)
                 wtx.SetMerkleBranch(pblock);
+
             return AddToWallet(wtx);
         }
         else
             WalletUpdateSpent(tx);
     }
+
     return false;
 }
 
@@ -644,9 +658,11 @@ bool CWallet::EraseFromWallet(uint256 hash)
         return false;
     {
         LOCK(cs_wallet);
+
         if (mapWallet.erase(hash))
             CWalletDB(strWalletFile).EraseTx(hash);
     }
+
     return true;
 }
 
@@ -655,14 +671,19 @@ bool CWallet::IsMine(const CTxIn &txin) const
     {
         LOCK(cs_wallet);
         map<uint256, CWalletTx>::const_iterator mi = mapWallet.find(txin.prevout.hash);
+
         if (mi != mapWallet.end())
         {
             const CWalletTx& prev = (*mi).second;
+
             if (txin.prevout.n < prev.vout.size())
+            {
                 if (IsMine(prev.vout[txin.prevout.n]))
                     return true;
+            }
         }
     }
+
     return false;
 }
 
@@ -757,8 +778,11 @@ int64_t CWallet::GetChange(const CTxOut& txout) const
 bool CWallet::IsMine(const CTransaction& tx) const
 {
     BOOST_FOREACH(const CTxOut& txout, tx.vout)
+    {
         if (IsMine(txout) && txout.nValue >= nMinimumInputValue)
             return true;
+    }
+
     return false;
 }
 
@@ -965,11 +989,8 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
         double dProgressStart = GuessVerificationProgress(pindex);
         double dProgressTip = GuessVerificationProgress(pindexBest);
 
-        if (fDebug)
-        {
-            LogPrintf("[Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n",
-                      pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
-        }
+        LogPrintf("[Rescan] Start - pindexBest->nHeight=%d, pindex->nHeight=%d,  dProgressStart=%lf, dProgressTip=%lf\n",
+                  pindexBest->nHeight, pindex->nHeight, dProgressStart, dProgressTip);
 
         while (pindex)
         {
