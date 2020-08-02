@@ -37,11 +37,15 @@ public:
     virtual bool GetSecret(const CKeyID &address, CSecret& vchSecret, bool &fCompressed) const
     {
         CKey key;
+
         if (!GetKey(address, key))
             return false;
+
         vchSecret = key.GetSecret(fCompressed);
         return true;
     }
+
+    virtual int size() const =0;
 };
 
 typedef std::map<CKeyID, std::pair<CSecret, bool> > KeyMap;
@@ -83,15 +87,24 @@ public:
         {
             LOCK(cs_KeyStore);
             KeyMap::const_iterator mi = mapKeys.find(address);
+
             if (mi != mapKeys.end())
             {
                 keyOut.Reset();
                 keyOut.SetSecret((*mi).second.first, (*mi).second.second);
+
                 return true;
             }
         }
+
         return false;
     }
+
+    int size() const
+    {
+        return mapKeys.size();
+    }
+
     virtual bool AddCScript(const CScript& redeemScript);
     virtual bool HaveCScript(const CScriptID &hash) const;
     virtual bool GetCScript(const CScriptID &hash, CScript& redeemScriptOut) const;
@@ -173,6 +186,11 @@ public:
             setAddress.insert((*mi).first);
             mi++;
         }
+    }
+
+    int size() const
+    {
+        return mapCryptedKeys.size();
     }
 
     /* Wallet status (encrypted, locked) changed.
