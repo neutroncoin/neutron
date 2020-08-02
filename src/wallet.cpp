@@ -1017,6 +1017,8 @@ int CWallet::ScanForWalletTransactions(CBlockIndex* pindexStart, bool fUpdate)
 
             pindex = pindex->pnext;
         }
+
+        LogPrintf("[Rescan] Completed - %d transactions identified as part of this wallet.\n", ret);
         ShowProgress(_("Rescanning..."), 100); // hide progress dialog in GUI
     }
 
