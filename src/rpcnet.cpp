@@ -365,3 +365,16 @@ UniValue spork(const UniValue& params, bool fHelp)
         "<value> is a epoch datetime to enable or disable spork" +
         HelpRequiringPassphrase());
 }
+
+UniValue getdatadirectory(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getdatadir\n"
+            "\nReturns local data directory for Neutron.\n");
+    boost::filesystem::path dataDir = GetDataDir();
+    UniValue result(UniValue::VOBJ);
+    result.push_back(Pair("directory", dataDir.string()));
+
+    return result;
+}

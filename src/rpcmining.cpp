@@ -8,7 +8,14 @@
 #include "txdb.h"
 #include "init.h"
 #include "miner.h"
+#include "masternode.h"
 #include "bitcoinrpc.h"
+#include "timedata.h"
+
+#ifdef ENABLE_WALLET
+#include "wallet.h"
+#include "walletdb.h"
+#endif
 
 using namespace std;
 
@@ -553,4 +560,47 @@ UniValue gethashespersec(const UniValue& params, bool fHelp)
     if (GetTimeMillis() - nHPSTimerStart > 8000)
         return (boost::int64_t)0;
     return (boost::int64_t)dHashesPerSec;
+}
+
+UniValue getstakingstatus(const UniValue& params, bool fHelp)
+{
+    if (fHelp || params.size() != 0)
+        throw runtime_error(
+            "getstakingstatus\n"
+            "\nReturns an object containing various staking information.\n"
+
+            "\nResult:\n"
+            "{\n"
+            "  \"validtime\": true|false,          (boolean) if the chain tip is within staking phases\n"
+            "  \"haveconnections\": true|false,    (boolean) if network connections are present\n"
+            "  \"walletunlocked\": true|false,     (boolean) if the wallet is unlocked\n"
+            "  \"mintablecoins\": true|false,      (boolean) if the wallet has mintable coins\n"
+            "  \"enoughcoins\": true|false,        (boolean) if available coins are greater than reserve balance\n"
+            "  \"mnsync\": true|false,             (boolean) if masternode data is synced\n"
+            "  \"staking status\": true|false,     (boolean) if the wallet is staking or not\n"
+            "}\n"
+
+            "\nExamples:\n" +
+            HelpExampleCli("getstakingstatus", "") + HelpExampleRpc("getstakingstatus", ""));
+
+    
+    UniValue obj(UniValue::VOBJ), debugObj(UniValue::VOBJ);
+    obj.push_back(Pair("validtime", pindexBest->nTime > 1471482000));
+    obj.push_back(Pair("haveconnections", !vNodes.empty()));
+    if (pwalletMain) {
+        obj.push_back(Pair("walletunlocked", !pwalletMain->IsLocked()));
+        obj.push_back(Pair("mintablecoins", pwalletMain->MintableCoins()));
+        obj.push_back(Pair("enoughcoins", nReserveBalance <= pwalletMain->GetBalance()));
+
+    }
+    debugObj.push_back(Pair("mnsync", !isMasternodeListSynced));
+
+    bool nStaking = false;
+    if (pindexBest->nHeight)
+        nStaking = true;
+    else if (pindexBest ->nHeight - 1 && nLastCoinStakeSearchInterval)
+        nStaking = true;
+    obj.push_back(Pair("staking status", nStaking));
+
+    return obj;
 }

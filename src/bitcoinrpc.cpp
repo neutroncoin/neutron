@@ -397,7 +397,8 @@ static const CRPCCommand vRPCCommands[] =
     { "getmininginfo",          &getmininginfo,          true,       false },
     { "getstakinginfo",         &getstakinginfo,         true,       false },
     { "submitblock",            &submitblock,            false,      false },
-    { "reservebalance",         &reservebalance,         false,      true },
+    { "reservebalance",         &reservebalance,         false,      true  },
+	{ "getstakingstatus",       &getstakingstatus,       false,      true  },
 
     /* Coin generation */
     { "setgenerate",            &setgenerate,            true,       false },
@@ -411,13 +412,15 @@ static const CRPCCommand vRPCCommands[] =
     { "signrawtransaction",     &signrawtransaction,     false,      false },
 
     /* Utility functions */
+    { "getdatadirectory",       &getdatadirectory,       false,      false },
     { "validateaddress",        &validateaddress,        true,       false },
     { "verifymessage",          &verifymessage,          true,       false },
+    { "autocombinerewards",     &autocombinerewards,     false,      true },
 
     /* Neutron features */
     { "masternode",             &masternode,             true,       true },
     { "spork",                  &spork,                  true,       false },
-    { "getminingreport",        &getminingreport,        false,      false},
+    { "getminingreport",        &getminingreport,        false,      false },
 
     /* Wallet */
     { "addmultisigaddress",     &addmultisigaddress,     false,      false },
@@ -1530,6 +1533,9 @@ static const CRPCConvertParam vRPCConvertParams[] =
     { "sendalert", 4, "" },
     { "sendalert", 5, "" },
     { "sendalert", 6, "" },
+    { "getdatadirectory", 0, "" },
+    { "autocombinerewards", 0, "" },
+    { "autocombinerewards", 1, "" },
 };
 
 class CRPCConvertTable

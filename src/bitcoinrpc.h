@@ -174,6 +174,7 @@ extern std::string HelpExampleRpc(std::string methodname, std::string args);
 
 // in rpcnet.cpp
 extern UniValue getconnectioncount(const UniValue& params, bool fHelp);
+extern UniValue getdatadirectory(const UniValue& params, bool fHelp);
 extern UniValue getpeerinfo(const UniValue& params, bool fHelp);
 extern UniValue addnode(const UniValue& params, bool fHelp);
 extern UniValue disconnectnode(const UniValue& params, bool fHelp);
@@ -199,6 +200,7 @@ extern UniValue dumpwallet(const UniValue& params, bool fHelp);
 extern UniValue getsubsidy(const UniValue& params, bool fHelp);
 extern UniValue getmininginfo(const UniValue& params, bool fHelp);
 extern UniValue getstakinginfo(const UniValue& params, bool fHelp);
+extern UniValue getstakingstatus(const UniValue& params, bool fHelp);
 extern UniValue getworkex(const UniValue& params, bool fHelp);
 extern UniValue getwork(const UniValue& params, bool fHelp);
 extern UniValue getblocktemplate(const UniValue& params, bool fHelp);
@@ -249,6 +251,7 @@ extern UniValue makekeypair(const UniValue& params, bool fHelp);
 extern UniValue getminingreport(const UniValue& params, bool fHelp);
 extern UniValue listlockunspent(const UniValue& params, bool fHelp);
 extern UniValue lockunspent(const UniValue& params, bool fHelp);
+extern UniValue autocombinerewards(const UniValue& params, bool fHelp);
 
 // in rcprawtransaction.cpp
 extern UniValue getrawtransaction(const UniValue& params, bool fHelp);

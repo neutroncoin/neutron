@@ -212,6 +212,8 @@ public:
 
     static bool Recover(CDBEnv& dbenv, std::string filename, bool fOnlyKeys);
     static bool Recover(CDBEnv& dbenv, std::string filename);
+
+    bool WriteAutoCombineSettings(bool fEnable, CAmount nCombineThreshold);
 };
 
 #endif // BITCOIN_WALLETDB_H

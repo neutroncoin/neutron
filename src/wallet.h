@@ -83,16 +83,14 @@ public:
 class CWallet : public CCryptoKeyStore
 {
 private:
-    bool SelectCoinsSimple(int64_t nTargetValue, unsigned int nSpendTime, int nMinConf,
-                           std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet,
-                           int64_t& nValueRet) const;
+    bool SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = true) const;
 
     // bool SelectCoins(int64_t nTargetValue, unsigned int nSpendTime,
     //                  std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet,
     //                  const CCoinControl *coinControl=NULL) const;
 
-    bool SelectCoins(CAmount nTargetValue, unsigned int nSpendTime,
-                     std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet,
+    bool SelectCoins(const CAmount& nTargetValue, unsigned int nSpendTime,
+                     std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet,
                      const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS,
                      bool useIX = false) const;
 
@@ -134,6 +132,10 @@ public:
     std::map<std::string, CAdrenalineNodeConfig> mapMyAdrenalineNodes;
     bool AddAdrenalineNodeConfig(CAdrenalineNodeConfig nodeConfig);
 
+    //Auto Combine Inputs
+    bool fCombineDust;
+    CAmount nAutoCombineThreshold;
+
     CWallet()
     {
         SetNull();
@@ -156,6 +158,10 @@ public:
         nOrderPosNext = 0;
         nTimeFirstKey = 0;
         fWalletUnlockAnonymizeOnly = false;
+
+        //Auto Combine Dust
+        fCombineDust = false;
+        nAutoCombineThreshold = 0;
     }
 
     std::map<uint256, CWalletTx> mapWallet;
@@ -172,8 +178,8 @@ public:
 
     void AvailableCoinsMinConf(std::vector<COutput>& vCoins, int nConf) const;
 
-    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl = NULL,
-                        AvailableCoinsType coin_type=ALL_COINS, bool useIX = false) const;
+    //void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl = NULL,
+    //                    AvailableCoinsType coin_type=ALL_COINS, bool useIX = false) const;
 
     void AvailableCoinsMN(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl *coinControl = NULL,
                           AvailableCoinsType coin_type=ALL_COINS, bool useIX = false) const;
@@ -181,6 +187,9 @@ public:
     bool SelectCoinsMinConf(int64_t nTargetValue, unsigned int nSpendTime, int nConfMine, int nConfTheirs,
                             std::vector<COutput> vCoins, std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet,
                             int64_t& nValueRet) const;
+
+    void AvailableCoins(std::vector<COutput>& vCoins, bool fOnlyConfirmed=true, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false) const;
+    std::map<CBitcoinAddress, std::vector<COutput> > AvailableCoinsByAddress(bool fConfirmed = true, CAmount maxCoinValue = 0);
 
     bool IsSpent(const uint256& hash, unsigned int n) const;
     bool IsLockedCoin(uint256 hash, unsigned int n) const;
@@ -250,11 +259,14 @@ public:
     bool CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey,
                            int64_t& nFeeRet, const CCoinControl *coinControl=NULL);
 
+    bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0);
+
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
 
     uint64_t GetStakeWeight() const;
     bool CreateCoinStake(const CKeyStore& keystore, unsigned int nBits, int64_t nSearchInterval, int64_t nFees,
                          CTransaction& txNew, CKey& key);
+    void AutoCombineDust();
 
     std::string SendMoney(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
     std::string SendMoneyToDestination(const CTxDestination &address, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
@@ -707,25 +719,44 @@ public:
 class COutput
 {
 public:
-    const CWalletTx *tx;
+    const CWalletTx* tx;
     int i;
     int nDepth;
     bool fSpendable;
 
-    COutput(const CWalletTx *txIn, int iIn, int nDepthIn, bool fSpendableIn)
+    COutput(const CWalletTx* txIn, int iIn, int nDepthIn, bool fSpendableIn)
     {
-        tx = txIn; i = iIn; nDepth = nDepthIn; fSpendable = fSpendableIn;
+        tx = txIn;
+        i = iIn;
+        nDepth = nDepthIn;
+        fSpendable = fSpendableIn;
     }
 
-    // used with Darksend. Will return fees, then denominations, everything else, then very small inputs that aren't fees
-    int Priority() const;
+    //Used with darkSendDenominations. Will return largest nondenom, then denominations, then very small inputs
+    int Priority() const
+    {
+        if (tx->vout[i].nValue == DARKSEND_FEE)
+        return -20000;
+
+    BOOST_FOREACH(int64_t d, darkSendDenominations)
+    {
+        if (tx->vout[i].nValue == d)
+            return 10000;
+    }
+
+    if(tx->vout[i].nValue < 1*COIN)
+        return 20000;
+
+    // nondenom return largest first
+    return -(tx->vout[i].nValue/COIN);
+    }
+
+    CAmount Value() const
+    {
+        return tx->vout[i].nValue;
+    }
 
     std::string ToString() const;
-
-    void print() const
-    {
-        printf("%s\n", ToString().c_str());
-    }
 };
 
 // private key that includes an expiration date in case it never gets used
