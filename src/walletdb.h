@@ -198,6 +198,12 @@ public:
 
     bool ReadAccount(const std::string& strAccount, CAccount& account);
     bool WriteAccount(const std::string& strAccount, const CAccount& account);
+
+    /// Write destination data key,value tuple to database
+    bool WriteDestData(const std::string& address, const std::string& key, const std::string& value);
+    /// Erase destination data tuple from wallet database
+    bool EraseDestData(const std::string& address, const std::string& key);
+
 private:
     bool WriteAccountingEntry(const uint64_t nAccEntryNum, const CAccountingEntry& acentry);
 public:
@@ -213,7 +219,7 @@ public:
     static bool Recover(CDBEnv& dbenv, std::string filename, bool fOnlyKeys);
     static bool Recover(CDBEnv& dbenv, std::string filename);
 
-    bool WriteAutoCombineSettings(bool fEnable, CAmount nCombineThreshold);
+    bool WriteAutoCombineSettings(bool fEnable, int64_t nCombineThreshold);
 };
 
 #endif // BITCOIN_WALLETDB_H

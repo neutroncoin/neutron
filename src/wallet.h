@@ -31,6 +31,7 @@ class CWalletTx;
 class CReserveKey;
 class COutput;
 class CCoinControl;
+class CScript;
 
 /** (client) version numbers for particular wallet features */
 enum WalletFeature
@@ -83,16 +84,32 @@ public:
 class CWallet : public CCryptoKeyStore
 {
 private:
-    bool SelectCoins(const CAmount& nTargetValue, std::set<std::pair<const CWalletTx*, unsigned int> >& setCoinsRet, CAmount& nValueRet, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = true) const;
+    bool SelectCoinsSimple(int64_t nTargetValue, 
+	unsigned int nSpendTime, 
+	int nMinConf,
+	std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet,
+	int64_t& nValueRet) const;
+
+    bool SelectCoins(const int64_t nTargetValue, 
+	unsigned int nSpendTime,
+	std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, 
+	int64_t& nValueRet,
+	const CCoinControl *coinControl = NULL, 
+	AvailableCoinsType coin_type=ALL_COINS,
+    bool useIX = false) const;
+
+
+    bool SelectCoins(const int64_t& nTargetValue, 
+	std::set<std::pair<const CWalletTx*, 
+	unsigned int> >& setCoinsRet, 
+	const int64_t& nValueRet, 
+	const CCoinControl* coinControl = NULL, 
+	AvailableCoinsType coin_type = ALL_COINS, 
+	bool useIX = true) const;
 
     // bool SelectCoins(int64_t nTargetValue, unsigned int nSpendTime,
     //                  std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, int64_t& nValueRet,
     //                  const CCoinControl *coinControl=NULL) const;
-
-    bool SelectCoins(const CAmount& nTargetValue, unsigned int nSpendTime,
-                     std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, CAmount& nValueRet,
-                     const CCoinControl *coinControl = NULL, AvailableCoinsType coin_type=ALL_COINS,
-                     bool useIX = false) const;
 
     CWalletDB *pwalletdbEncryption;
     int nWalletVersion; // clients below this version are not able to load the wallet
@@ -134,7 +151,7 @@ public:
 
     //Auto Combine Inputs
     bool fCombineDust;
-    CAmount nAutoCombineThreshold;
+    int64_t nAutoCombineThreshold;
 
     CWallet()
     {
@@ -211,6 +228,15 @@ public:
 
     bool LoadMinVersion(int nVersion) { nWalletVersion = nVersion; nWalletMaxVersion = std::max(nWalletMaxVersion, nVersion); return true; }
 
+    //! Adds a destination data tuple to the store, and saves it to disk
+    bool AddDestData(const CTxDestination& dest, const std::string& key, const std::string& value);
+    //! Erases a destination data tuple in the store and on disk
+    bool EraseDestData(const CTxDestination& dest, const std::string& key);
+    //! Adds a destination data tuple to the store, without saving it to disk
+    bool LoadDestData(const CTxDestination& dest, const std::string& key, const std::string& value);
+    //! Look up a destination data tuple in the store, return true if found false otherwise
+    bool GetDestData(const CTxDestination& dest, const std::string& key, std::string* value) const;
+
     // Adds an encrypted key to the store, and saves it to disk.
     bool AddCryptedKey(const CPubKey &vchPubKey, const std::vector<unsigned char> &vchCryptedSecret);
 
@@ -251,15 +277,31 @@ public:
     CAmount GetNormalizedAnonymizedBalance() const;
     CAmount GetDenominatedBalance(bool onlyDenom=true, bool onlyUnconfirmed=false) const;
 
-    bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend, CWalletTx& wtxNew,
-                           CReserveKey& reservekey, int64_t& nFeeRet, std::string& strFailReason,
-                           const CCoinControl *coinControl=NULL, AvailableCoinsType coin_type=ALL_COINS,
-                           bool useIX=false);
+    bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend,
+	CWalletTx& wtxNew,
+	CReserveKey& reservekey, 
+	int64_t& nFeeRet, 
+	std::string& strFailReason,
+	const CCoinControl *coinControl=NULL, 
+	AvailableCoinsType coin_type=ALL_COINS,                          bool useIX=false);
 
-    bool CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey,
-                           int64_t& nFeeRet, const CCoinControl *coinControl=NULL);
+    bool CreateTransaction(CScript scriptPubKey,
+	int64_t nValue,
+	CWalletTx& wtxNew,
+	CReserveKey& reservekey,
+	int64_t& nFeeRet,
+	const CCoinControl *coinControl=NULL);
 
-    bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0);
+    bool CreateTransaction(CScript scriptPubKey, 
+	const int64_t& nValue, 
+	CWalletTx& wtxNew, 
+	CReserveKey& reservekey, 
+	int64_t& nFeeRet, 
+	std::string& strFailReason, 
+	const CCoinControl* coinControl = NULL, 
+	AvailableCoinsType coin_type = ALL_COINS, 
+	bool useIX = false, 
+	int64_t nFeePay = 0);
 
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
 

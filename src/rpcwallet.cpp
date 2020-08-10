@@ -2131,7 +2131,7 @@ UniValue autocombinerewards(const UniValue& params, bool fHelp)
             HelpExampleCli("autocombinerewards", "true 500") + HelpExampleRpc("autocombinerewards", "true 500"));
 
     CWalletDB walletdb(pwalletMain->strWalletFile);
-    CAmount nThreshold = 0;
+    int64_t nThreshold = 0;
 
     if (fEnable)
         nThreshold = params[1].get_int();
