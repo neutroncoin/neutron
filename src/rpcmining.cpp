@@ -565,10 +565,10 @@ UniValue gethashespersec(const UniValue& params, bool fHelp)
 UniValue getstakingstatus(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() != 0)
-        throw runtime_error(
+    {
+		throw runtime_error(
             "getstakingstatus\n"
             "\nReturns an object containing various staking information.\n"
-
             "\nResult:\n"
             "{\n"
             "  \"validtime\": true|false,          (boolean) if the chain tip is within staking phases\n"
@@ -582,9 +582,13 @@ UniValue getstakingstatus(const UniValue& params, bool fHelp)
 
             "\nExamples:\n" +
             HelpExampleCli("getstakingstatus", "") + HelpExampleRpc("getstakingstatus", ""));
+    }
 
-    
+    uint64_t nWeight = pwalletMain->GetStakeWeight();
+    bool staking = nLastCoinStakeSearchInterval && nWeight;
+
     UniValue obj(UniValue::VOBJ), debugObj(UniValue::VOBJ);
+
     obj.push_back(Pair("validtime", pindexBest->nTime > 1471482000));
     obj.push_back(Pair("haveconnections", !vNodes.empty()));
     if (pwalletMain) {
@@ -594,13 +598,7 @@ UniValue getstakingstatus(const UniValue& params, bool fHelp)
 
     }
     debugObj.push_back(Pair("mnsync", !isMasternodeListSynced));
-
-    bool nStaking = false;
-    if (pindexBest->nHeight)
-        nStaking = true;
-    else if (pindexBest ->nHeight - 1 && nLastCoinStakeSearchInterval)
-        nStaking = true;
-    obj.push_back(Pair("staking status", nStaking));
+	obj.push_back(Pair("staking status", staking));
 
     return obj;
 }
