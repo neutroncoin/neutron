@@ -447,16 +447,7 @@ ReadKeyValue(CWallet* pwallet, CDataStream& ssKey, CDataStream& ssValue,
         CAdrenalineNodeConfig adrenalineNodeConfig;
         ssValue >> adrenalineNodeConfig;
         pwallet->mapMyAdrenalineNodes.insert(make_pair(sAlias, adrenalineNodeConfig));
-    }    else if (strType == "destdata") {
-            std::string strAddress, strKey, strValue;
-            ssKey >> strAddress;
-            ssKey >> strKey;
-            ssValue >> strValue;
-            if (!pwallet->LoadDestData(CBitcoinAddress(strAddress).Get(), strKey, strValue)) {
-                strErr = "Error reading wallet database: LoadDestData failed";
-                return false;
-            }
-        }
+    }    
     } catch (...)
     {
         return false;

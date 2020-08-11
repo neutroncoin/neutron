@@ -84,27 +84,27 @@ public:
 class CWallet : public CCryptoKeyStore
 {
 private:
-    bool SelectCoinsSimple(int64_t nTargetValue, 
-	unsigned int nSpendTime, 
+    bool SelectCoinsSimple(int64_t nTargetValue,
+	unsigned int nSpendTime,
 	int nMinConf,
 	std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet,
 	int64_t& nValueRet) const;
 
-    bool SelectCoins(const int64_t nTargetValue, 
+    bool SelectCoins(const int64_t nTargetValue,
 	unsigned int nSpendTime,
-	std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet, 
+	std::set<std::pair<const CWalletTx*,unsigned int> >& setCoinsRet,
 	int64_t& nValueRet,
-	const CCoinControl *coinControl = NULL, 
+	const CCoinControl *coinControl = NULL,
 	AvailableCoinsType coin_type=ALL_COINS,
     bool useIX = false) const;
 
 
-    bool SelectCoins(const int64_t& nTargetValue, 
-	std::set<std::pair<const CWalletTx*, 
-	unsigned int> >& setCoinsRet, 
-	const int64_t& nValueRet, 
-	const CCoinControl* coinControl = NULL, 
-	AvailableCoinsType coin_type = ALL_COINS, 
+    bool SelectCoins(const int64_t& nTargetValue,
+	std::set<std::pair<const CWalletTx*,
+	unsigned int> >& setCoinsRet,
+	const int64_t& nValueRet,
+	const CCoinControl* coinControl = NULL,
+	AvailableCoinsType coin_type = ALL_COINS,
 	bool useIX = true) const;
 
     // bool SelectCoins(int64_t nTargetValue, unsigned int nSpendTime,
@@ -276,14 +276,30 @@ public:
     double GetAverageAnonymizedRounds() const;
     CAmount GetNormalizedAnonymizedBalance() const;
     CAmount GetDenominatedBalance(bool onlyDenom=true, bool onlyUnconfirmed=false) const;
+	
+	
+	bool CreateTransaction(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, CReserveKey& reservekey, int64_t& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl);
+    bool CreateTransaction(const std::vector<std::pair<CScript, CAmount> >& vecSend,
+        CWalletTx& wtxNew,
+        CReserveKey& reservekey,
+        CAmount& nFeeRet,
+        std::string& strFailReason,
+        const CCoinControl* coinControl = NULL,
+        AvailableCoinsType coin_type = ALL_COINS,
+        bool useIX = false,
+        CAmount nFeePay = 0);
+    bool CreateTransaction(CScript scriptPubKey, const CAmount& nValue, CWalletTx& wtxNew, CReserveKey& reservekey, CAmount& nFeeRet, std::string& strFailReason, const CCoinControl* coinControl = NULL, AvailableCoinsType coin_type = ALL_COINS, bool useIX = false, CAmount nFeePay = 0);
+	
+	
 
-    bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend,
+   /* bool CreateTransaction(const std::vector<std::pair<CScript, int64_t> >& vecSend,
 	CWalletTx& wtxNew,
-	CReserveKey& reservekey, 
-	int64_t& nFeeRet, 
+	CReserveKey& reservekey,
+	int64_t& nFeeRet,
 	std::string& strFailReason,
-	const CCoinControl *coinControl=NULL, 
-	AvailableCoinsType coin_type=ALL_COINS,                          bool useIX=false);
+	const CCoinControl *coinControl=NULL,
+	AvailableCoinsType coin_type=ALL_COINS,
+  bool useIX=false);
 
     bool CreateTransaction(CScript scriptPubKey,
 	int64_t nValue,
@@ -292,17 +308,28 @@ public:
 	int64_t& nFeeRet,
 	const CCoinControl *coinControl=NULL);
 
-    bool CreateTransaction(CScript scriptPubKey, 
-	const int64_t& nValue, 
-	CWalletTx& wtxNew, 
-	CReserveKey& reservekey, 
-	int64_t& nFeeRet, 
-	std::string& strFailReason, 
-	const CCoinControl* coinControl = NULL, 
-	AvailableCoinsType coin_type = ALL_COINS, 
-	bool useIX = false, 
+    bool CreateTransaction(CScript scriptPubKey,
+	const int64_t& nValue,
+	CWalletTx& wtxNew,
+	CReserveKey& reservekey,
+	int64_t& nFeeRet,
+	std::string& strFailReason,
+	const CCoinControl* coinControl = NULL,
+	AvailableCoinsType coin_type = ALL_COINS,
+	bool useIX = false,
 	int64_t nFeePay = 0);
 
+    bool CreateTransaction(CScript scriptPubKey,
+	const CAmount& nValue,
+	CWalletTx& wtxNew,
+	CReserveKey& reservekey,
+	CAmount& nFeeRet,
+	std::string& strFailReason,
+	const CCoinControl* coinControl = NULL,
+	AvailableCoinsType coin_type = ALL_COINS,
+	bool useIX = false,
+	CAmount nFeePay = 0);
+*/
     bool CommitTransaction(CWalletTx& wtxNew, CReserveKey& reservekey);
 
     uint64_t GetStakeWeight() const;
@@ -310,8 +337,8 @@ public:
                          CTransaction& txNew, CKey& key);
     void AutoCombineDust();
 
-    std::string SendMoney(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
-    std::string SendMoneyToDestination(const CTxDestination &address, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false);
+/*     std::string SendMoney(CScript scriptPubKey, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false); */
+    /* std::string SendMoneyToDestination(const CTxDestination &address, int64_t nValue, CWalletTx& wtxNew, bool fAskFee=false); */
 
     std::string PrepareDarksendDenominate(int minRounds, int maxRounds);
     bool CreateCollateralTransaction(CTransaction& txCollateral, std::string strReason);
