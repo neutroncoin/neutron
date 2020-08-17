@@ -54,7 +54,7 @@ void AddEditAdrenalineNode::on_okButton_clicked()
 	s.SetSecret(secret.GetSecret(fCompressedOut), false);
 
         c.sMasternodePrivKey = s.ToString();
-	
+
         CWalletDB walletdb(pwalletMain->strWalletFile);
         CAccount account;
         walletdb.ReadAccount(c.sAlias, account);
@@ -66,7 +66,7 @@ void AddEditAdrenalineNode::on_okButton_clicked()
         {
             CScript scriptPubKey;
             scriptPubKey.SetDestination(account.vchPubKey.GetID());
-            for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin();
+            for (auto it = pwalletMain->mapWallet.begin();
                  it != pwalletMain->mapWallet.end() && account.vchPubKey.IsValid();
                  ++it)
             {
@@ -105,4 +105,3 @@ void AddEditAdrenalineNode::on_cancelButton_clicked()
 {
     reject();
 }
-
