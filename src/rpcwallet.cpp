@@ -377,7 +377,6 @@ void SendMoney(const CTxDestination& address, CAmount nValue, CWalletTx& wtxNew,
 UniValue sendtoaddress(const UniValue& params, bool fHelp)
 {
     if (fHelp || params.size() < 2 || params.size() > 4)
-    {
         throw runtime_error(
             "sendtoaddress <Neutronaddress> <amount> [comment] [comment-to]\n"
             "\nSend an amount to a given address. The amount is real and is rounded to the nearest 0.00000001\n" +
