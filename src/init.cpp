@@ -1084,11 +1084,15 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         LogPrintf("[AppInit2] rescan %15dms\n", GetTimeMillis() - nStart);
 
         // Restore wallet transaction metadata after -zapwallettxes=1
-        if (GetBoolArg("-zapwallettxes", false) && GetArg("-zapwallettxes", "1") != "2") {
-            BOOST_FOREACH (const CWalletTx& wtxOld, vWtx) {
+        if (GetBoolArg("-zapwallettxes", false) && GetArg("-zapwallettxes", "1") != "2")
+        {
+            BOOST_FOREACH (const CWalletTx& wtxOld, vWtx)
+            {
                 uint256 hash = wtxOld.GetHash();
-                std::map<uint256, CWalletTx>::iterator mi = pwalletMain->mapWallet.find(hash);
-                if (mi != pwalletMain->mapWallet.end()) {
+                auto mi = pwalletMain->mapWallet.find(hash);
+
+                if (mi != pwalletMain->mapWallet.end())
+                {
                     const CWalletTx* copyFrom = &wtxOld;
                     CWalletTx* copyTo = &mi->second;
                     copyTo->mapValue = copyFrom->mapValue;
