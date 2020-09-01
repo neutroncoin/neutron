@@ -1,3 +1,8 @@
+// Copyright (c) 2015-2020 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "transactiontablemodel.h"
 #include "guiutil.h"
 #include "transactionrecord.h"
@@ -21,12 +26,12 @@
 
 // Amount column is right-aligned it contains numbers
 static int column_alignments[] = {
-        Qt::AlignLeft|Qt::AlignVCenter,
-        Qt::AlignLeft|Qt::AlignVCenter,
-        Qt::AlignLeft|Qt::AlignVCenter,
-        Qt::AlignLeft|Qt::AlignVCenter,
-        Qt::AlignRight|Qt::AlignVCenter
-    };
+    Qt::AlignLeft|Qt::AlignVCenter,
+    Qt::AlignLeft|Qt::AlignVCenter,
+    Qt::AlignLeft|Qt::AlignVCenter,
+    Qt::AlignLeft|Qt::AlignVCenter,
+    Qt::AlignRight|Qt::AlignVCenter
+};
 
 // Comparison operator for sort/binary search of model tx list
 struct TxLessThan
@@ -71,7 +76,7 @@ public:
         cachedWallet.clear();
         {
             LOCK(wallet->cs_wallet);
-            for(std::map<uint256, CWalletTx>::iterator it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
+            for(auto it = wallet->mapWallet.begin(); it != wallet->mapWallet.end(); ++it)
             {
                 if(TransactionRecord::showTransaction(it->second))
                     cachedWallet.append(TransactionRecord::decomposeTransaction(wallet, it->second));
@@ -91,14 +96,16 @@ public:
             LOCK(wallet->cs_wallet);
 
             // Find transaction in wallet
-            std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(hash);
+            auto mi = wallet->mapWallet.find(hash);
             bool inWallet = mi != wallet->mapWallet.end();
 
             // Find bounds of this transaction in model
             QList<TransactionRecord>::iterator lower = qLowerBound(
                 cachedWallet.begin(), cachedWallet.end(), hash, TxLessThan());
+
             QList<TransactionRecord>::iterator upper = qUpperBound(
                 cachedWallet.begin(), cachedWallet.end(), hash, TxLessThan());
+
             int lowerIndex = (lower - cachedWallet.begin());
             int upperIndex = (upper - cachedWallet.begin());
             bool inModel = (lower != upper);
@@ -185,7 +192,7 @@ public:
             {
                 {
                     LOCK(wallet->cs_wallet);
-                    std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
+                    auto mi = wallet->mapWallet.find(rec->hash);
 
                     if(mi != wallet->mapWallet.end())
                     {
@@ -205,7 +212,7 @@ public:
     {
         {
             LOCK(wallet->cs_wallet);
-            std::map<uint256, CWalletTx>::iterator mi = wallet->mapWallet.find(rec->hash);
+            auto mi = wallet->mapWallet.find(rec->hash);
             if(mi != wallet->mapWallet.end())
             {
                 return TransactionDesc::toHTML(wallet, mi->second);
@@ -473,11 +480,13 @@ QVariant TransactionTableModel::txStatusDecoration(const TransactionRecord *wtx)
 QString TransactionTableModel::formatTooltip(const TransactionRecord *rec) const
 {
     QString tooltip = formatTxStatus(rec) + QString("\n") + formatTxType(rec);
+
     if(rec->type==TransactionRecord::RecvFromOther || rec->type==TransactionRecord::SendToOther ||
        rec->type==TransactionRecord::SendToAddress || rec->type==TransactionRecord::RecvWithAddress)
     {
         tooltip += QString(" ") + formatTxToAddress(rec, true);
     }
+
     return tooltip;
 }
 
@@ -485,6 +494,7 @@ QVariant TransactionTableModel::data(const QModelIndex &index, int role) const
 {
     if(!index.isValid())
         return QVariant();
+
     TransactionRecord *rec = static_cast<TransactionRecord*>(index.internalPointer());
 
     switch(role)
@@ -581,7 +591,8 @@ QVariant TransactionTableModel::headerData(int section, Qt::Orientation orientat
         else if (role == Qt::TextAlignmentRole)
         {
             return column_alignments[section];
-        } else if (role == Qt::ToolTipRole)
+        }
+        else if (role == Qt::ToolTipRole)
         {
             switch(section)
             {

@@ -1,3 +1,8 @@
+// Copyright (c) 2015-2020 The Neutron Developers
+//
+// Distributed under the MIT/X11 software license, see the accompanying
+// file COPYING or http://www.opensource.org/licenses/mit-license.php.
+
 #include "addeditadrenalinenode.h"
 #include "ui_addeditadrenalinenode.h"
 
@@ -66,14 +71,17 @@ void AddEditAdrenalineNode::on_okButton_clicked()
         {
             CScript scriptPubKey;
             scriptPubKey.SetDestination(account.vchPubKey.GetID());
-            for (map<uint256, CWalletTx>::iterator it = pwalletMain->mapWallet.begin();
+            for (auto it = pwalletMain->mapWallet.begin();
                  it != pwalletMain->mapWallet.end() && account.vchPubKey.IsValid();
                  ++it)
             {
                 const CWalletTx& wtx = (*it).second;
+
                 BOOST_FOREACH(const CTxOut& txout, wtx.vout)
+                {
                     if (txout.scriptPubKey == scriptPubKey)
                         bKeyUsed = true;
+                }
             }
         }
 
