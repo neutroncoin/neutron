@@ -131,6 +131,7 @@ OBJS= \
     obj/netaddress.o \
     obj/netbase.o \
     obj/noui.o \
+    obj/opensslcompat.o \
     obj/pbkdf2.o \
     obj/protocol.o \
     obj/random.o \

@@ -193,6 +193,7 @@ HEADERS += src/activemasternode.h \
     src/netaddress.h \
     src/netbase.h \
     src/noui.h \
+    src/opensslcompat.h \
     src/pbkdf2.h \
     src/protocol.h \
     src/random.h \
@@ -298,6 +299,7 @@ SOURCES += src/activemasternode.cpp \
     src/netaddress.cpp \
     src/netbase.cpp \
     src/noui.cpp \
+    src/opensslcompat.c \
     src/protocol.cpp \
     src/pbkdf2.cpp \
     src/random.cpp \
