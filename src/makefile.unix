@@ -96,11 +96,11 @@ ifeq (${ARCH}, i686)
     EXT_OPTIONS=-msse2
 endif
 
-
 # CXXFLAGS can be specified on the make command line, so we use xCXXFLAGS that only
 # adds some defaults in front. Unfortunately, CXXFLAGS=... $(CXXFLAGS) does not work.
-xCXXFLAGS=-O2 $(EXT_OPTIONS) -rdynamic -std=c++11 -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter \
-    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CXXFLAGS)
+xCXXFLAGS=-std=c++11 $(xCCFLAGS) $(CXXFLAGS)
+xCCFLAGS=-O3 -ftree-parallelize-loops=4 -rdynamic $(EXT_OPTIONS) -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter \
+    $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CCFLAGS)
 
 # LDFLAGS can be specified on the make command line, so we use xLDFLAGS that only
 # adds some defaults in front. Unfortunately, LDFLAGS=... $(LDFLAGS) does not work.
@@ -209,6 +209,14 @@ obj/scrypt-x86_64.o: scrypt-x86_64.S
 
 obj/scrypt-arm.o: scrypt-arm.S
 	$(CXX) -c $(xCXXFLAGS) -MMD -o $@ $<
+
+obj/%.o: %.c
+	@mkdir -p obj/xz
+	$(CC) -c $(xCCFLAGS) -MMD -MF $(@:%.o=%.d) -o $@ $<
+	@cp $(@:%.o=%.d) $(@:%.o=%.P); \
+	  sed -e 's/#.*//' -e 's/^[^:]*: *//' -e 's/ *\\$$//' \
+	      -e '/^$$/ d' -e 's/$$/ :/' < $(@:%.o=%.d) >> $(@:%.o=%.P); \
+	  rm -f $(@:%.o=%.d)
 
 obj/%.o: %.cpp
 	$(CXX) -c $(xCXXFLAGS) -MMD -MF $(@:%.o=%.d) -o $@ $<

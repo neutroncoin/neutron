@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin developers
+// Copyright (c) 2021 The Neutron developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -17,8 +18,7 @@ using namespace boost;
 #include "main.h"
 #include "sync.h"
 #include "util.h"
-
-
+#include "opensslcompat.h"
 
 bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType);
 
@@ -30,7 +30,6 @@ static const CBigNum bnOne(1);
 static const CBigNum bnFalse(0);
 static const CBigNum bnTrue(1);
 static const size_t nMaxNumSize = 4;
-
 
 CBigNum CastToBigNum(const valtype& vch)
 {
@@ -81,12 +80,8 @@ void MakeSameSize(valtype& vch1, valtype& vch2)
         vch2.resize(vch1.size(), 0);
 }
 
-
-
-//
 // Script is a stack machine (like Forth) that evaluates a predicate
 // returning a bool indicating valid or not.  There are no loops.
-//
 #define stacktop(i)  (stack.at(stack.size()+(i)))
 #define altstacktop(i)  (altstack.at(altstack.size()+(i)))
 static inline void popstack(vector<valtype>& stack)
@@ -867,17 +862,17 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                         break;
 
                     case OP_MUL:
-                        if (!BN_mul(&bn, &bn1, &bn2, pctx))
+                        if (!BN_mul(bn.getBN(), bn1.getBNConst(), bn2.getBNConst(), pctx))
                             return false;
                         break;
 
                     case OP_DIV:
-                        if (!BN_div(&bn, NULL, &bn1, &bn2, pctx))
+                        if (!BN_div(bn.getBN(), NULL, bn1.getBNConst(), bn2.getBNConst(), pctx))
                             return false;
                         break;
 
                     case OP_MOD:
-                        if (!BN_mod(&bn, &bn1, &bn2, pctx))
+                        if (!BN_mod(bn.getBN(), bn1.getBNConst(), bn2.getBNConst(), pctx))
                             return false;
                         break;
 

@@ -1,8 +1,8 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2012 The Bitcoin Developers
+// Copyright (c) 2021 The Neutron developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
-
 
 //
 // Why base-58 instead of standard base-64 encoding?
@@ -42,15 +42,18 @@ inline std::string EncodeBase58(const unsigned char* pbegin, const unsigned char
 
     // Convert bignum to std::string
     std::string str;
-    // Expected size increase from base58 conversion is approximately 137%
-    // use 138% to be safe
+
+    // Expected size increase from base58 conversion is approximately 137% - use 138% to be safe
     str.reserve((pend - pbegin) * 138 / 100 + 1);
+
     CBigNum dv;
     CBigNum rem;
+
     while (bn > bn0)
     {
-        if (!BN_div(&dv, &rem, &bn, &bn58, pctx))
+        if (!BN_div(dv.getBN(), rem.getBN(), bn.getBNConst(), bn58.getBNConst(), pctx))
             throw bignum_error("EncodeBase58 : BN_div failed");
+
         bn = dv;
         unsigned int c = rem.getulong();
         str += pszBase58[c];
@@ -80,6 +83,7 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
     CBigNum bn58 = 58;
     CBigNum bn = 0;
     CBigNum bnChar;
+
     while (isspace(*psz))
         psz++;
 
@@ -91,13 +95,17 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
         {
             while (isspace(*p))
                 p++;
+
             if (*p != '\0')
                 return false;
             break;
         }
+
         bnChar.setulong(p1 - pszBase58);
-        if (!BN_mul(&bn, &bn, &bn58, pctx))
+
+        if (!BN_mul(bn.getBN(), bn.getBNConst(), bn58.getBNConst(), pctx))
             throw bignum_error("DecodeBase58 : BN_mul failed");
+
         bn += bnChar;
     }
 
@@ -110,8 +118,10 @@ inline bool DecodeBase58(const char* psz, std::vector<unsigned char>& vchRet)
 
     // Restore leading zeros
     int nLeadingZeros = 0;
+
     for (const char* p = psz; *p == pszBase58[0]; p++)
         nLeadingZeros++;
+
     vchRet.assign(nLeadingZeros + vchTmp.size(), 0);
 
     // Convert little endian data to big endian
@@ -135,7 +145,8 @@ inline std::string EncodeBase58Check(const std::vector<unsigned char>& vchIn)
     // add 4-byte hash check to the end
     std::vector<unsigned char> vch(vchIn);
     uint256 hash = Hash(vch.begin(), vch.end());
-    vch.insert(vch.end(), (unsigned char*)&hash, (unsigned char*)&hash + 4);
+    vch.insert(vch.end(), (unsigned char *) &hash, (unsigned char *) &hash + 4);
+
     return EncodeBase58(vch);
 }
 
@@ -145,17 +156,21 @@ inline bool DecodeBase58Check(const char* psz, std::vector<unsigned char>& vchRe
 {
     if (!DecodeBase58(psz, vchRet))
         return false;
+
     if (vchRet.size() < 4)
     {
         vchRet.clear();
         return false;
     }
+
     uint256 hash = Hash(vchRet.begin(), vchRet.end()-4);
+
     if (memcmp(&hash, &vchRet.end()[-4], 4) != 0)
     {
         vchRet.clear();
         return false;
     }
+
     vchRet.resize(vchRet.size()-4);
     return true;
 }
@@ -167,11 +182,7 @@ inline bool DecodeBase58Check(const std::string& str, std::vector<unsigned char>
     return DecodeBase58Check(str.c_str(), vchRet);
 }
 
-
-
-
-
-/** Base class for all base58-encoded data */
+/* Base class for all base58-encoded data */
 class CBase58Data
 {
 protected:
@@ -212,16 +223,20 @@ public:
     {
         std::vector<unsigned char> vchTemp;
         DecodeBase58Check(psz, vchTemp);
+
         if (vchTemp.empty())
         {
             vchData.clear();
             nVersion = 0;
             return false;
         }
+
         nVersion = vchTemp[0];
         vchData.resize(vchTemp.size() - 1);
+
         if (!vchData.empty())
             memcpy(&vchData[0], &vchTemp[1], vchData.size());
+
         memset(&vchTemp[0], 0, vchTemp.size());
         return true;
     }
@@ -244,6 +259,7 @@ public:
         if (nVersion > b58.nVersion) return  1;
         if (vchData < b58.vchData)   return -1;
         if (vchData > b58.vchData)   return  1;
+
         return 0;
     }
 
@@ -411,9 +427,6 @@ public:
             vchData.push_back(1);
     }
 
-
-
-
     CSecret GetSecret(bool &fCompressedOut)
     {
         CSecret vchSecret;
@@ -456,9 +469,7 @@ public:
         SetSecret(vchSecret, fCompressed);
     }
 
-    CBitcoinSecret()
-    {
-    }
+    CBitcoinSecret() { }
 };
 
 #endif

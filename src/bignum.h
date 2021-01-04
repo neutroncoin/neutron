@@ -599,7 +599,11 @@ public:
         #if OPENSSL_VERSION_NUMBER < 0x10100000L
         int ret = BN_is_prime(getBNConst(), checks, NULL, pctx, NULL);
         #else
+        #if OPENSSL_VERSION_NUMBER > 0x20000000L
+        int ret = BN_check_prime(getBNConst(), pctx, NULL);
+        #else
         int ret = BN_is_prime_ex(getBNConst(), checks, pctx, NULL);
+        #endif
         #endif
 
         if(ret < 0)

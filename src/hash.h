@@ -1,5 +1,6 @@
 // Copyright (c) 2009-2010 Satoshi Nakamoto
 // Copyright (c) 2009-2013 The Bitcoin developers
+// Copyright (c) 2021 The Neutron developers
 // Distributed under the MIT/X11 software license, see the accompanying
 // file COPYING or http://www.opensource.org/licenses/mit-license.php.
 
@@ -11,7 +12,6 @@
 #include "version.h"
 
 #include <vector>
-
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 
@@ -115,7 +115,8 @@ inline uint160 Hash160(const T1 pbegin, const T1 pend)
     uint256 hash1;
     SHA256((pbegin == pend ? pblank : (unsigned char*)&pbegin[0]), (pend - pbegin) * sizeof(pbegin[0]), (unsigned char*)&hash1);
     uint160 hash2;
-    RIPEMD160((unsigned char*)&hash1, sizeof(hash1), (unsigned char*)&hash2);
+    RIPEMD160((unsigned char *) &hash1, sizeof(hash1), (unsigned char *) &hash2);
+
     return hash2;
 }
 
