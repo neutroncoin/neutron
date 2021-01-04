@@ -313,10 +313,11 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
     valtype vchPushValue;
     vector<bool> vfExec;
     vector<valtype> altstack;
+
     if (script.size() > 10000)
         return false;
-    int nOpCount = 0;
 
+    int nOpCount = 0;
 
     try
     {
@@ -715,10 +716,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                 }
                 break;
 
-
-                //
                 // Bitwise logic
-                //
                 case OP_INVERT:
                 {
                     // (in - out)
@@ -730,11 +728,10 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                 }
                 break;
 
-                //
                 // WARNING: These disabled opcodes exhibit unexpected behavior
                 // when used on signed integers due to a bug in MakeSameSize()
                 // [see definition of MakeSameSize() above].
-                //
+
                 case OP_AND:
                 case OP_OR:
                 case OP_XOR:
@@ -931,10 +928,7 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
                 }
                 break;
 
-
-                //
                 // Crypto
-                //
                 case OP_RIPEMD160:
                 case OP_SHA1:
                 case OP_SHA256:
@@ -1100,20 +1094,11 @@ bool EvalScript(vector<vector<unsigned char> >& stack, const CScript& script, co
         return false;
     }
 
-
     if (!vfExec.empty())
         return false;
 
     return true;
 }
-
-
-
-
-
-
-
-
 
 uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int nIn, int nHashType)
 {
@@ -1176,7 +1161,6 @@ uint256 SignatureHash(CScript scriptCode, const CTransaction& txTo, unsigned int
     ss << txTmp << nHashType;
     return Hash(ss.begin(), ss.end());
 }
-
 
 // Valid signature cache, to avoid doing expensive ECDSA signature checking
 // twice for every transaction (once when accepted into memory pool, and
@@ -1264,17 +1248,7 @@ bool CheckSig(vector<unsigned char> vchSig, vector<unsigned char> vchPubKey, CSc
     return true;
 }
 
-
-
-
-
-
-
-
-
-//
 // Return public keys or hashes from scriptPubKey, for 'standard' transaction types.
-//
 bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsigned char> >& vSolutionsRet)
 {
     // Templates
@@ -1389,7 +1363,6 @@ bool Solver(const CScript& scriptPubKey, txnouttype& typeRet, vector<vector<unsi
     return false;
 }
 
-
 bool Sign1(const CKeyID& address, const CKeyStore& keystore, uint256 hash, int nHashType, CScript& scriptSigRet)
 {
     CKey key;
@@ -1419,12 +1392,11 @@ bool SignN(const vector<valtype>& multisigdata, const CKeyStore& keystore, uint2
     return nSigned==nRequired;
 }
 
-//
 // Sign scriptPubKey with private keys stored in keystore, given transaction hash and hash type.
 // Signatures are returned in scriptSigRet (or returns false if scriptPubKey can't be signed),
 // unless whichTypeRet is TX_SCRIPTHASH, in which case scriptSigRet is the redemption script.
 // Returns false if scriptPubKey could not be completely satisfied.
-//
+
 bool Solver(const CKeyStore& keystore, const CScript& scriptPubKey, uint256 hash, int nHashType,
                   CScript& scriptSigRet, txnouttype& whichTypeRet)
 {
@@ -1505,7 +1477,6 @@ bool IsStandard(const CScript& scriptPubKey, txnouttype& whichType)
     return whichType != TX_NONSTANDARD;
 }
 
-
 bool ExtractDestination(const CScript& scriptPubKey, CTxDestination& addressRet)
 {
     vector<valtype> vSolutions;
@@ -1563,7 +1534,6 @@ public:
 
     void operator()(const CNoDestination &none) {}
 };
-
 
 void ExtractAffectedKeys(const CKeyStore &keystore, const CScript& scriptPubKey, std::vector<CKeyID> &vKeys) {
     CAffectedKeysVisitor(keystore, vKeys).Process(scriptPubKey);
@@ -1638,7 +1608,6 @@ bool VerifyScript(const CScript& scriptSig, const CScript& scriptPubKey, const C
 
     return true;
 }
-
 
 bool SignSignature(const CKeyStore &keystore, const CScript& fromPubKey, CTransaction& txTo, unsigned int nIn, int nHashType)
 {
@@ -1850,8 +1819,6 @@ unsigned int CScript::GetSigOpCount(bool fAccurate) const
     return n;
 }
 
-
-
 unsigned int CScript::GetSigOpCount(const CScript& scriptSig) const
 {
     if (!IsPayToScriptHash())
@@ -1968,7 +1935,6 @@ bool CScript::IsNormalPaymentScript() const
 
     return true;
 }
-
 
 void CScript::SetDestination(const CTxDestination& dest)
 {
