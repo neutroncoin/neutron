@@ -405,7 +405,7 @@ CPubKey CKey::GetPubKey() const
 bool CKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)
 {
     vchSig.clear();
-    ECDSA_SIG *sig = ECDSA_do_sign((unsigned char*)&hash, sizeof(hash), pkey);
+    ECDSA_SIG *sig = ECDSA_do_sign((unsigned char *) &hash, sizeof(hash), pkey);
 
     if (sig == NULL)
         return false;
@@ -420,7 +420,7 @@ bool CKey::Sign(uint256 hash, std::vector<unsigned char>& vchSig)
 
     if (BN_cmp(ECDSA_SIG_gets(sig), halforder) > 0) {
         // enforce low S values, by negating the value (modulo the order) if above order/2.
-        BN_sub(ECDSA_SIG_gets(sig), order, ECDSA_SIG_getr(sig));
+        BN_sub(ECDSA_SIG_gets(sig), order, ECDSA_SIG_gets(sig));
     }
 
     BN_CTX_end(ctx);
