@@ -836,10 +836,12 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     return false;
 }
 
+static CCriticalSection pblockIndexCache;
 static CBlockIndex* pblockindexFBBHLast;
 
 CBlockIndex* FindBlockByHeight(int nHeight)
 {
+    LOCK(pblockIndexCache);
     CBlockIndex *pblockindex;
 
     if (nHeight < nBestHeight / 2)
