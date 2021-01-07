@@ -99,7 +99,7 @@ endif
 # CXXFLAGS can be specified on the make command line, so we use xCXXFLAGS that only
 # adds some defaults in front. Unfortunately, CXXFLAGS=... $(CXXFLAGS) does not work.
 xCXXFLAGS=-std=c++11 $(xCCFLAGS) $(CXXFLAGS)
-xCCFLAGS=-O3 -ftree-parallelize-loops=4 -rdynamic $(EXT_OPTIONS) -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter \
+xCCFLAGS=-O3 -ftree-parallelize-loops=4 -rdynamic $(EXT_OPTIONS) -pthread -Wall -Wextra -Wno-ignored-qualifiers -Wformat -Wformat-security -Wno-unused-parameter -Wno-deprecated-declarations \
     $(DEBUGFLAGS) $(DEFS) $(HARDENING) $(CCFLAGS)
 
 # LDFLAGS can be specified on the make command line, so we use xLDFLAGS that only
