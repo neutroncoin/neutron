@@ -836,12 +836,8 @@ bool GetTransaction(const uint256 &hash, CTransaction &tx, uint256 &hashBlock)
     return false;
 }
 
-static CCriticalSection pblockIndexCache;
-static CBlockIndex* pblockindexFBBHLast;
-
 CBlockIndex* FindBlockByHeight(int nHeight)
 {
-    LOCK(pblockIndexCache);
     CBlockIndex *pblockindex;
 
     if (nHeight < nBestHeight / 2)
@@ -849,17 +845,12 @@ CBlockIndex* FindBlockByHeight(int nHeight)
     else
         pblockindex = pindexBest;
 
-    if (pblockindexFBBHLast && abs(nHeight - pblockindex->nHeight) >
-        abs(nHeight - pblockindexFBBHLast->nHeight))
-        pblockindex = pblockindexFBBHLast;
-
     while (pblockindex->pprev && pblockindex->nHeight > nHeight)
         pblockindex = pblockindex->pprev;
 
     while (pblockindex->pnext && pblockindex->nHeight < nHeight)
         pblockindex = pblockindex->pnext;
 
-    pblockindexFBBHLast = pblockindex;
     return pblockindex;
 }
 
@@ -2107,7 +2098,6 @@ bool CBlock::SetBestChain(CTxDB& txdb, CBlockIndex* pindexNew)
     hashBestChain = hash;
     pindexBest = pindexNew;
     pindexBest->pnext = nullptr; /* Should already be null or with pnext being invalid - effectively disconnectng the rest */
-    pblockindexFBBHLast = nullptr;
     nBestHeight = pindexBest->nHeight;
     nBestChainTrust = pindexNew->nChainTrust;
     nTimeBestReceived = GetTime();
