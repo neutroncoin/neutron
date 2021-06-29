@@ -33,6 +33,8 @@
 #include "loggerpage.h"
 #include "stakereportdialog.h"
 
+#include "statisticspage.h"
+#include "tradingdialog.h"
 
 #ifdef Q_OS_MAC
 #include "macdockiconhandler.h"
@@ -146,6 +148,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
 
     signVerifyMessageDialog = new SignVerifyMessageDialog(this);
     masternodeManagerPage = new MasternodeManager(this);
+    statisticsPage = new StatisticsPage(this);
+    tradingPage = new TradingPage(this);
+    //staisybitPage = new StaisybitPage(this);
 #if 0
     loggerPage = new LoggerPage(this);
 #endif
@@ -157,6 +162,9 @@ BitcoinGUI::BitcoinGUI(QWidget *parent):
     centralWidget->addWidget(receiveCoinsPage);
     centralWidget->addWidget(sendCoinsPage);
     centralWidget->addWidget(masternodeManagerPage);
+    centralWidget->addWidget(statisticsPage);
+    centralWidget->addWidget(tradingPage);
+    //centralWidget->addWidget(staisybitPage);
 #if 0
     centralWidget->addWidget(loggerPage);
 #endif
@@ -298,6 +306,23 @@ void BitcoinGUI::createActions()
     masternodeManagerAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
     tabGroup->addAction(masternodeManagerAction);
 
+    statisticsAction = new QAction(QIcon(":/icons/statistics"), tr("Statisti&cs"), this);
+    statisticsAction->setToolTip(tr("Neutron network and financial statistics"));
+    statisticsAction->setCheckable(true);
+    statisticsAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_6));
+    tabGroup->addAction(statisticsAction);
+
+    tradingAction = new QAction(QIcon(":/icons/trading"), tr("Tra&de"), this);
+    tradingAction->setToolTip(tr("Trade Neutron directly from your wallet"));
+    tradingAction->setCheckable(true);
+    tradingAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_7));
+    tabGroup->addAction(tradingAction);
+
+    //staisybitAction = new QAction(QIcon(":/icons/staisybit"), tr("Cloud Staking"), this);
+    //staisybitAction->setToolTip(tr("Neutron Coin online staking wallet"));
+    //staisybitAction->setCheckable(true);
+    //staisybitAction->setShortcut(QKeySequence(Qt::ALT + Qt::Key_8));
+    //tabGroup->addAction(staisybitAction);
 #if 0
     openLoggerAction = new QAction(QIcon(":/icons/history"), tr("&Logger"), this);
     openLoggerAction->setStatusTip(tr("Show log entries"));
@@ -323,6 +348,9 @@ void BitcoinGUI::createActions()
     connect(addressBookAction, SIGNAL(triggered()), this, SLOT(gotoAddressBookPage()));
     connect(masternodeManagerAction, SIGNAL(triggered()), this, SLOT(showNormalIfMinimized()));
     connect(masternodeManagerAction, SIGNAL(triggered()), this, SLOT(gotoMasternodeManagerPage()));
+    connect(statisticsAction, SIGNAL(triggered()), this, SLOT(gotoStatisticsPage()));
+    connect(tradingAction, SIGNAL(triggered()), this, SLOT(gotoTradingPage()));
+    //connect(staisybitAction, SIGNAL(triggered()), this, SLOT(gotoStaisybitPage()));
 #if 0
     connect(openLoggerAction, SIGNAL(triggered()), this, SLOT(gotoLoggerPage()));
 # endif
@@ -495,6 +523,9 @@ void BitcoinGUI::createToolBars()
     toolbar->addAction(receiveCoinsAction);
     toolbar->addAction(historyAction);
     toolbar->addAction(addressBookAction);
+    toolbar->addAction(statisticsAction);
+    toolbar->addAction(tradingAction);
+    //toolbar->addAction(staisybitAction);
     toolbar->addAction(masternodeManagerAction);
     toolbar->addAction(openRPCConsoleAction);
     toolbar->addAction(miningReportAction);
@@ -1054,6 +1085,36 @@ void BitcoinGUI::gotoSendCoinsPage()
 
     exportAction->setEnabled(false);
     disconnect(exportAction, SIGNAL(triggered()), 0, 0);
+}
+
+void BitcoinGUI::gotoStatisticsPage()
+{
+    statisticsAction->setChecked(true);
+    centralWidget->setCurrentWidget(statisticsPage);
+
+    statisticsPage->tradingStatsWidget->UpdateMarketData();
+    statisticsPage->coinStatsWidget->updateStatistics();
+
+    exportAction->setEnabled(false);
+    disconnect(exportAction, SIGNAL(triggered()), 0, 0);
+}
+
+void BitcoinGUI::gotoTradingPage()
+{
+    tradingAction->setChecked(true);
+    centralWidget->setCurrentWidget(tradingPage);
+
+    exportAction->setEnabled(false);
+    disconnect(exportAction, SIGNAL(triggered()), 0, 0);
+}
+
+void BitcoinGUI::gotoStaisybitPage()
+{
+    //staisybitAction->setChecked(true);
+    //centralWidget->setCurrentWidget(staisybitPage);
+
+    //exportAction->setEnabled(false);
+    //disconnect(exportAction, SIGNAL(triggered()), 0, 0);
 }
 
 void BitcoinGUI::gotoSignMessageTab(QString addr)

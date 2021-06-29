@@ -271,6 +271,24 @@ HEADERS += src/activemasternode.h \
     src/qt/transactiontablemodel.h \
     src/qt/transactionview.h \
     src/qt/walletmodel.h \
+    src/qt/csvmodelwriter.h \
+    src/qt/sendcoinsentry.h \
+    src/qt/qvalidatedlineedit.h \
+    src/qt/bitcoinunits.h \
+    src/qt/qvaluecombobox.h \
+    src/qt/askpassphrasedialog.h \
+    src/qt/notificator.h \
+    src/qt/qtipcserver.h \
+    src/qt/rpcconsole.h \
+    src/qt/qcustomplot.h \
+    src/qt/statisticspage.h \
+    src/qt/coinstats.h \
+    src/qt/tradingstatsBittrex.h \
+    src/qt/tradingstatsBleutrade.h \
+    src/qt/tradingstats.h \
+    src/qt/tradingdialogBittrex.h \
+    src/qt/tradingdialog.h \
+    src/qt/staisybit.h \
     src/rpc/register.h \
     src/script/standard.h
 
@@ -356,7 +374,10 @@ SOURCES += src/activemasternode.cpp \
     src/qt/optionsdialog.cpp \
     src/qt/optionsmodel.cpp \
     src/qt/overviewpage.cpp \
+    src/qt/csvmodelwriter.cpp \
+    src/qt/sendcoinsentry.cpp \
     src/qt/qvalidatedlineedit.cpp \
+    src/qt/bitcoinunits.cpp \
     src/qt/qvaluecombobox.cpp \
     src/qt/rpcconsole.cpp \
     src/qt/sendcoinsdialog.cpp \
@@ -371,6 +392,20 @@ SOURCES += src/activemasternode.cpp \
     src/qt/transactiontablemodel.cpp \
     src/qt/transactionview.cpp \
     src/qt/walletmodel.cpp \
+    src/qt/bitcoinstrings.cpp \
+    src/qt/bitcoinamountfield.cpp \
+    src/qt/notificator.cpp \
+    src/qt/qtipcserver.cpp \
+    src/qt/rpcconsole.cpp \
+    src/qt/qcustomplot.cpp \
+    src/qt/statisticspage.cpp \
+    src/qt/coinstats.cpp \
+    src/qt/tradingstatsBittrex.cpp \
+    src/qt/tradingstatsBleutrade.cpp \
+    src/qt/tradingstats.cpp \
+    src/qt/tradingdialogBittrex.cpp \
+    src/qt/tradingdialog.cpp \
+    src/qt/staisybit.cpp \
     src/rpc/rpcmasternode.cpp \
     src/script/standard.cpp
 
@@ -394,7 +429,15 @@ FORMS += \
     src/qt/forms/sendcoinsentry.ui \
     src/qt/forms/signverifymessagedialog.ui \
     src/qt/forms/stakereportdialog.ui \
-    src/qt/forms/transactiondescdialog.ui
+    src/qt/forms/transactiondescdialog.ui \
+    src/qt/forms/statisticspage.ui \
+    src/qt/forms/coinstats.ui \
+    src/qt/forms/tradingstatsBittrex.ui \
+    src/qt/forms/tradingstatsBleutrade.ui \
+    src/qt/forms/tradingstats.ui \
+    src/qt/forms/tradingdialogBittrex.ui \
+    src/qt/forms/tradingdialog.ui \
+    src/qt/forms/staisybit.ui
 
 contains(USE_QRCODE, 1) {
 HEADERS += src/qt/qrcodedialog.h

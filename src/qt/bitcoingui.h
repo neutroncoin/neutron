@@ -23,6 +23,10 @@ class Notificator;
 class RPCConsole;
 class MasternodeManager;
 class LoggerPage;
+class StatisticsPage;
+class TradingPage;
+class StaisybitPage;
+
 QT_BEGIN_NAMESPACE
 class QAction;
 class QLabel;
@@ -82,6 +86,9 @@ private:
     SignVerifyMessageDialog *signVerifyMessageDialog;
     MasternodeManager *masternodeManagerPage;
     LoggerPage *loggerPage;
+    StatisticsPage *statisticsPage;
+    TradingPage *tradingPage;
+    StaisybitPage *staisybitPage;
     QLabel *labelEncryptionIcon;
     QLabel *labelStakingIcon;
     QLabel *labelConnectionsIcon;
@@ -119,7 +126,9 @@ private:
     QAction *showBackupsAction;
     QAction *openAction;
     QAction *miningReportAction;
-
+    QAction *statisticsAction;
+    QAction *tradingAction;
+    QAction *staisybitAction;
 
     QSystemTrayIcon *trayIcon;
     Notificator *notificator;
@@ -204,6 +213,12 @@ private Q_SLOTS:
     void gotoReceiveCoinsPage();
     /** Switch to send coins page */
     void gotoSendCoinsPage();
+    /** Switch to statistics page */
+    void gotoStatisticsPage();
+    /** Switch to trading page */
+    void gotoTradingPage();
+    /** Switch to Staisybit page */
+    void gotoStaisybitPage();
 
     void gotoMasternodeManagerPage();
 
