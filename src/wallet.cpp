@@ -441,7 +441,7 @@ void CWallet::WalletUpdateSpent(const CTransaction &tx, bool fBlock)
                 }
                 else if (!wtx.IsSpent(txin.prevout.n) && IsMine(wtx.vout[txin.prevout.n]))
                 {
-                    LogPrintf("%s : found spent coin %s TC %s\n", __func__,
+                    LogPrintf("%s : found spent coin %s NTRN %s\n", __func__,
                               FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
 
                     wtx.MarkSpent(txin.prevout.n);
@@ -1075,7 +1075,7 @@ void CWallet::ReacceptWalletTransactions()
 
                     if (fUpdated)
                     {
-                        LogPrintf("%s : Found spent coin %s TC %s\n", __func__,
+                        LogPrintf("%s : Found spent coin %s NTRN %s\n", __func__,
                                   FormatMoney(wtx.GetCredit()).c_str(), wtx.GetHash().ToString().c_str());
 
                         wtx.MarkDirty();
@@ -3443,7 +3443,7 @@ void CWallet::FixSpentCoins(int& nMismatchFound, int64_t& nBalanceInQuestion, bo
         {
             if (IsMine(pcoin->vout[n]) && pcoin->IsSpent(n) && (txindex.vSpent.size() <= n || txindex.vSpent[n].IsNull()))
             {
-                LogPrintf("FixSpentCoins found lost coin %s TC %s[%d], %s\n",
+                LogPrintf("FixSpentCoins found lost coin %s NTRN %s[%d], %s\n",
                     FormatMoney(pcoin->vout[n].nValue).c_str(), pcoin->GetHash().ToString().c_str(), n, fCheckOnly? "repair not attempted" : "repairing");
                 nMismatchFound++;
                 nBalanceInQuestion += pcoin->vout[n].nValue;
@@ -3456,7 +3456,7 @@ void CWallet::FixSpentCoins(int& nMismatchFound, int64_t& nBalanceInQuestion, bo
             }
             else if (IsMine(pcoin->vout[n]) && !pcoin->IsSpent(n) && (txindex.vSpent.size() > n && !txindex.vSpent[n].IsNull()))
             {
-                LogPrintf("FixSpentCoins found spent coin %s TC %s[%d], %s\n",
+                LogPrintf("FixSpentCoins found spent coin %s NTRN %s[%d], %s\n",
                     FormatMoney(pcoin->vout[n].nValue).c_str(), pcoin->GetHash().ToString().c_str(), n, fCheckOnly? "repair not attempted" : "repairing");
                 nMismatchFound++;
                 nBalanceInQuestion += pcoin->vout[n].nValue;
