@@ -20,8 +20,8 @@ Build-Depends: debhelper,
  libqrencode-dev
 Standards-Version: 3.9.2
 Homepage: https://www.neutroncoin.com/
-Vcs-Git: git://github.com/audiotopix/Neutron.git
-Vcs-Browser: https://github.com/audiotopix/Neutron
+Vcs-Git: git://github.com/neutroncoin/neutron.git
+Vcs-Browser: https://github.com/neutroncoin/neutron
 
 Package: neutrond
 Architecture: any
