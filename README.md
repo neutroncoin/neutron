@@ -27,7 +27,7 @@ Specs:
 	Dev Fee 10%
 
 
-Current Rewards per stake post Dev Fee as of July-06-2021
+Current Rewards per stake post Dev Fee as of July-06-2022
 
 	Staking: 1.69976727
 
