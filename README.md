@@ -27,11 +27,11 @@ Specs:
 	Dev Fee 10%
 
 
-Current Rewards per stake post Dev Fee as of March-06-2021
+Current Rewards per stake post Dev Fee as of July-06-2021
 
-	Staking: 2.52876105
+	Staking: 1.69976727
 
-	Masternode: 4.90925259
+	Masternode: 3.2995512
 
 
 For more information about Neutron, visit www.neutroncoin.com
