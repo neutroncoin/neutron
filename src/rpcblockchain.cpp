@@ -295,7 +295,7 @@ UniValue getblockbyrange(const UniValue& params, bool fHelp)
         throw runtime_error(
             "getblockbyrange <from> <to> [txinfo]\n"
             "txinfo optional to print more detailed tx info\n"
-            "Returns list of blocsk within the given block range.");
+            "Returns list of blocks within the given block range.");
 
     int low = std::min(params[0].get_int(), params[1].get_int());
     int high = std::max(params[0].get_int(), params[1].get_int());
