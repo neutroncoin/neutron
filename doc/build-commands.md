@@ -6,7 +6,7 @@
 ## Install dependencies
 ```
 sudo apt-get update
-sudo apt-get install build-essential libminiupnpc-dev automake libtool cmake zlib1g-dev
+sudo apt-get install build-essential libminiupnpc-dev automake libtool cmake zlib1g-dev git
 ```
 
 ##### Manually compile Berkeley DB 4.8 from source instead of using libdb++-dev
@@ -69,10 +69,8 @@ sudo apt-get install build-essential libminiupnpc-dev automake libtool cmake zli
 	mkdir -p ~/compile/neutron
 	cd ~/compile/neutron
 	NEUTRON_RELEASE_TAG=`curl --silent "https://api.github.com/repos/neutroncoin/neutron/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")'`
-	mkdir -p neutron_$NEUTRON_RELEASE_TAG
+	git clone -b master --recursive https://github.com/neutroncoin/neutron.git neutron_$NEUTRON_RELEASE_TAG
 	cd neutron_$NEUTRON_RELEASE_TAG
-	wget https://github.com/neutroncoin/neutron/archive/$NEUTRON_RELEASE_TAG.tar.gz
-	tar -xvf *.tar.gz --strip-components=1
 ```
 
 ##### [Optional] Allocate more memory for compile
@@ -83,7 +81,7 @@ sudo chmod 600 /var/swap.img
 sudo swapon /var/swap.img
 ```
 
-##### Compile neutron daemon without GUI (command line only)
+## Compile neutron daemon without GUI (command line only)
 ```
 	cd src
 	BDB_INCLUDE_PATH=/usr/local/BerkeleyDB.4.8/include \
@@ -94,6 +92,17 @@ sudo swapon /var/swap.img
 	BOOST_LIB_PATH=/usr/local/boost/boost-1.62.0/lib \
 	STATIC=1 \
 	make -f makefile.unix
+```
+
+##### Copy compiled daemon to bin
+```
+	cp neutrond /usr/bin/neutrond
+```
+
+##### Execute Neutron daemon from anywhere, check status 
+```
+	neutrond -daemon
+	neutrond getdebuginfo
 ```
 
 ##### Compile with GUI
@@ -153,13 +162,13 @@ make install
 
 ## Compile wallet
 
-##### Get source
+##### Get neutron source
 ```
 mkdir -p ~/compile/neutron
 cd ~/compile/neutron
-RELEASE_TAG=`curl --silent "https://api.github.com/repos/neutroncoin/neutron/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")'`
-wget https://github.com/neutroncoin/neutron/archive/$RELEASE_TAG.tar.gz
-tar -xvf *.tar.gz --strip-components=1
+NEUTRON_RELEASE_TAG=`curl --silent "https://api.github.com/repos/neutroncoin/neutron/releases/latest" | grep -Po '"tag_name": "\K.*?(?=")'`
+git clone -b master --recursive https://github.com/neutroncoin/neutron.git neutron_$NEUTRON_RELEASE_TAG
+cd neutron_$NEUTRON_RELEASE_TAG
 ```
 
 ##### [Optional] Allocate more memory for compile
@@ -170,7 +179,7 @@ sudo chmod 600 /var/swap.img
 sudo swapon /var/swap.img
 ```
 
-##### Compile without GUI (command line only)
+## Compile without GUI (command line only)
 ```
 cd src
 CXXFLAGS="-I/usr/local/BerkeleyDB.4.8/include" \
@@ -179,7 +188,7 @@ STATIC=1 \
 make -f makefile.unix
 ```
 
-##### Compile with GUI
+## Compile with GUI
 ```
 BDB_INC_PATH=/usr/local/BerkeleyDB.4.8/include
 BDB_LIB_PATH=/usr/local/BerkeleyDB.4.8/lib
